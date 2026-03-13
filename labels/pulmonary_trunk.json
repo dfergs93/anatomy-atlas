@@ -1,0 +1,12 @@
+{
+  "id": "pulmonary_trunk",
+  "name": "Pulmonary Trunk",
+  "ta2_name": "Truncus pulmonalis",
+  "description": "Short wide vessel arising from the right ventricle, bifurcating into right and left pulmonary arteries at the level of the carina. On CT: main PA diameter >29 mm suggests pulmonary hypertension. Assess for pulmonary embolism (filling defects), aneurysm, and PA:aorta ratio.",
+  "normal_values": {
+    "diameter_mm": "25–29",
+    "PA_to_aorta_ratio": "<1.0"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/pulmonary-trunk",
+  "related_structures": ["pulmonary_valve", "right_ventricle", "aorta"]
+}

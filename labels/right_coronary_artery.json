@@ -1,0 +1,12 @@
+{
+  "id": "right_coronary_artery",
+  "name": "Right Coronary Artery",
+  "ta2_name": "Arteria coronaria dextra",
+  "description": "Arises from the right coronary sinus and courses in the right atrioventricular groove. Supplies the RV, inferior LV wall (in right-dominant circulation, ~85% of patients), SA node (60%), and AV node (80%). On cardiac CTA: assess for stenosis, calcification, and dominance.",
+  "normal_values": {
+    "proximal_diameter_mm": "2.5–4.5",
+    "dominance": "Right-dominant in ~85%"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/right-coronary-artery",
+  "related_structures": ["right_ventricle", "right_atrium", "tricuspid_valve", "aortic_valve"]
+}

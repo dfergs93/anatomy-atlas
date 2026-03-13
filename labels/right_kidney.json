@@ -1,0 +1,13 @@
+{
+  "id": "right_kidney",
+  "name": "Right Kidney",
+  "ta2_name": "Ren dexter",
+  "description": "Retroperitoneal organ at T12–L3, slightly lower than the left due to the liver. On CT: assess cortical thickness, corticomedullary differentiation, collecting system dilatation (hydronephrosis), stones, masses, and renal vascular anatomy. Contrast phases: corticomedullary (30s), nephrographic (80s), excretory (3–5 min).",
+  "normal_values": {
+    "length_cm": "9–12",
+    "cortical_thickness_mm": "7–10",
+    "parenchymal_thickness_mm": "15–20"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/kidney",
+  "related_structures": ["liver", "adrenal_glands", "inferior_vena_cava"]
+}

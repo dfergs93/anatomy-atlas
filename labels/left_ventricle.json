@@ -1,0 +1,15 @@
+{
+  "id": "left_ventricle",
+  "name": "Left Ventricle",
+  "ta2_name": "Ventriculus sinister",
+  "description": "Main pumping chamber of the heart. Thick-walled muscular chamber that ejects oxygenated blood into the systemic circulation via the aortic valve. On cardiac CTA: assess wall thickness, wall motion abnormalities, trabeculations, mural thrombus, and calculate LVEF. Apical thinning may indicate prior infarct.",
+  "normal_values": {
+    "wall_thickness_mm": "6–10",
+    "ejection_fraction_pct": "55–70",
+    "EDV_ml": "90–180",
+    "ESV_ml": "30–70",
+    "mass_g": "80–150"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/left-ventricle",
+  "related_structures": ["mitral_valve", "aortic_valve", "interventricular_septum", "papillary_muscles", "left_anterior_descending_artery"]
+}

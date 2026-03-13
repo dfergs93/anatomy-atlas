@@ -1,0 +1,12 @@
+{
+  "id": "mitral_valve",
+  "name": "Mitral Valve",
+  "ta2_name": "Valva mitralis",
+  "description": "Bicuspid atrioventricular valve between the left atrium and left ventricle. Has anterior and posterior leaflets attached to papillary muscles via chordae tendineae. On cardiac CTA: assess for leaflet calcification, prolapse, annular dilatation, and vegetations.",
+  "normal_values": {
+    "annulus_diameter_mm": "25–35",
+    "orifice_area_cm2": "4.0–6.0"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/mitral-valve",
+  "related_structures": ["left_atrium", "left_ventricle", "papillary_muscles"]
+}

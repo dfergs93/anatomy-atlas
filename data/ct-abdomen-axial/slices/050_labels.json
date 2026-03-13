@@ -1,0 +1,457 @@
+[
+  {
+    "id": "liver",
+    "name": "Liver",
+    "ta2": "Hepar",
+    "polygon": [
+      [
+        250,
+        80
+      ],
+      [
+        400,
+        90
+      ],
+      [
+        440,
+        130
+      ],
+      [
+        450,
+        200
+      ],
+      [
+        420,
+        280
+      ],
+      [
+        350,
+        300
+      ],
+      [
+        280,
+        290
+      ],
+      [
+        250,
+        250
+      ],
+      [
+        240,
+        180
+      ],
+      [
+        240,
+        120
+      ]
+    ],
+    "description": "Largest solid organ, occupying the right upper quadrant. Divided into eight Couinaud segments based on portal and hepatic vein anatomy. Dual blood supply: hepatic artery (25%) and portal vein (75%). On CT: assess for focal lesions, diffuse disease (steatosis, cirrhosis), vascular patency, and biliary dilatation.",
+    "normal_values": {
+      "craniocaudal_span_cm": "14\u201316",
+      "attenuation_HU": "55\u201365 (non-contrast)",
+      "liver_to_spleen_ratio": ">1.0"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/liver"
+  },
+  {
+    "id": "spleen",
+    "name": "Spleen",
+    "ta2": "Splen",
+    "polygon": [
+      [
+        60,
+        150
+      ],
+      [
+        120,
+        130
+      ],
+      [
+        150,
+        150
+      ],
+      [
+        160,
+        200
+      ],
+      [
+        150,
+        260
+      ],
+      [
+        110,
+        280
+      ],
+      [
+        70,
+        260
+      ],
+      [
+        50,
+        220
+      ],
+      [
+        50,
+        180
+      ]
+    ],
+    "description": "Largest lymphoid organ, located in the left upper quadrant posterolateral to the stomach. Lies between the 9th and 11th ribs. On CT: assess for splenomegaly (>13 cm craniocaudal), focal lesions, splenic infarcts, lacerations (trauma), and accessory spleens.",
+    "normal_values": {
+      "craniocaudal_length_cm": "8\u201313",
+      "splenic_index": "<480 cm\u00b3"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/spleen"
+  },
+  {
+    "id": "right_kidney",
+    "name": "Right Kidney",
+    "ta2": "Ren dexter",
+    "polygon": [
+      [
+        370,
+        280
+      ],
+      [
+        400,
+        270
+      ],
+      [
+        420,
+        290
+      ],
+      [
+        425,
+        340
+      ],
+      [
+        420,
+        380
+      ],
+      [
+        400,
+        400
+      ],
+      [
+        370,
+        395
+      ],
+      [
+        360,
+        360
+      ],
+      [
+        360,
+        310
+      ]
+    ],
+    "description": "Retroperitoneal organ at T12\u2013L3, slightly lower than the left due to the liver. On CT: assess cortical thickness, corticomedullary differentiation, collecting system dilatation (hydronephrosis), stones, masses, and renal vascular anatomy. Contrast phases: corticomedullary (30s), nephrographic (80s), excretory (3\u20135 min).",
+    "normal_values": {
+      "length_cm": "9\u201312",
+      "cortical_thickness_mm": "7\u201310",
+      "parenchymal_thickness_mm": "15\u201320"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/kidney"
+  },
+  {
+    "id": "left_kidney",
+    "name": "Left Kidney",
+    "ta2": "Ren sinister",
+    "polygon": [
+      [
+        90,
+        280
+      ],
+      [
+        120,
+        270
+      ],
+      [
+        140,
+        290
+      ],
+      [
+        145,
+        340
+      ],
+      [
+        140,
+        380
+      ],
+      [
+        120,
+        400
+      ],
+      [
+        90,
+        395
+      ],
+      [
+        80,
+        360
+      ],
+      [
+        80,
+        310
+      ]
+    ],
+    "description": "Retroperitoneal organ at T12\u2013L3, slightly higher than the right. Same imaging assessment as right kidney. The left renal vein courses between the aorta and SMA (nutcracker position). On CT: assess same features as right kidney plus left renal vein compression.",
+    "normal_values": {
+      "length_cm": "9\u201312",
+      "cortical_thickness_mm": "7\u201310",
+      "parenchymal_thickness_mm": "15\u201320"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/kidney"
+  },
+  {
+    "id": "pancreas",
+    "name": "Pancreas",
+    "ta2": "Pancreas",
+    "polygon": [
+      [
+        150,
+        260
+      ],
+      [
+        200,
+        250
+      ],
+      [
+        280,
+        240
+      ],
+      [
+        340,
+        250
+      ],
+      [
+        360,
+        265
+      ],
+      [
+        340,
+        280
+      ],
+      [
+        280,
+        275
+      ],
+      [
+        200,
+        280
+      ],
+      [
+        150,
+        285
+      ]
+    ],
+    "description": "Retroperitoneal gland extending from the duodenal C-loop (head) to the splenic hilum (tail). Parts: head, uncinate process, neck, body, tail. The main pancreatic duct (Wirsung) joins the common bile duct at the ampulla of Vater. On CT: assess for masses, duct dilatation (>3 mm), calcifications, peripancreatic fat stranding, and atrophy.",
+    "normal_values": {
+      "head_AP_mm": "20\u201330",
+      "body_AP_mm": "15\u201320",
+      "tail_AP_mm": "15\u201320",
+      "duct_diameter_mm": "<3"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/pancreas"
+  },
+  {
+    "id": "stomach",
+    "name": "Stomach",
+    "ta2": "Gaster",
+    "polygon": [
+      [
+        150,
+        130
+      ],
+      [
+        220,
+        110
+      ],
+      [
+        250,
+        130
+      ],
+      [
+        260,
+        180
+      ],
+      [
+        250,
+        230
+      ],
+      [
+        210,
+        250
+      ],
+      [
+        160,
+        240
+      ],
+      [
+        140,
+        200
+      ],
+      [
+        140,
+        160
+      ]
+    ],
+    "description": "J-shaped hollow organ in the left upper quadrant between the esophagus and duodenum. Parts: cardia, fundus, body, antrum, pylorus. On CT: assess wall thickness (<5 mm when distended), masses, ulceration, gastric varices, and gastric outlet obstruction.",
+    "normal_values": {
+      "wall_thickness_mm": "<5 (distended)",
+      "capacity_ml": "1000\u20131500"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/stomach"
+  },
+  {
+    "id": "gallbladder",
+    "name": "Gallbladder",
+    "ta2": "Vesica biliaris",
+    "polygon": [
+      [
+        300,
+        250
+      ],
+      [
+        320,
+        240
+      ],
+      [
+        330,
+        255
+      ],
+      [
+        330,
+        285
+      ],
+      [
+        320,
+        300
+      ],
+      [
+        300,
+        295
+      ],
+      [
+        295,
+        275
+      ]
+    ],
+    "description": "Pear-shaped sac on the undersurface of the liver (gallbladder fossa). Stores and concentrates bile. Parts: fundus, body, infundibulum (Hartmann pouch), neck. On CT: assess for stones (often hyperdense), wall thickening (>3 mm), pericholecystic fluid, masses, and porcelain gallbladder.",
+    "normal_values": {
+      "length_cm": "7\u201310",
+      "wall_thickness_mm": "<3",
+      "transverse_diameter_cm": "3\u20135"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/gallbladder"
+  },
+  {
+    "id": "abdominal_aorta",
+    "name": "Abdominal Aorta",
+    "ta2": "Aorta abdominalis",
+    "polygon": [
+      [
+        248,
+        310
+      ],
+      [
+        268,
+        310
+      ],
+      [
+        272,
+        340
+      ],
+      [
+        268,
+        370
+      ],
+      [
+        248,
+        370
+      ],
+      [
+        244,
+        340
+      ]
+    ],
+    "description": "Continuation of the descending thoracic aorta below the aortic hiatus (T12). Major branches: celiac trunk, SMA, renal arteries, IMA. Bifurcates into common iliac arteries at L4. On CT: assess diameter (aneurysm >3 cm), mural thrombus, calcification, dissection, and branch vessel patency.",
+    "normal_values": {
+      "infrarenal_diameter_mm": "15\u201322",
+      "aneurysm_threshold_mm": ">30"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/abdominal-aorta"
+  },
+  {
+    "id": "portal_vein",
+    "name": "Portal Vein",
+    "ta2": "Vena portae hepatis",
+    "polygon": [
+      [
+        270,
+        200
+      ],
+      [
+        290,
+        195
+      ],
+      [
+        295,
+        215
+      ],
+      [
+        290,
+        235
+      ],
+      [
+        270,
+        240
+      ],
+      [
+        265,
+        220
+      ]
+    ],
+    "description": "Formed by confluence of the superior mesenteric and splenic veins posterior to the pancreatic neck. Carries nutrient-rich blood from the GI tract to the liver. On CT: assess for thrombosis, cavernous transformation, tumor invasion (pancreatic/HCC), and portal hypertension signs (varices, splenomegaly, ascites).",
+    "normal_values": {
+      "diameter_mm": "10\u201313",
+      "portal_hypertension_threshold_mm": ">13"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/portal-vein"
+  },
+  {
+    "id": "psoas_muscle",
+    "name": "Psoas Muscle",
+    "ta2": "Musculus psoas major",
+    "polygon": [
+      [
+        210,
+        340
+      ],
+      [
+        240,
+        330
+      ],
+      [
+        245,
+        380
+      ],
+      [
+        240,
+        430
+      ],
+      [
+        210,
+        435
+      ],
+      [
+        205,
+        390
+      ]
+    ],
+    "description": "Paired retroperitoneal muscles originating from T12\u2013L5 vertebral bodies, merging with iliacus to form the iliopsoas, inserting on the lesser trochanter. On CT: assess for asymmetric enlargement (abscess, hematoma), psoas sign (adjacent pathology), and atrophy (sarcopenia marker).",
+    "normal_values": {
+      "cross_sectional_area_cm2": "12\u201324 (age/sex dependent)"
+    },
+    "radiopaedia_url": "https://radiopaedia.org/articles/psoas-major-muscle"
+  }
+]

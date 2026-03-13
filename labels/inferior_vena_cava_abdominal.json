@@ -1,0 +1,12 @@
+{
+  "id": "inferior_vena_cava_abdominal",
+  "name": "Inferior Vena Cava (Abdominal)",
+  "ta2_name": "Vena cava inferior (pars abdominalis)",
+  "description": "Abdominal segment of the IVC from the confluence of the common iliac veins (L5) to the diaphragm. Receives renal veins, hepatic veins, and lumbar veins. On CT: assess for thrombosis (renal cell carcinoma extension), IVC filter position, compression, and anomalies (duplicated IVC, left-sided IVC).",
+  "normal_values": {
+    "diameter_mm": "15–25",
+    "infrarenal_diameter_mm": "15–22"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/inferior-vena-cava",
+  "related_structures": ["abdominal_aorta", "right_kidney", "left_kidney", "liver"]
+}

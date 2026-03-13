@@ -1,0 +1,11 @@
+{
+  "id": "superior_vena_cava",
+  "name": "Superior Vena Cava",
+  "ta2_name": "Vena cava superior",
+  "description": "Large vein formed by confluence of the right and left brachiocephalic veins, draining the head, neck, upper limbs, and thorax into the right atrium. On CT: assess for thrombosis (SVC syndrome), compression by mediastinal masses, and catheter tip position.",
+  "normal_values": {
+    "diameter_mm": "15–22"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/superior-vena-cava",
+  "related_structures": ["right_atrium", "aorta", "azygos_vein"]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "left_lung",
+  "name": "Left Lung",
+  "ta2_name": "Pulmo sinister",
+  "description": "Two-lobed lung (upper, lower) separated by the oblique fissure. Smaller than the right due to the cardiac notch accommodating the heart. The lingula is the tongue-like projection of the left upper lobe, analogous to the right middle lobe. On CT: assess parenchyma, fissure, airways, and vasculature.",
+  "normal_values": {
+    "lobes": "2 (upper, lower)",
+    "segments": "8–10"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/left-lung",
+  "related_structures": ["right_lung", "trachea", "diaphragm", "ribs"]
+}

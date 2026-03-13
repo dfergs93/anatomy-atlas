@@ -1,0 +1,14 @@
+{
+  "id": "right_ventricle",
+  "name": "Right Ventricle",
+  "ta2_name": "Ventriculus dexter",
+  "description": "Thin-walled anterior chamber that pumps deoxygenated blood to the pulmonary circulation via the pulmonary valve. Normally crescent-shaped in cross-section. On cardiac CTA: assess for dilatation (RV:LV ratio >1.0 suggests right heart strain), wall hypertrophy, and RVEF.",
+  "normal_values": {
+    "wall_thickness_mm": "3–5",
+    "ejection_fraction_pct": "45–60",
+    "EDV_ml": "100–200",
+    "RV_LV_ratio": "<1.0"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/right-ventricle",
+  "related_structures": ["tricuspid_valve", "pulmonary_valve", "interventricular_septum", "right_coronary_artery"]
+}

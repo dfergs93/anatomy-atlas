@@ -1,0 +1,13 @@
+{
+  "id": "trachea",
+  "name": "Trachea",
+  "ta2_name": "Trachea",
+  "description": "Cartilaginous airway extending from the cricoid cartilage (C6) to the carina (T4–T5) where it bifurcates into right and left main bronchi. C-shaped cartilage rings anterolaterally with a membranous posterior wall. On CT: assess caliber, wall thickening, tracheomalacia, and extrinsic compression.",
+  "normal_values": {
+    "AP_diameter_mm": "13–25",
+    "transverse_diameter_mm": "13–27",
+    "length_cm": "10–13"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/trachea",
+  "related_structures": ["esophagus", "thymus", "aorta", "right_lung", "left_lung"]
+}

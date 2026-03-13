@@ -1,0 +1,13 @@
+{
+  "id": "left_kidney",
+  "name": "Left Kidney",
+  "ta2_name": "Ren sinister",
+  "description": "Retroperitoneal organ at T12–L3, slightly higher than the right. Same imaging assessment as right kidney. The left renal vein courses between the aorta and SMA (nutcracker position). On CT: assess same features as right kidney plus left renal vein compression.",
+  "normal_values": {
+    "length_cm": "9–12",
+    "cortical_thickness_mm": "7–10",
+    "parenchymal_thickness_mm": "15–20"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/kidney",
+  "related_structures": ["spleen", "adrenal_glands", "abdominal_aorta", "pancreas"]
+}

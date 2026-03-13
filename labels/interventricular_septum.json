@@ -1,0 +1,12 @@
+{
+  "id": "interventricular_septum",
+  "name": "Interventricular Septum",
+  "ta2_name": "Septum interventriculare",
+  "description": "Muscular and membranous wall separating the left and right ventricles. The muscular portion is thick and contractile; the thin membranous portion is located superiorly near the aortic valve. On cardiac CTA: assess thickness (hypertrophy in HCM), septal defects (VSD), and wall motion.",
+  "normal_values": {
+    "thickness_mm": "7–11",
+    "septal_to_posterior_wall_ratio": "<1.3"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/interventricular-septum",
+  "related_structures": ["left_ventricle", "right_ventricle", "aortic_valve", "left_anterior_descending_artery"]
+}

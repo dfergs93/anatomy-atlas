@@ -1,0 +1,13 @@
+{
+  "id": "diaphragm",
+  "name": "Diaphragm",
+  "ta2_name": "Diaphragma",
+  "description": "Dome-shaped musculotendinous partition separating the thoracic and abdominal cavities. Three major openings: caval hiatus (T8, IVC), esophageal hiatus (T10, esophagus), aortic hiatus (T12, aorta). On CT: assess for herniation, eventration, paralysis, and crus thickening.",
+  "normal_values": {
+    "crus_thickness_mm": "5–7",
+    "right_dome_level": "T9–T10",
+    "left_dome_level": "T10–T11"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/diaphragm",
+  "related_structures": ["liver", "stomach", "spleen", "ribs", "esophagus"]
+}

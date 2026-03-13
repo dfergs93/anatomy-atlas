@@ -1,0 +1,11 @@
+{
+  "id": "psoas_muscle",
+  "name": "Psoas Muscle",
+  "ta2_name": "Musculus psoas major",
+  "description": "Paired retroperitoneal muscles originating from T12–L5 vertebral bodies, merging with iliacus to form the iliopsoas, inserting on the lesser trochanter. On CT: assess for asymmetric enlargement (abscess, hematoma), psoas sign (adjacent pathology), and atrophy (sarcopenia marker).",
+  "normal_values": {
+    "cross_sectional_area_cm2": "12–24 (age/sex dependent)"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/psoas-major-muscle",
+  "related_structures": ["abdominal_aorta", "left_kidney", "right_kidney", "thoracic_vertebra"]
+}

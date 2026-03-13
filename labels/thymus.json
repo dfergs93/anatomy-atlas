@@ -1,0 +1,12 @@
+{
+  "id": "thymus",
+  "name": "Thymus",
+  "ta2_name": "Thymus",
+  "description": "Bilobed lymphoid organ in the anterior superior mediastinum, anterior to the great vessels. Largest and most prominent in childhood; undergoes fatty involution with age. On CT: assess for thymoma, thymic hyperplasia (rebound or true), thymic cyst, and lymphoma involvement.",
+  "normal_values": {
+    "thickness_mm_adult": "<13 (age-dependent)",
+    "involution": "Fatty replacement by age 40+"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/thymus",
+  "related_structures": ["aorta", "superior_vena_cava", "trachea", "sternum"]
+}

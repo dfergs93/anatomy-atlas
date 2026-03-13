@@ -1,0 +1,19 @@
+{
+  "modality": "CT",
+  "body_part": "abdomen",
+  "plane": "axial",
+  "source": "TotalSegmentator (demo placeholder)",
+  "licence": "CC BY 4.0",
+  "structures": [
+    "liver",
+    "spleen",
+    "right_kidney",
+    "left_kidney",
+    "pancreas",
+    "stomach",
+    "gallbladder",
+    "abdominal_aorta",
+    "portal_vein",
+    "psoas_muscle"
+  ]
+}

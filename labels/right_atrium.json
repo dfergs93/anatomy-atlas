@@ -1,0 +1,13 @@
+{
+  "id": "right_atrium",
+  "name": "Right Atrium",
+  "ta2_name": "Atrium dextrum",
+  "description": "Right-sided chamber receiving systemic venous return from the SVC and IVC. Contains the sinoatrial node (pacemaker), crista terminalis, and Eustachian valve. On cardiac CTA: assess for dilatation, thrombus, and central line position.",
+  "normal_values": {
+    "AP_diameter_mm": "34–44",
+    "volume_ml": "25–65",
+    "area_cm2": "15–25"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/right-atrium",
+  "related_structures": ["tricuspid_valve", "interatrial_septum", "superior_vena_cava", "inferior_vena_cava"]
+}

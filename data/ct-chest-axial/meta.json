@@ -1,0 +1,17 @@
+{
+  "modality": "CT",
+  "body_part": "chest",
+  "plane": "axial",
+  "source": "TotalSegmentator (demo placeholder)",
+  "licence": "CC BY 4.0",
+  "structures": [
+    "right_lung",
+    "left_lung",
+    "aorta",
+    "trachea",
+    "esophagus",
+    "thoracic_vertebra",
+    "sternum",
+    "diaphragm"
+  ]
+}

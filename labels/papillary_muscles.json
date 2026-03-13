@@ -1,0 +1,9 @@
+{
+  "id": "papillary_muscles",
+  "name": "Papillary Muscles",
+  "ta2_name": "Musculi papillares",
+  "description": "Conical muscular projections from the LV wall that anchor the mitral valve leaflets via chordae tendineae. The anterolateral papillary muscle has dual blood supply (LAD + LCx); the posteromedial has single supply (RCA or LCx), making it more vulnerable to ischemic rupture.",
+  "normal_values": {},
+  "radiopaedia_url": "https://radiopaedia.org/articles/papillary-muscles-of-the-heart",
+  "related_structures": ["left_ventricle", "mitral_valve", "left_anterior_descending_artery", "left_circumflex_artery"]
+}

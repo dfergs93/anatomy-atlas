@@ -1,0 +1,11 @@
+{
+  "id": "interatrial_septum",
+  "name": "Interatrial Septum",
+  "ta2_name": "Septum interatriale",
+  "description": "Thin wall separating the left and right atria. Contains the fossa ovalis, a remnant of the foramen ovale. On cardiac CTA: assess for atrial septal defects (ASD), patent foramen ovale (PFO), lipomatous hypertrophy, and atrial septal aneurysm.",
+  "normal_values": {
+    "thickness_mm": "1–3"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/interatrial-septum",
+  "related_structures": ["left_atrium", "right_atrium"]
+}

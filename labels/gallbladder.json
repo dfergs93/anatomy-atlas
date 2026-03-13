@@ -1,0 +1,13 @@
+{
+  "id": "gallbladder",
+  "name": "Gallbladder",
+  "ta2_name": "Vesica biliaris",
+  "description": "Pear-shaped sac on the undersurface of the liver (gallbladder fossa). Stores and concentrates bile. Parts: fundus, body, infundibulum (Hartmann pouch), neck. On CT: assess for stones (often hyperdense), wall thickening (>3 mm), pericholecystic fluid, masses, and porcelain gallbladder.",
+  "normal_values": {
+    "length_cm": "7–10",
+    "wall_thickness_mm": "<3",
+    "transverse_diameter_cm": "3–5"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/gallbladder",
+  "related_structures": ["liver", "portal_vein", "pancreas"]
+}

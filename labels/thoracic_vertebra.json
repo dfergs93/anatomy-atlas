@@ -1,0 +1,12 @@
+{
+  "id": "thoracic_vertebra",
+  "name": "Thoracic Vertebra",
+  "ta2_name": "Vertebra thoracica",
+  "description": "Twelve thoracic vertebrae (T1–T12) forming the posterior thoracic wall. Each articulates with a pair of ribs via costovertebral joints. On CT: assess vertebral body height and density (compression fractures, metastases), pedicles, spinal canal diameter, and disc spaces.",
+  "normal_values": {
+    "vertebral_body_height_mm": "20–26",
+    "spinal_canal_AP_mm": "15–20"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/thoracic-vertebrae",
+  "related_structures": ["ribs", "esophagus", "aorta"]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "left_anterior_descending_artery",
+  "name": "Left Anterior Descending Artery",
+  "ta2_name": "Ramus interventricularis anterior",
+  "description": "Major branch of the left main coronary artery coursing in the anterior interventricular groove. Supplies the anterior LV wall, anterior two-thirds of the interventricular septum, and LV apex. The 'widow maker' — proximal LAD occlusion causes large anterior STEMI.",
+  "normal_values": {
+    "proximal_diameter_mm": "3.0–4.5",
+    "length_mm": "100–130"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/left-anterior-descending-artery",
+  "related_structures": ["aortic_valve", "left_circumflex_artery", "interventricular_septum", "left_ventricle"]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "tricuspid_valve",
+  "name": "Tricuspid Valve",
+  "ta2_name": "Valva tricuspidalis",
+  "description": "Three-leaflet atrioventricular valve between the right atrium and right ventricle. Anterior, posterior, and septal leaflets. Most anteriorly positioned cardiac valve. On cardiac CTA: assess for annular dilatation, leaflet thickening, and regurgitant jets.",
+  "normal_values": {
+    "annulus_diameter_mm": "28–40",
+    "orifice_area_cm2": "6.0–8.0"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/tricuspid-valve",
+  "related_structures": ["right_atrium", "right_ventricle", "right_coronary_artery"]
+}

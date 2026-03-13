@@ -1,0 +1,14 @@
+{
+  "id": "pancreas",
+  "name": "Pancreas",
+  "ta2_name": "Pancreas",
+  "description": "Retroperitoneal gland extending from the duodenal C-loop (head) to the splenic hilum (tail). Parts: head, uncinate process, neck, body, tail. The main pancreatic duct (Wirsung) joins the common bile duct at the ampulla of Vater. On CT: assess for masses, duct dilatation (>3 mm), calcifications, peripancreatic fat stranding, and atrophy.",
+  "normal_values": {
+    "head_AP_mm": "20–30",
+    "body_AP_mm": "15–20",
+    "tail_AP_mm": "15–20",
+    "duct_diameter_mm": "<3"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/pancreas",
+  "related_structures": ["stomach", "spleen", "left_kidney", "abdominal_aorta", "portal_vein"]
+}

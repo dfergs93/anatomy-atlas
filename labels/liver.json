@@ -1,0 +1,13 @@
+{
+  "id": "liver",
+  "name": "Liver",
+  "ta2_name": "Hepar",
+  "description": "Largest solid organ, occupying the right upper quadrant. Divided into eight Couinaud segments based on portal and hepatic vein anatomy. Dual blood supply: hepatic artery (25%) and portal vein (75%). On CT: assess for focal lesions, diffuse disease (steatosis, cirrhosis), vascular patency, and biliary dilatation.",
+  "normal_values": {
+    "craniocaudal_span_cm": "14–16",
+    "attenuation_HU": "55–65 (non-contrast)",
+    "liver_to_spleen_ratio": ">1.0"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/liver",
+  "related_structures": ["portal_vein", "gallbladder", "inferior_vena_cava", "diaphragm"]
+}

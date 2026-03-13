@@ -1,0 +1,14 @@
+{
+  "id": "ribs",
+  "name": "Ribs",
+  "ta2_name": "Costae",
+  "description": "Twelve pairs of curved bones forming the lateral thoracic cage. Ribs 1–7 are true ribs (attach directly to sternum), 8–10 are false ribs (attach via costal cartilage), 11–12 are floating ribs. On CT: assess for fractures (especially in trauma), metastatic lesions, and fibrous dysplasia.",
+  "normal_values": {
+    "pairs": "12",
+    "true_ribs": "1–7",
+    "false_ribs": "8–10",
+    "floating_ribs": "11–12"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/ribs",
+  "related_structures": ["thoracic_vertebra", "sternum", "diaphragm"]
+}

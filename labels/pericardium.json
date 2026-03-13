@@ -1,0 +1,12 @@
+{
+  "id": "pericardium",
+  "name": "Pericardium",
+  "ta2_name": "Pericardium",
+  "description": "Double-layered fibroserous sac surrounding the heart. The visceral layer (epicardium) adheres to the heart; the parietal layer is the outer fibrous sac. On cardiac CTA: assess for effusion, thickening (>4 mm suggests constrictive pericarditis), calcification, and pericardial masses.",
+  "normal_values": {
+    "thickness_mm": "1–3",
+    "normal_fluid_ml": "<50"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/pericardium",
+  "related_structures": ["left_ventricle", "right_ventricle", "left_atrium", "right_atrium"]
+}

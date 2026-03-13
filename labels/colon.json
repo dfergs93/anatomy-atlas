@@ -1,0 +1,13 @@
+{
+  "id": "colon",
+  "name": "Colon",
+  "ta2_name": "Intestinum crassum",
+  "description": "Large bowel from cecum to rectum: cecum, ascending colon, hepatic flexure, transverse colon, splenic flexure, descending colon, sigmoid colon, rectum. Distinguished from small bowel by haustral folds, taeniae coli, and appendices epiploicae. On CT: assess wall thickness, diverticulosis, masses, and pneumatosis.",
+  "normal_values": {
+    "wall_thickness_mm": "<3 (distended)",
+    "cecal_max_diameter_cm": "9",
+    "transverse_max_diameter_cm": "6"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/colon",
+  "related_structures": ["small_bowel", "liver", "spleen", "mesenteric_vessels"]
+}

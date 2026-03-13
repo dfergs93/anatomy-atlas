@@ -1,0 +1,11 @@
+{
+  "id": "azygos_vein",
+  "name": "Azygos Vein",
+  "ta2_name": "Vena azygos",
+  "description": "Venous channel ascending along the right side of the thoracic spine, arching over the right main bronchus to drain into the SVC. Provides collateral venous drainage between the SVC and IVC territories. On CT: assess for dilatation (SVC obstruction, portal hypertension), azygos fissure, and azygos continuation of IVC.",
+  "normal_values": {
+    "diameter_mm": "8–12"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/azygos-vein",
+  "related_structures": ["superior_vena_cava", "thoracic_vertebra", "esophagus"]
+}

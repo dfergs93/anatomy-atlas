@@ -1,0 +1,12 @@
+{
+  "id": "pulmonary_valve",
+  "name": "Pulmonary Valve",
+  "ta2_name": "Valva trunci pulmonalis",
+  "description": "Trileaflet semilunar valve at the RV outflow tract–pulmonary trunk junction. Most superiorly and anteriorly positioned cardiac valve. On cardiac CTA: assess for stenosis, regurgitation, and post-stenotic dilatation of the pulmonary trunk.",
+  "normal_values": {
+    "annulus_diameter_mm": "20–27",
+    "orifice_area_cm2": "3.0–5.0"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/pulmonary-valve",
+  "related_structures": ["right_ventricle", "pulmonary_trunk"]
+}

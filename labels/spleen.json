@@ -1,0 +1,12 @@
+{
+  "id": "spleen",
+  "name": "Spleen",
+  "ta2_name": "Splen",
+  "description": "Largest lymphoid organ, located in the left upper quadrant posterolateral to the stomach. Lies between the 9th and 11th ribs. On CT: assess for splenomegaly (>13 cm craniocaudal), focal lesions, splenic infarcts, lacerations (trauma), and accessory spleens.",
+  "normal_values": {
+    "craniocaudal_length_cm": "8–13",
+    "splenic_index": "<480 cm³"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/spleen",
+  "related_structures": ["stomach", "left_kidney", "diaphragm", "pancreas"]
+}

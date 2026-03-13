@@ -1,0 +1,13 @@
+{
+  "id": "mesenteric_vessels",
+  "name": "Mesenteric Vessels",
+  "ta2_name": "Vasa mesenterica",
+  "description": "Superior mesenteric artery (SMA) and inferior mesenteric artery (IMA) with their accompanying veins. SMA arises from the aorta at L1, supplies midgut. IMA arises at L3, supplies hindgut. On CT: assess for thrombosis/embolism (mesenteric ischemia), stenosis, aneurysm, and SMV thrombosis.",
+  "normal_values": {
+    "SMA_diameter_mm": "6–8",
+    "SMV_diameter_mm": "10–14",
+    "IMA_diameter_mm": "3–5"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/mesenteric-vessels",
+  "related_structures": ["abdominal_aorta", "portal_vein", "small_bowel", "colon"]
+}

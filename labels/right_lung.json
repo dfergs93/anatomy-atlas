@@ -1,0 +1,12 @@
+{
+  "id": "right_lung",
+  "name": "Right Lung",
+  "ta2_name": "Pulmo dexter",
+  "description": "Three-lobed lung (upper, middle, lower) separated by the oblique and horizontal fissures. Slightly larger than the left lung. The right main bronchus is wider, shorter, and more vertical — aspirated foreign bodies preferentially enter the right side. On CT: assess parenchyma, fissures, airways, and vasculature.",
+  "normal_values": {
+    "lobes": "3 (upper, middle, lower)",
+    "segments": "10"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/right-lung",
+  "related_structures": ["left_lung", "trachea", "diaphragm", "ribs"]
+}

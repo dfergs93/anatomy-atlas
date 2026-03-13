@@ -1,0 +1,13 @@
+{
+  "id": "adrenal_glands",
+  "name": "Adrenal Glands",
+  "ta2_name": "Glandulae suprarenales",
+  "description": "Paired retroperitoneal endocrine glands superior to the kidneys. Inverted Y or V shape. Right adrenal is posterior to IVC; left is anterolateral to left crus. On CT: assess limb thickness (<10 mm), nodules (adenoma vs metastasis — washout characteristics), hemorrhage, and hyperplasia.",
+  "normal_values": {
+    "limb_thickness_mm": "5–7",
+    "max_limb_thickness_mm": "<10",
+    "adenoma_threshold_HU": "<10 (unenhanced)"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/adrenal-gland",
+  "related_structures": ["right_kidney", "left_kidney", "inferior_vena_cava", "abdominal_aorta"]
+}

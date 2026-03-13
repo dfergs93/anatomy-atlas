@@ -1,0 +1,12 @@
+{
+  "id": "inferior_vena_cava",
+  "name": "Inferior Vena Cava",
+  "ta2_name": "Vena cava inferior",
+  "description": "Largest vein in the body, returning blood from the lower body to the right atrium. Passes through the caval hiatus of the diaphragm at T8. On CT: assess for thrombosis, filter placement, retroperitoneal extension of tumor, and IVC diameter for volume status.",
+  "normal_values": {
+    "diameter_mm": "15–25",
+    "hepatic_segment_diameter_mm": "20–30"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/inferior-vena-cava",
+  "related_structures": ["right_atrium", "liver", "right_kidney", "left_kidney"]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "aortic_valve",
+  "name": "Aortic Valve",
+  "ta2_name": "Valva aortae",
+  "description": "Trileaflet semilunar valve at the LV outflow tract–aortic root junction. Three cusps: right coronary, left coronary, and non-coronary. On cardiac CTA: assess for calcification (Agatston scoring for TAVR planning), bicuspid morphology, annular dimensions, and coronary ostial height.",
+  "normal_values": {
+    "annulus_diameter_mm": "20–26",
+    "orifice_area_cm2": "3.0–4.0",
+    "sinus_of_valsalva_mm": "30–36"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/aortic-valve",
+  "related_structures": ["left_ventricle", "aorta", "left_anterior_descending_artery", "left_circumflex_artery"]
+}

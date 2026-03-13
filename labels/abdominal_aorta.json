@@ -1,0 +1,12 @@
+{
+  "id": "abdominal_aorta",
+  "name": "Abdominal Aorta",
+  "ta2_name": "Aorta abdominalis",
+  "description": "Continuation of the descending thoracic aorta below the aortic hiatus (T12). Major branches: celiac trunk, SMA, renal arteries, IMA. Bifurcates into common iliac arteries at L4. On CT: assess diameter (aneurysm >3 cm), mural thrombus, calcification, dissection, and branch vessel patency.",
+  "normal_values": {
+    "infrarenal_diameter_mm": "15–22",
+    "aneurysm_threshold_mm": ">30"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/abdominal-aorta",
+  "related_structures": ["aorta", "left_kidney", "right_kidney", "inferior_vena_cava"]
+}

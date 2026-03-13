@@ -1,0 +1,11 @@
+{
+  "id": "left_circumflex_artery",
+  "name": "Left Circumflex Artery",
+  "ta2_name": "Ramus circumflexus",
+  "description": "Branch of the left main coronary artery coursing in the left atrioventricular groove. Supplies the lateral and posterolateral LV wall. Gives off obtuse marginal branches. In left-dominant circulation (~15%), it also supplies the PDA territory.",
+  "normal_values": {
+    "proximal_diameter_mm": "2.5–4.0"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/left-circumflex-artery",
+  "related_structures": ["left_anterior_descending_artery", "aortic_valve", "mitral_valve", "left_ventricle"]
+}

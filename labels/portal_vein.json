@@ -1,0 +1,12 @@
+{
+  "id": "portal_vein",
+  "name": "Portal Vein",
+  "ta2_name": "Vena portae hepatis",
+  "description": "Formed by confluence of the superior mesenteric and splenic veins posterior to the pancreatic neck. Carries nutrient-rich blood from the GI tract to the liver. On CT: assess for thrombosis, cavernous transformation, tumor invasion (pancreatic/HCC), and portal hypertension signs (varices, splenomegaly, ascites).",
+  "normal_values": {
+    "diameter_mm": "10–13",
+    "portal_hypertension_threshold_mm": ">13"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/portal-vein",
+  "related_structures": ["liver", "pancreas", "spleen", "mesenteric_vessels"]
+}

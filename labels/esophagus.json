@@ -1,0 +1,12 @@
+{
+  "id": "esophagus",
+  "name": "Esophagus",
+  "ta2_name": "Oesophagus",
+  "description": "Muscular tube extending from the pharynx (C6) to the gastroesophageal junction (T11). Posterior to the trachea in the upper mediastinum, then courses left of midline in the posterior mediastinum. On CT: assess wall thickness (<3 mm normal when distended), masses, varices, and hiatal herniation.",
+  "normal_values": {
+    "wall_thickness_mm": "<3 (distended)",
+    "length_cm": "25–30"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/oesophagus",
+  "related_structures": ["trachea", "aorta", "thoracic_vertebra", "stomach"]
+}

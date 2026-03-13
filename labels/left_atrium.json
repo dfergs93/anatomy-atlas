@@ -1,0 +1,13 @@
+{
+  "id": "left_atrium",
+  "name": "Left Atrium",
+  "ta2_name": "Atrium sinistrum",
+  "description": "Posterior superior chamber receiving oxygenated blood from the four pulmonary veins. On cardiac CTA: assess for dilatation (associated with atrial fibrillation), thrombus in the left atrial appendage (LAA), and pulmonary vein anatomy prior to ablation.",
+  "normal_values": {
+    "AP_diameter_mm": "27–38",
+    "volume_ml": "22–58",
+    "area_cm2": "15–23"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/left-atrium",
+  "related_structures": ["mitral_valve", "interatrial_septum", "left_ventricle"]
+}

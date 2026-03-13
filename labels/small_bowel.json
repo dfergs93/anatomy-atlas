@@ -1,0 +1,14 @@
+{
+  "id": "small_bowel",
+  "name": "Small Bowel",
+  "ta2_name": "Intestinum tenue",
+  "description": "Tubular organ from the pylorus to the ileocecal valve, comprising duodenum, jejunum, and ileum. Total length ~6 m. On CT: assess wall thickness (<3 mm when distended), enhancement pattern, caliber (obstruction if >3 cm), transition points, mesenteric fat stranding, and pneumatosis.",
+  "normal_values": {
+    "wall_thickness_mm": "<3 (distended)",
+    "max_caliber_cm": "3",
+    "jejunal_folds_per_inch": "4–7",
+    "ileal_folds_per_inch": "2–4"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/small-bowel",
+  "related_structures": ["stomach", "colon", "mesenteric_vessels", "pancreas"]
+}

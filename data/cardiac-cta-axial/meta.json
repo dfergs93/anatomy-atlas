@@ -1,0 +1,17 @@
+{
+  "modality": "CT",
+  "body_part": "cardiac",
+  "plane": "axial",
+  "source": "TCIA MM-WHS (demo placeholder)",
+  "licence": "CC BY 4.0",
+  "structures": [
+    "left_ventricle",
+    "right_ventricle",
+    "left_atrium",
+    "right_atrium",
+    "aorta",
+    "pulmonary_trunk",
+    "interventricular_septum",
+    "pericardium"
+  ]
+}

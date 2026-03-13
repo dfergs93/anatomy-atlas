@@ -1,0 +1,14 @@
+{
+  "id": "aorta",
+  "name": "Aorta",
+  "ta2_name": "Aorta",
+  "description": "Largest artery in the body. Ascending aorta arises from the aortic valve, arches over the left main bronchus, then descends through the thorax. On CT: assess diameter at standard levels (sinuses, mid-ascending, arch, isthmus, descending), wall calcification, intramural hematoma, dissection flap, and ulceration.",
+  "normal_values": {
+    "ascending_diameter_mm": "22–36",
+    "arch_diameter_mm": "22–30",
+    "descending_diameter_mm": "20–28",
+    "root_diameter_mm": "30–38"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/aorta",
+  "related_structures": ["aortic_valve", "left_ventricle", "pulmonary_trunk", "superior_vena_cava"]
+}

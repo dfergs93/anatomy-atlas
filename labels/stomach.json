@@ -1,0 +1,12 @@
+{
+  "id": "stomach",
+  "name": "Stomach",
+  "ta2_name": "Gaster",
+  "description": "J-shaped hollow organ in the left upper quadrant between the esophagus and duodenum. Parts: cardia, fundus, body, antrum, pylorus. On CT: assess wall thickness (<5 mm when distended), masses, ulceration, gastric varices, and gastric outlet obstruction.",
+  "normal_values": {
+    "wall_thickness_mm": "<5 (distended)",
+    "capacity_ml": "1000–1500"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/stomach",
+  "related_structures": ["esophagus", "spleen", "pancreas", "liver", "diaphragm"]
+}

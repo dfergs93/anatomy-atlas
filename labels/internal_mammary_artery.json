@@ -1,0 +1,11 @@
+{
+  "id": "internal_mammary_artery",
+  "name": "Internal Mammary Artery",
+  "ta2_name": "Arteria thoracica interna",
+  "description": "Paired arteries descending along the posterior surface of the anterior chest wall, ~1 cm lateral to the sternal border. Important conduit for CABG (LIMA to LAD). Bifurcates at the 6th intercostal space into musculophrenic and superior epigastric arteries. On CT: assess patency of grafts and for use as surgical conduit.",
+  "normal_values": {
+    "diameter_mm": "2–3"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/internal-thoracic-artery",
+  "related_structures": ["sternum", "ribs", "left_anterior_descending_artery"]
+}

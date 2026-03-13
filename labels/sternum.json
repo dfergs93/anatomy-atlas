@@ -1,0 +1,12 @@
+{
+  "id": "sternum",
+  "name": "Sternum",
+  "ta2_name": "Sternum",
+  "description": "Flat bone forming the anterior midline of the thoracic wall. Three parts: manubrium, body, and xiphoid process. The sternal angle (angle of Louis) at the manubriosternal junction marks the level of T4–T5, the aortic arch, and the carina. On CT: assess for fractures, sternal wires (post-sternotomy), and retrosternal masses.",
+  "normal_values": {
+    "length_cm": "15–20",
+    "thickness_mm": "10–15"
+  },
+  "radiopaedia_url": "https://radiopaedia.org/articles/sternum",
+  "related_structures": ["ribs", "internal_mammary_artery", "thymus"]
+}

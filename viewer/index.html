@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anatomy Atlas</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --panel: #16213e;
+    --border: #0f3460;
+    --text: #e0e0e0;
+    --text-muted: #8888aa;
+    --accent: #e94560;
+    --accent-hover: #ff6b81;
+    --highlight: rgba(233, 69, 96, 0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  select, button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  select:hover, button:hover {
+    border-color: var(--accent);
+  }
+
+  button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* Main layout */
+  .main {
+    display: flex;
+    height: calc(100vh - 52px);
+  }
+
+  /* Image panel */
+  .image-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    overflow: auto;
+    position: relative;
+  }
+
+  .image-container {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    cursor: crosshair;
+  }
+
+  .image-container img {
+    display: block;
+    max-width: 100%;
+    max-height: calc(100vh - 160px);
+    height: auto;
+  }
+
+  .image-container .overlay-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .image-container svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  svg polygon {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 1.5;
+    cursor: pointer;
+    transition: fill 0.15s, stroke 0.15s;
+  }
+
+  svg polygon:hover {
+    fill: var(--highlight);
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+
+  svg polygon.selected {
+    fill: rgba(233, 69, 96, 0.4);
+    stroke: var(--accent);
+    stroke-width: 2.5;
+  }
+
+  /* Hover label */
+  .hover-label {
+    text-align: center;
+    padding: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--accent);
+    min-height: 36px;
+    transition: opacity 0.15s;
+  }
+
+  .hover-label.empty {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  /* Level info */
+  .level-info {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 4px 0;
+  }
+
+  /* Detail panel */
+  .detail-panel {
+    width: 360px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: 20px;
+    overflow-y: auto;
+    transition: width 0.3s;
+  }
+
+  .detail-panel.collapsed {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .detail-panel h2 {
+    font-size: 18px;
+    margin-bottom: 4px;
+    color: var(--accent);
+  }
+
+  .detail-panel .ta2 {
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .detail-panel .description {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  .detail-panel h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    margin-top: 16px;
+  }
+
+  .normal-values {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .normal-values td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .normal-values td:first-child {
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .detail-panel a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 13px;
+  }
+
+  .detail-panel a:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+  }
+
+  .related-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .related-tag {
+    padding: 3px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .related-tag:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .placeholder-text {
+    color: var(--text-muted);
+    font-size: 14px;
+    padding-top: 40px;
+    text-align: center;
+  }
+
+  /* Bottom bar */
+  .bottom-bar {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Loading */
+  .loading {
+    display: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 20px;
+  }
+
+  .loading.active { display: block; }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .main {
+      flex-direction: column;
+      height: auto;
+    }
+    .detail-panel {
+      width: 100%;
+      border-left: none;
+      border-top: 1px solid var(--border);
+      max-height: 50vh;
+    }
+    .detail-panel.collapsed {
+      max-height: 0;
+      width: 100%;
+    }
+    .image-container img {
+      max-height: 50vh;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Anatomy Atlas</h1>
+  <div class="controls">
+    <select id="regionSelect">
+      <option value="">Loading regions...</option>
+    </select>
+    <button id="overlayToggle" class="active" title="Toggle coloured overlay">Overlay</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="image-panel">
+    <div class="loading" id="loading">Loading atlas data...</div>
+    <div class="level-info" id="levelInfo"></div>
+    <div class="image-container" id="imageContainer" style="display:none;">
+      <img id="sliceImg" alt="CT slice" />
+      <img id="overlayImg" class="overlay-img" alt="Structure overlay" />
+      <svg id="svgOverlay" viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div class="hover-label empty" id="hoverLabel">Hover over a structure to see its name</div>
+  </div>
+
+  <div class="detail-panel collapsed" id="detailPanel">
+    <div class="placeholder-text" id="detailPlaceholder">Click a structure for details</div>
+    <div id="detailContent" style="display:none;">
+      <h2 id="detailName"></h2>
+      <div class="ta2" id="detailTa2"></div>
+      <div class="description" id="detailDesc"></div>
+
+      <div id="normalValuesSection" style="display:none;">
+        <h3>Normal Values</h3>
+        <table class="normal-values" id="normalValuesTable"></table>
+      </div>
+
+      <div id="radiopaediaSection" style="display:none;">
+        <h3>Reference</h3>
+        <a id="radiopaediaLink" href="#" target="_blank" rel="noopener">View on Radiopaedia</a>
+      </div>
+
+      <div id="relatedSection" style="display:none;">
+        <h3>Related Structures</h3>
+        <div class="related-list" id="relatedList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Configuration
+// ---------------------------------------------------------------------------
+
+const API_BASE = window.ATLAS_API_BASE || 'http://localhost:8000';
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+
+let currentCase = null;
+let currentLabels = [];
+let selectedStructure = null;
+
+// ---------------------------------------------------------------------------
+// DOM refs
+// ---------------------------------------------------------------------------
+
+const regionSelect = document.getElementById('regionSelect');
+const overlayToggle = document.getElementById('overlayToggle');
+const imageContainer = document.getElementById('imageContainer');
+const sliceImg = document.getElementById('sliceImg');
+const overlayImg = document.getElementById('overlayImg');
+const svgOverlay = document.getElementById('svgOverlay');
+const hoverLabel = document.getElementById('hoverLabel');
+const levelInfo = document.getElementById('levelInfo');
+const loading = document.getElementById('loading');
+const detailPanel = document.getElementById('detailPanel');
+const detailPlaceholder = document.getElementById('detailPlaceholder');
+const detailContent = document.getElementById('detailContent');
+const detailName = document.getElementById('detailName');
+const detailTa2 = document.getElementById('detailTa2');
+const detailDesc = document.getElementById('detailDesc');
+const normalValuesSection = document.getElementById('normalValuesSection');
+const normalValuesTable = document.getElementById('normalValuesTable');
+const radiopaediaSection = document.getElementById('radiopaediaSection');
+const radiopaediaLink = document.getElementById('radiopaediaLink');
+const relatedSection = document.getElementById('relatedSection');
+const relatedList = document.getElementById('relatedList');
+
+// ---------------------------------------------------------------------------
+// API helpers
+// ---------------------------------------------------------------------------
+
+async function apiFetch(path) {
+  const resp = await fetch(`${API_BASE}${path}`);
+  if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+  return resp.json();
+}
+
+// ---------------------------------------------------------------------------
+// Initialization
+// ---------------------------------------------------------------------------
+
+async function init() {
+  loading.classList.add('active');
+
+  try {
+    const cases = await apiFetch('/atlas/list');
+
+    regionSelect.innerHTML = '';
+    if (cases.length === 0) {
+      regionSelect.innerHTML = '<option value="">No cases available</option>';
+      loading.classList.remove('active');
+      return;
+    }
+
+    cases.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({
+        body_part: c.body_part,
+        modality: c.modality,
+        plane: c.plane,
+        case_id: c.case_id,
+      });
+      const label = `${c.modality} ${capitalize(c.body_part)} (${c.plane})`;
+      opt.textContent = `${label} — ${c.structure_count} structures`;
+      regionSelect.appendChild(opt);
+    });
+
+    // Load first case
+    await loadCase(cases[0]);
+  } catch (err) {
+    console.error('Init error:', err);
+    loading.classList.remove('active');
+    hoverLabel.textContent = `Error: Could not connect to API at ${API_BASE}`;
+    hoverLabel.classList.add('empty');
+  }
+}
+
+async function loadCase(caseInfo) {
+  loading.classList.add('active');
+  imageContainer.style.display = 'none';
+  clearDetail();
+
+  try {
+    const sliceData = await apiFetch(
+      `/atlas/slice?body_part=${encodeURIComponent(caseInfo.body_part)}&modality=${encodeURIComponent(caseInfo.modality)}&plane=${encodeURIComponent(caseInfo.plane)}`
+    );
+
+    currentCase = { ...caseInfo, ...sliceData };
+
+    // Load images
+    sliceImg.src = `${API_BASE}${sliceData.slice_png_url}`;
+    overlayImg.src = `${API_BASE}${sliceData.overlay_png_url}`;
+
+    // Wait for slice image to load to get dimensions
+    await new Promise((resolve, reject) => {
+      sliceImg.onload = resolve;
+      sliceImg.onerror = reject;
+    });
+
+    // Load labels
+    const labelsResp = await fetch(`${API_BASE}${sliceData.labels_json_url}`);
+    currentLabels = await labelsResp.json();
+
+    // Render SVG polygons
+    renderPolygons(currentLabels);
+
+    // Update UI
+    levelInfo.textContent = sliceData.level || '';
+    imageContainer.style.display = 'inline-block';
+    loading.classList.remove('active');
+
+    hoverLabel.textContent = 'Hover over a structure to see its name';
+    hoverLabel.classList.add('empty');
+  } catch (err) {
+    console.error('Load error:', err);
+    loading.classList.remove('active');
+    hoverLabel.textContent = 'Error loading case data';
+    hoverLabel.classList.add('empty');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SVG polygon rendering
+// ---------------------------------------------------------------------------
+
+function renderPolygons(labels) {
+  svgOverlay.innerHTML = '';
+
+  labels.forEach(label => {
+    if (!label.polygon || label.polygon.length < 3) return;
+
+    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    const points = label.polygon.map(p => `${p[0]},${p[1]}`).join(' ');
+    polygon.setAttribute('points', points);
+    polygon.dataset.id = label.id;
+    polygon.dataset.name = label.name;
+
+    polygon.addEventListener('mouseenter', () => {
+      hoverLabel.textContent = label.name;
+      hoverLabel.classList.remove('empty');
+    });
+
+    polygon.addEventListener('mouseleave', () => {
+      if (!selectedStructure) {
+        hoverLabel.textContent = 'Hover over a structure to see its name';
+        hoverLabel.classList.add('empty');
+      }
+    });
+
+    polygon.addEventListener('click', () => {
+      selectStructure(label);
+    });
+
+    svgOverlay.appendChild(polygon);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Structure selection and detail panel
+// ---------------------------------------------------------------------------
+
+async function selectStructure(label) {
+  // Clear previous selection
+  svgOverlay.querySelectorAll('polygon.selected').forEach(p => p.classList.remove('selected'));
+
+  // Highlight selected polygon
+  const poly = svgOverlay.querySelector(`polygon[data-id="${label.id}"]`);
+  if (poly) poly.classList.add('selected');
+
+  selectedStructure = label.id;
+  hoverLabel.textContent = label.name;
+  hoverLabel.classList.remove('empty');
+
+  // Show detail panel
+  detailPanel.classList.remove('collapsed');
+  detailPlaceholder.style.display = 'none';
+  detailContent.style.display = 'block';
+
+  // Try to get full label data from API
+  try {
+    const caseId = currentCase.case_id;
+    const fullLabel = await apiFetch(`/atlas/label?slice_id=${encodeURIComponent(caseId)}&label_id=${encodeURIComponent(label.id)}`);
+    renderDetail(fullLabel);
+  } catch {
+    // Fall back to slice-level label data
+    renderDetail(label);
+  }
+}
+
+function renderDetail(label) {
+  detailName.textContent = label.name || '';
+  detailTa2.textContent = label.ta2_name || label.ta2 || '';
+  detailDesc.textContent = label.description || 'No description available.';
+
+  // Normal values
+  const nv = label.normal_values || {};
+  const nvKeys = Object.keys(nv);
+  if (nvKeys.length > 0) {
+    normalValuesSection.style.display = 'block';
+    normalValuesTable.innerHTML = '';
+    nvKeys.forEach(key => {
+      const tr = document.createElement('tr');
+      const tdKey = document.createElement('td');
+      tdKey.textContent = formatKey(key);
+      const tdVal = document.createElement('td');
+      tdVal.textContent = nv[key];
+      tr.appendChild(tdKey);
+      tr.appendChild(tdVal);
+      normalValuesTable.appendChild(tr);
+    });
+  } else {
+    normalValuesSection.style.display = 'none';
+  }
+
+  // Radiopaedia link
+  if (label.radiopaedia_url) {
+    radiopaediaSection.style.display = 'block';
+    radiopaediaLink.href = label.radiopaedia_url;
+  } else {
+    radiopaediaSection.style.display = 'none';
+  }
+
+  // Related structures
+  const related = label.related_structures || [];
+  if (related.length > 0) {
+    relatedSection.style.display = 'block';
+    relatedList.innerHTML = '';
+    related.forEach(structId => {
+      const tag = document.createElement('span');
+      tag.className = 'related-tag';
+      tag.textContent = formatKey(structId);
+      tag.addEventListener('click', () => {
+        // Try to find and select this structure in current labels
+        const found = currentLabels.find(l => l.id === structId);
+        if (found) selectStructure(found);
+      });
+      relatedList.appendChild(tag);
+    });
+  } else {
+    relatedSection.style.display = 'none';
+  }
+}
+
+function clearDetail() {
+  selectedStructure = null;
+  detailPanel.classList.add('collapsed');
+  detailPlaceholder.style.display = 'block';
+  detailContent.style.display = 'none';
+  svgOverlay.querySelectorAll('polygon.selected').forEach(p => p.classList.remove('selected'));
+}
+
+// ---------------------------------------------------------------------------
+// Event handlers
+// ---------------------------------------------------------------------------
+
+regionSelect.addEventListener('change', () => {
+  const val = regionSelect.value;
+  if (!val) return;
+  const caseInfo = JSON.parse(val);
+  loadCase(caseInfo);
+});
+
+overlayToggle.addEventListener('click', () => {
+  overlayToggle.classList.toggle('active');
+  overlayImg.style.opacity = overlayToggle.classList.contains('active') ? '1' : '0';
+});
+
+// Click outside structures to deselect
+imageContainer.addEventListener('click', (e) => {
+  if (e.target === sliceImg || e.target === overlayImg) {
+    clearDetail();
+    hoverLabel.textContent = 'Hover over a structure to see its name';
+    hoverLabel.classList.add('empty');
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function formatKey(key) {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/\bPct\b/i, '%')
+    .replace(/\bMm\b/i, 'mm')
+    .replace(/\bMl\b/i, 'mL')
+    .replace(/\bCm\b/i, 'cm')
+    .replace(/\bHu\b/i, 'HU');
+}
+
+// ---------------------------------------------------------------------------
+// Start
+// ---------------------------------------------------------------------------
+
+init();
+</script>
+</body>
+</html>
