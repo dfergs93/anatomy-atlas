@@ -49,31 +49,90 @@ WINDOW_PRESETS = {
     "cardiac_cta": {"width": 700, "level": 100},
 }
 
-# Default TotalSegmentator label map (subset — extend as needed)
+# Default TotalSegmentator v2 label map (subset — extend as needed)
+# Label IDs match TotalSegmentator v2 class_map['total'] exactly.
 DEFAULT_STRUCTURE_MAP = {
-    1: {"id": "spleen", "name": "Spleen", "ta2": "Splen"},
-    2: {"id": "right_kidney", "name": "Right Kidney", "ta2": "Ren dexter"},
-    3: {"id": "left_kidney", "name": "Left Kidney", "ta2": "Ren sinister"},
-    4: {"id": "gallbladder", "name": "Gallbladder", "ta2": "Vesica biliaris"},
-    5: {"id": "liver", "name": "Liver", "ta2": "Hepar"},
-    6: {"id": "stomach", "name": "Stomach", "ta2": "Gaster"},
-    7: {"id": "pancreas", "name": "Pancreas", "ta2": "Pancreas"},
-    8: {"id": "adrenal_glands", "name": "Right Adrenal Gland", "ta2": "Glandula suprarenalis dextra"},
-    9: {"id": "adrenal_glands", "name": "Left Adrenal Gland", "ta2": "Glandula suprarenalis sinistra"},
-    10: {"id": "right_lung", "name": "Right Upper Lung Lobe", "ta2": "Lobus superior pulmonis dextri"},
-    11: {"id": "right_lung", "name": "Right Middle Lung Lobe", "ta2": "Lobus medius pulmonis dextri"},
-    12: {"id": "right_lung", "name": "Right Lower Lung Lobe", "ta2": "Lobus inferior pulmonis dextri"},
-    13: {"id": "left_lung", "name": "Left Upper Lung Lobe", "ta2": "Lobus superior pulmonis sinistri"},
-    14: {"id": "left_lung", "name": "Left Lower Lung Lobe", "ta2": "Lobus inferior pulmonis sinistri"},
+    # Abdominal organs
+    1:  {"id": "spleen", "name": "Spleen", "ta2": "Splen"},
+    2:  {"id": "right_kidney", "name": "Right Kidney", "ta2": "Ren dexter"},
+    3:  {"id": "left_kidney", "name": "Left Kidney", "ta2": "Ren sinister"},
+    4:  {"id": "gallbladder", "name": "Gallbladder", "ta2": "Vesica biliaris"},
+    5:  {"id": "liver", "name": "Liver", "ta2": "Hepar"},
+    6:  {"id": "stomach", "name": "Stomach", "ta2": "Gaster"},
+    7:  {"id": "pancreas", "name": "Pancreas", "ta2": "Pancreas"},
+    8:  {"id": "adrenal_glands", "name": "Right Adrenal Gland", "ta2": "Glandula suprarenalis dextra"},
+    9:  {"id": "adrenal_glands", "name": "Left Adrenal Gland", "ta2": "Glandula suprarenalis sinistra"},
+    # Lung lobes (TotalSegmentator v2: left lobes are 10–11, right lobes are 12–14)
+    10: {"id": "left_lung", "name": "Left Upper Lobe", "ta2": "Lobus superior pulmonis sinistri"},
+    11: {"id": "left_lung", "name": "Left Lower Lobe", "ta2": "Lobus inferior pulmonis sinistri"},
+    12: {"id": "right_lung", "name": "Right Upper Lobe", "ta2": "Lobus superior pulmonis dextri"},
+    13: {"id": "right_lung", "name": "Right Middle Lobe", "ta2": "Lobus medius pulmonis dextri"},
+    14: {"id": "right_lung", "name": "Right Lower Lobe", "ta2": "Lobus inferior pulmonis dextri"},
+    # Mediastinal airways
     15: {"id": "esophagus", "name": "Esophagus", "ta2": "Oesophagus"},
     16: {"id": "trachea", "name": "Trachea", "ta2": "Trachea"},
-    17: {"id": "thymus", "name": "Thymus", "ta2": "Thymus"},
-    18: {"id": "small_bowel", "name": "Small Bowel", "ta2": "Intestinum tenue"},
-    19: {"id": "colon", "name": "Colon", "ta2": "Intestinum crassum"},
-    20: {"id": "aorta", "name": "Aorta", "ta2": "Aorta"},
-    21: {"id": "inferior_vena_cava", "name": "Inferior Vena Cava", "ta2": "Vena cava inferior"},
-    22: {"id": "portal_vein", "name": "Portal Vein", "ta2": "Vena portae hepatis"},
-    23: {"id": "pulmonary_trunk", "name": "Pulmonary Trunk", "ta2": "Truncus pulmonalis"},
+    17: {"id": "thyroid_gland", "name": "Thyroid Gland", "ta2": "Glandula thyroidea"},
+    # Cardiovascular
+    51: {"id": "heart", "name": "Heart", "ta2": "Cor"},
+    52: {"id": "aorta", "name": "Aorta", "ta2": "Aorta"},
+    53: {"id": "pulmonary_vein", "name": "Pulmonary Vein", "ta2": "Vena pulmonalis"},
+    62: {"id": "superior_vena_cava", "name": "Superior Vena Cava", "ta2": "Vena cava superior"},
+    63: {"id": "inferior_vena_cava", "name": "Inferior Vena Cava", "ta2": "Vena cava inferior"},
+    64: {"id": "portal_vein", "name": "Portal Vein", "ta2": "Vena portae hepatis"},
+    # Thoracic vertebrae
+    36: {"id": "thoracic_vertebra", "name": "T8 Vertebra", "ta2": "Vertebra thoracica VIII"},
+    37: {"id": "thoracic_vertebra", "name": "T7 Vertebra", "ta2": "Vertebra thoracica VII"},
+    38: {"id": "thoracic_vertebra", "name": "T6 Vertebra", "ta2": "Vertebra thoracica VI"},
+    39: {"id": "thoracic_vertebra", "name": "T5 Vertebra", "ta2": "Vertebra thoracica V"},
+    40: {"id": "thoracic_vertebra", "name": "T4 Vertebra", "ta2": "Vertebra thoracica IV"},
+    41: {"id": "thoracic_vertebra", "name": "T3 Vertebra", "ta2": "Vertebra thoracica III"},
+    # Ribs and sternum
+    92:  {"id": "rib", "name": "Left 1st Rib", "ta2": "Costa I sinistra"},
+    93:  {"id": "rib", "name": "Left 2nd Rib", "ta2": "Costa II sinistra"},
+    94:  {"id": "rib", "name": "Left 3rd Rib", "ta2": "Costa III sinistra"},
+    95:  {"id": "rib", "name": "Left 4th Rib", "ta2": "Costa IV sinistra"},
+    96:  {"id": "rib", "name": "Left 5th Rib", "ta2": "Costa V sinistra"},
+    97:  {"id": "rib", "name": "Left 6th Rib", "ta2": "Costa VI sinistra"},
+    98:  {"id": "rib", "name": "Left 7th Rib", "ta2": "Costa VII sinistra"},
+    99:  {"id": "rib", "name": "Left 8th Rib", "ta2": "Costa VIII sinistra"},
+    100: {"id": "rib", "name": "Left 9th Rib", "ta2": "Costa IX sinistra"},
+    101: {"id": "rib", "name": "Left 10th Rib", "ta2": "Costa X sinistra"},
+    102: {"id": "rib", "name": "Left 11th Rib", "ta2": "Costa XI sinistra"},
+    103: {"id": "rib", "name": "Left 12th Rib", "ta2": "Costa XII sinistra"},
+    104: {"id": "rib", "name": "Right 1st Rib", "ta2": "Costa I dextra"},
+    105: {"id": "rib", "name": "Right 2nd Rib", "ta2": "Costa II dextra"},
+    106: {"id": "rib", "name": "Right 3rd Rib", "ta2": "Costa III dextra"},
+    107: {"id": "rib", "name": "Right 4th Rib", "ta2": "Costa IV dextra"},
+    108: {"id": "rib", "name": "Right 5th Rib", "ta2": "Costa V dextra"},
+    109: {"id": "rib", "name": "Right 6th Rib", "ta2": "Costa VI dextra"},
+    110: {"id": "rib", "name": "Right 7th Rib", "ta2": "Costa VII dextra"},
+    111: {"id": "rib", "name": "Right 8th Rib", "ta2": "Costa VIII dextra"},
+    112: {"id": "rib", "name": "Right 9th Rib", "ta2": "Costa IX dextra"},
+    113: {"id": "rib", "name": "Right 10th Rib", "ta2": "Costa X dextra"},
+    114: {"id": "rib", "name": "Right 11th Rib", "ta2": "Costa XI dextra"},
+    115: {"id": "rib", "name": "Right 12th Rib", "ta2": "Costa XII dextra"},
+    116: {"id": "sternum", "name": "Sternum", "ta2": "Sternum"},
+    # Spine (lumbar and lower thoracic for abdomen slices)
+    29: {"id": "lumbar_vertebra", "name": "L3 Vertebra", "ta2": "Vertebra lumbalis III"},
+    30: {"id": "lumbar_vertebra", "name": "L2 Vertebra", "ta2": "Vertebra lumbalis II"},
+    31: {"id": "lumbar_vertebra", "name": "L1 Vertebra", "ta2": "Vertebra lumbalis I"},
+    32: {"id": "thoracic_vertebra", "name": "T12 Vertebra", "ta2": "Vertebra thoracica XII"},
+    33: {"id": "thoracic_vertebra", "name": "T11 Vertebra", "ta2": "Vertebra thoracica XI"},
+    34: {"id": "thoracic_vertebra", "name": "T10 Vertebra", "ta2": "Vertebra thoracica X"},
+    35: {"id": "thoracic_vertebra", "name": "T9 Vertebra", "ta2": "Vertebra thoracica IX"},
+    # Great vessels (additional)
+    54: {"id": "aorta", "name": "Brachiocephalic Trunk", "ta2": "Truncus brachiocephalicus"},
+    55: {"id": "aorta", "name": "Right Subclavian Artery", "ta2": "Arteria subclavia dextra"},
+    56: {"id": "aorta", "name": "Left Subclavian Artery", "ta2": "Arteria subclavia sinistra"},
+    59: {"id": "superior_vena_cava", "name": "Left Brachiocephalic Vein", "ta2": "Vena brachiocephalica sinistra"},
+    60: {"id": "superior_vena_cava", "name": "Right Brachiocephalic Vein", "ta2": "Vena brachiocephalica dextra"},
+    # Musculoskeletal
+    71: {"id": "rib", "name": "Left Scapula", "ta2": "Scapula sinistra"},
+    72: {"id": "rib", "name": "Right Scapula", "ta2": "Scapula dextra"},
+    79: {"id": "thoracic_vertebra", "name": "Spinal Cord", "ta2": "Medulla spinalis"},
+    86: {"id": "thoracic_vertebra", "name": "Left Paraspinal Muscles", "ta2": "Musculi autochthones dorsi sinister"},
+    87: {"id": "thoracic_vertebra", "name": "Right Paraspinal Muscles", "ta2": "Musculi autochthones dorsi dexter"},
+    117: {"id": "sternum", "name": "Costal Cartilages", "ta2": "Cartilagines costales"},
 }
 
 
@@ -180,7 +239,7 @@ def generate_overlay(ct_slice_windowed, label_slice, structure_map):
     unique_labels = np.unique(label_slice)
     # Generate distinct colors using a colormap
     n_structures = len([l for l in unique_labels if l > 0 and l in structure_map])
-    colormap = cm.get_cmap("tab20", max(n_structures, 1))
+    colormap = matplotlib.colormaps.get_cmap("tab20").resampled(max(n_structures, 1))
 
     color_idx = 0
     for label_val in unique_labels:

@@ -2,16 +2,22 @@
   "modality": "CT",
   "body_part": "chest",
   "plane": "axial",
-  "source": "TotalSegmentator (demo placeholder)",
-  "licence": "CC BY 4.0",
+  "source": "LIDC-IDRI (TCIA, CC BY 3.0) — segmented with TotalSegmentator v2 (CC BY 4.0)",
+  "licence": "CC BY 3.0",
   "structures": [
-    "right_lung",
     "left_lung",
-    "aorta",
+    "right_lung",
     "trachea",
     "esophagus",
+    "heart",
+    "aorta",
+    "pulmonary_vein",
+    "superior_vena_cava",
     "thoracic_vertebra",
+    "spinal_cord",
     "sternum",
-    "diaphragm"
+    "ribs",
+    "scapulae",
+    "paraspinal_muscles"
   ]
 }
