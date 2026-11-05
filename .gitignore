@@ -1,0 +1,17 @@
+# Imaging data never goes to GitHub (dataset licences + volunteer consent).
+# Only small JSON metadata under data/ is committed.
+data/**
+!data/**/
+!data/**/*.json
+
+# Belt and braces: no imaging files anywhere in the repo
+*.nii
+*.nii.gz
+*.dcm
+*.mgz
+*.nrrd
+
+# Python
+__pycache__/
+*.pyc
+.venv/

@@ -1,25 +1,54 @@
 # CLAUDE.md — anatomy-atlas
 
-> Self-hosted cross-sectional anatomy atlas — pre-rendered PNG slices · SVG label overlays · FastAPI
-> Serves the ARIA `/anatomy` tab and operates as a standalone web tool.
-> Part of the five-repo ARIA ecosystem. No patient data. No DICOM served.
+> Self-hosted, MRI-first anatomy atlas for use during reading — e-Anatomy-style scrollable labelled stacks, hover to name.
+> Browser viewer (NiiVue) over local NIfTI volumes + label maps. No server needed to read.
+> Serves the ARIA `/anatomy` tab and runs standalone. Part of the five-repo ARIA ecosystem.
+> Personal + departmental use only. Non-commercial. No patient data.
 
 -----
 
 ## Purpose and design philosophy
 
-One canonical “best normal” scan per body region + modality + plane. Quality and curation over volume. Expand iteratively.
+A locally owned alternative to e-Anatomy for the reading room. Pick the joint, scroll to the level you are reading, hover a structure to see its name.
 
-**The atlas has two consumers with different UX contracts:**
+- **Stacks, not single slices.** Every case is a full volume you scroll through, in any plane.
+- **MSK MRI first.** Knee → shoulder → ankle → hip → wrist → elbow. Spine, brain, CT and cardiac later.
+- **Curation over volume.** One excellent normal per joint beats ten mediocre ones.
+- **Labels are the product.** Auto-segmentation covers the big structures. The clinically useful small ones (ligaments, tendons, nerves) are hand-labelled in the viewer’s author mode.
+- **Offline.** Everything, including JS libraries, is served from local files. Works on a PACS workstation with no internet.
 
-|Consumer                     |What it needs                        |Label detail shown                                                                       |
-|-----------------------------|-------------------------------------|-----------------------------------------------------------------------------------------|
-|ARIA sidebar (`/anatomy` tab)|Slice PNG + SVG polygon overlay      |Structure name on hover only — nothing else                                              |
-|Standalone web viewer        |Slice PNG + SVG overlay + label panel|Full label content on click (name · TA2 · description · normal values · Radiopaedia link)|
+**Three viewer modes, one set of files:**
 
-The API serves both. The label JSON always contains full content — what each consumer chooses to display is a UI decision, not a data decision.
+|Mode         |URL                                           |Shows                                                                                                   |
+|-------------|----------------------------------------------|--------------------------------------------------------------------------------------------------------|
+|ARIA sidebar |`viewer/index.html?case=knee-mri&mode=sidebar`|Structure name on hover only — nothing else                                                             |
+|Standalone   |`viewer/index.html?case=knee-mri`             |Hover name + click → panel (name · TA2 · description · normal values · variants/pitfalls · Radiopaedia)|
+|Author       |`viewer/index.html?case=knee-mri&mode=author` |Paint / erase / point tools, structure picker, save. Localhost only, via `tools/serve.py`               |
 
-**Reference UX:** xrayhead.com — one image, hover reveals labels. Keep v1 this simple.
+The label JSON always holds full content. What each mode displays is a UI decision, not a data decision.
+
+-----
+
+## Architecture
+
+```
+volumes/*.nii.gz  (MRI sequences)  ─┐
+labels.nii.gz     (uint16 label map)├─► viewer/index.html (NiiVue, WebGL2)
+lut.json          (value → id, rgb) │     hover → LUT lookup / nearest point → name
+points.json       (point labels)   ─┘     click → labels/<id>.json → side panel
+```
+
+- **Viewer:** NiiVue (BSD-2), vendored at `viewer/vendor/` — never loaded from a CDN.
+- **Reading is static files only.** Any static web server works (local, or a departmental web server).
+- **`tools/serve.py`:** small local server = static files + a save endpoint for author mode. Binds `127.0.0.1` only.
+- **No API layer in v1.** ARIA reads `data/index.json` and embeds the viewer. Add a thin FastAPI wrapper over the same JSON only if a real need appears.
+
+**Two label types:**
+
+|Type  |Stored in                                       |Use for                                                                                                                       |
+|------|------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+|Region|`labels.nii.gz` voxel value → `lut.json`        |Anything paintable: bones, cartilage, menisci, ligaments, tendons, muscles, fat pads, large vessels/nerves. Valid in every plane.|
+|Point |`points.json` (world mm coordinates)            |Tiny structures and landmarks: genicular arteries, small bursae, Gerdy’s tubercle. Marker + name shown within ±1 slice.         |
 
 -----
 
@@ -27,250 +56,160 @@ The API serves both. The label JSON always contains full content — what each c
 
 ```
 anatomy-atlas/
-  data/
-    cardiac-cta-axial/
-      meta.json          # {modality, body_part, plane, source, licence, structures[]}
-      index.json         # {canonical_slice, slice_range, level}
-      slices/
-        050.png          # raw CT slice — grayscale, windowed
-        050_overlay.png  # coloured structure overlay (toggleable in viewer)
-        050_labels.json  # [{id, name, ta2, polygon, description, normal_values, radiopaedia_url}]
-    ct-chest-axial/
-    ct-abdomen-axial/
-    ct-head-axial/
-    ct-spine-sagittal/
-    ct-neck-axial/
-    mri-brain-t1-axial/    # v2
-    mri-cardiac-sax/       # v2
-    mri-spine-t2-sagittal/ # v2
-  export/
-    export.py        # NIfTI → PNG slice exporter + polygon extractor
-  api/
-    server.py        # FastAPI: four endpoints (see below)
   viewer/
-    index.html       # Standalone single-file web viewer
+    index.html            # single-file viewer: sidebar / standalone / author modes
+    vendor/niivue.umd.js  # vendored, pinned version
+  data/                   # volumes + label maps gitignored — see Data storage
+    index.json            # [{case_id, region, modality, sequences[], structure_count}]
+    knee-mri/
+      meta.json           # source, licence, citation, consent ref, side, sequences[], default W/L per sequence
+      volumes/
+        pd_fs_3d.nii.gz   # labelling reference volume
+        pd_3d.nii.gz      # optional, same session
+        cor_pd_fs_2d.nii.gz  # optional clinical 2D series, same session
+      labels.nii.gz       # uint16 label map, in pd_fs_3d space
+      lut.json            # {"1": {"id": "acl", "rgb": [r,g,b]}, ...}
+      points.json         # [{"id": "gerdys_tubercle", "xyz_mm": [x,y,z]}]
   labels/
-    left_ventricle.json
-    right_ventricle.json
-    ...              # One JSON per structure — you write these
+    acl.json              # content — one file per structure, shared across cases
+    ...
+  checklists/
+    knee.md               # structures to label, ticked as done
+  tools/
+    build_case.py         # DICOM → anonymised NIfTI (dcm2niix), reorient RAS, crop, write meta/lut skeleton
+    autoseg.py            # optional base layer (bones, cartilage, menisci) from open models
+    serve.py              # local static server + author-mode save endpoint
   subagents/
-    atlas-exporter.md
+    case-builder.md
     label-writer.md
 ```
 
 -----
 
-## v1 atlas cases (CT — build first)
+## Data sources
 
-|Slot               |Source                            |Window          |Notes                                           |
-|-------------------|----------------------------------|----------------|------------------------------------------------|
-|`cardiac-cta-axial`|TCIA MM-WHS or de-id institutional|700 HU / 100 HU |**Manual QC required** — your clinical expertise|
-|`ct-chest-axial`   |TotalSegmentator (Zenodo)         |400 HU / 40 HU  |Auto-seg acceptable                             |
-|`ct-abdomen-axial` |TotalSegmentator (Zenodo)         |400 HU / 40 HU  |Portal venous phase                             |
-|`ct-head-axial`    |TotalSegmentator (Zenodo)         |80 HU / 40 HU   |Non-contrast                                    |
-|`ct-spine-sagittal`|TotalSegmentator (Zenodo)         |1500 HU / 300 HU|Bone window                                     |
-|`ct-neck-axial`    |TotalSegmentator (Zenodo)         |400 HU / 40 HU  |Soft tissue window                              |
+### Primary: volunteer scans (recommended)
 
-## v2 atlas cases (MRI — after CT atlas is live)
+Healthy volunteer (often yourself) on your own scanner with your own protocols. You own the images, and their appearance matches what you read daily. Public normal MSK MRI is scarce, so this is the main path.
 
-|Slot                   |Source                                    |
-|-----------------------|------------------------------------------|
-|`mri-brain-t1-axial`   |TotalSegmentator MR dataset (298 subjects)|
-|`mri-cardiac-sax`      |TotalSegmentator MR dataset               |
-|`mri-spine-t2-sagittal`|TotalSegmentator MR dataset               |
+**Protocol per joint — one session, no repositioning:**
 
------
+- 3D isotropic PD-FS, ~0.5–0.6 mm (CUBE / SPACE / VISTA) — the labelling volume
+- 3D isotropic PD or T1 without fat sat — anatomy contrast
+- Optional: standard clinical 2D TSE series (ax / cor / sag). Same session = same scanner coordinates, so 3D labels carry onto them via the NIfTI affine.
 
-## Windowing presets — hardcode in `export.py`
+**Before scanning:** written consent, an incidental-findings plan, and confirm whether your institution treats volunteer scans as research (IRB) or protocol development / QA.
 
-|Modality      |Window (HU)|Level (HU)|
-|--------------|-----------|----------|
-|CT soft tissue|400        |40        |
-|CT lung       |1500       |−600      |
-|CT bone       |1500       |300       |
-|CT brain      |80         |40        |
-|Cardiac CTA   |700        |100       |
+**De-identify on conversion:** `dcm2niix -ba y`. No DICOM kept anywhere in the repo.
 
------
+### Fallback: public datasets (non-commercial research terms)
 
-## Data sources and licences
+|Dataset                |Content                                   |Existing labels             |Terms                         |
+|-----------------------|------------------------------------------|----------------------------|------------------------------|
+|SKM-TEA (Stanford AIMI)|Knee 3D qDESS, 155 scans                  |Cartilage, menisci          |Research use agreement        |
+|OAI + OAI-ZIB          |Knee 3D DESS, large cohort incl. controls |Femur, tibia, cartilage     |NIH data use terms; check ZIB |
+|TotalSegmentator MR    |Body MRI                                  |Hip/thigh bones and muscles |CC BY 4.0 — useful for hip    |
 
-|Dataset                  |Coverage                            |Modality |Licence        |URL                         |
-|-------------------------|------------------------------------|---------|---------------|----------------------------|
-|TotalSegmentator (Zenodo)|117 CT structures · 50 MR structures|CT + MRI |CC BY 4.0      |zenodo.org/records/10047292 |
-|TCIA MM-WHS              |Whole heart                         |CT + MRI |CC BY 4.0      |cancerimagingarchive.net    |
-|TCIA CT-ORG              |6 organs                            |CT       |TCIA Data Usage|cancerimagingarchive.net    |
-|NLM Visible Human        |Whole body                          |CT + cryo|Public domain  |nlm.nih.gov/research/visible|
+These terms generally forbid redistribution. Check each agreement before hosting on a departmental server.
+Not suitable: fastMRI and MRNet (2D / low resolution, no anatomy labels, pathology-heavy).
 
-**IRB:** Institutional cases (cardiac CTA) require IRB sign-off before inclusion. Confirm with your institution before sourcing. All TotalSegmentator and TCIA data is pre-de-identified — no PHI enters this pipeline.
+### Data storage
+
+- Volumes and label maps **never** go to GitHub (licence terms + volunteer consent). Enforced by `.gitignore`.
+- Keep `data/` on local disk or a departmental share, with a separate backup — hand-painted label maps are hours of work.
+- Committed: `viewer/`, `tools/`, `labels/`, `checklists/`, and small `data/**/*.json` metadata.
 
 -----
 
-## Export pipeline (`export/export.py`)
+## Viewer (`viewer/index.html`)
 
-Takes a NIfTI volume + TotalSegmentator label map and produces the three files needed per slice.
+- Case (joint) picker + sequence toggle (PD-FS / PD / 2D series)
+- Plane: axial / coronal / sagittal; single large view by default, optional 3-up
+- Scroll = slice · drag = window/level · zoom / pan · touch-friendly
+- Hover → structure name (region LUT lookup, else nearest point label)
+- Click → side panel with full label content (not in sidebar mode)
+- Overlay: off / outline / filled, opacity slider
+- **Find structure:** type a name → jump to its centroid slice and highlight it
+- **Author mode:** structure picker (from `labels/` + checklist), paint / erase brush, point tool, undo, save via `serve.py`
 
-**Outputs per slice:**
+**Risk:** NiiVue needs WebGL2. Confirm it runs on the reading-room workstation (and any VDI/Citrix setup) in Phase 0. Fallback if not: pre-rendered PNG stacks + SVG polygon overlay.
 
-1. `{slice_id}.png` — raw CT slice, grayscale, windowed
-1. `{slice_id}_overlay.png` — semi-transparent coloured structure overlay
-1. `{slice_id}_labels.json` — per-structure polygon array for that slice
-
-**Label JSON schema (per structure per slice):**
-
-```json
-{
-  "id": "left_ventricle",
-  "name": "Left Ventricle",
-  "ta2": "Ventriculus sinister",
-  "polygon": [[x1,y1],[x2,y2],...],
-  "description": "Main pumping chamber...",
-  "normal_values": { "wall_thickness_mm": "6–10", "EF_pct": "55–70" },
-  "radiopaedia_url": "https://radiopaedia.org/articles/left-ventricle"
-}
-```
-
-**Polygon extraction:** contour tracing per structure from the NIfTI label mask. Coordinates are pixel-space relative to the exported PNG dimensions.
-
-**QC step:** after export, visually confirm every label polygon aligns with anatomy in the PNG before committing. Cardiac structures especially — automated segmentation is imprecise at cardiac resolution.
-
-**Claude Code prompt to write `export.py`:**
-
-```
-Write a Python script using nibabel and matplotlib that takes a NIfTI CT volume
-and its TotalSegmentator multi-label map, extracts the axial slice at a given
-z-index, applies a soft-tissue window (W:400 L:40), renders each structure as
-a semi-transparent coloured overlay, and exports: (1) raw CT slice as PNG,
-(2) overlay PNG, and (3) a JSON file with each structure's pixel polygon for that slice.
-```
-
------
-
-## FastAPI (`api/server.py`)
-
-Four endpoints. CORS enabled for browser extension and standalone viewer.
-
-```
-GET /atlas/slice?body_part=chest&modality=CT&plane=axial
-  → { slice_png_url, overlay_png_url, labels_json_url, level, source_citation }
-
-GET /atlas/label?slice_id=ct-chest-axial&label_id=42
-  → { name, ta2_name, description, normal_values, radiopaedia_url, related_structures[] }
-
-GET /atlas/search?q=left+ventricle
-  → [{ slice_id, label_id, name, modality, plane }]
-
-GET /atlas/list
-  → [{ body_part, modality, plane, canonical_level, structure_count }]
-```
-
-Mount `data/` as a static file server — PNGs are served directly by URL, not proxied through the API.
-
-**ARIA sidebar calls `GET /atlas/slice` only.** The response gives the sidebar everything it needs: the PNG URL for the image and the labels JSON URL for the SVG polygon overlay. The sidebar renders name-on-hover and nothing else. The `/atlas/label` endpoint is used by the standalone viewer when a user clicks a structure — it is not called by the ARIA sidebar.
-
------
-
-## ARIA sidebar UX contract
-
-The ARIA Anatomy tab is a **pure labelled map**. This is intentional and should not be expanded in the sidebar context.
-
-**What the sidebar renders:**
-
-- Region picker (Cardiac CTA · CT Chest · CT Abdomen · CT Head) — manual for now, PACS-parsed in future
-- Full-width slice PNG with SVG polygon overlay
-- On hover: structure name displayed below the image — no tooltip panel, no click state, no normal values
-
-**What the sidebar does not render:**
-
-- TA2 names
-- Descriptions
-- Normal values
-- Radiopaedia links
-
-Those live in the label JSON and are available via `/atlas/label` — the standalone viewer uses them. The sidebar deliberately does not, to keep the anatomy tab a fast visual reference during case reading.
-
------
-
-## Standalone web viewer (`viewer/index.html`)
-
-Single HTML file. Used independently and embedded in the ARIA sidebar for the full-detail experience when needed.
-
-**Viewer renders:**
-
-- Slice PNG with toggleable coloured overlay
-- SVG polygon overlay — hover highlights structure + shows name tooltip
-- Click on structure → right panel with full label content (name · TA2 · description · normal values · Radiopaedia link)
-- Region + modality selector
-- Window preset toggle (soft tissue / lung / bone for CT)
-- Mobile-responsive for whiteboard or conference use
+MRI has no HU, so there are no fixed window presets. `build_case.py` sets a default W/L per sequence from intensity percentiles, stored in `meta.json`.
 
 -----
 
 ## Label content (`labels/`)
 
-One JSON file per structure. These are written by you — clinical accuracy is the priority, not automated generation.
-
-**Template:**
+One JSON per structure, written or reviewed by you — clinical accuracy is the priority. The `label-writer` subagent drafts; you review before commit.
 
 ```json
 {
-  "id": "left_ventricle",
-  "name": "Left Ventricle",
-  "ta2_name": "Ventriculus sinister",
-  "description": "Main pumping chamber. Normal wall thickness 6–10 mm. On cardiac CTA: assess wall motion, trabeculations, thrombus, LVEF.",
-  "normal_values": {
-    "wall_thickness_mm": "6–10",
-    "ejection_fraction_pct": "55–70",
-    "EDV_ml": "90–180"
-  },
-  "radiopaedia_url": "https://radiopaedia.org/articles/left-ventricle",
-  "related_structures": ["mitral_valve", "aortic_valve", "interventricular_septum", "papillary_muscles"]
+  "id": "patellar_tendon",
+  "name": "Patellar Tendon",
+  "ta2_name": "Ligamentum patellae",
+  "region": "knee",
+  "description": "Continuation of the quadriceps mechanism from the inferior patellar pole to the tibial tuberosity. Uniformly low signal.",
+  "normal_values": { "insall_salvati_ratio": "0.8–1.2" },
+  "variants_pitfalls": ["Magic angle: intermediate signal on short-TE sequences where fibres lie ~55° to B0"],
+  "radiopaedia_url": "https://radiopaedia.org/articles/patellar-tendon",
+  "related_structures": ["patella", "quadriceps_tendon", "hoffa_fat_pad", "tibial_tuberosity"]
 }
 ```
 
-**Write order:**
+`normal_values: {}` and `variants_pitfalls: []` when not applicable — never omit the keys.
 
-1. Cardiac structures — your domain, do these first
-1. Chest structures
-1. Abdominal structures — use TotalSegmentator label list as checklist
-1. Brain + head/neck structures
+**Write order:** follow `checklists/knee.md`, then each new joint’s checklist.
 
-Add `normal_values` wherever clinically relevant. Leave it as `{}` where not applicable rather than omitting the key.
+-----
+
+## ARIA sidebar UX contract
+
+The ARIA Anatomy tab is a **pure labelled map**. Intentional — do not expand it in the sidebar.
+
+- ARIA lists cases from `data/index.json` and embeds `viewer/index.html?case=<id>&mode=sidebar`.
+- **Renders:** joint picker · scrollable image · structure name below the image on hover.
+- **Does not render:** TA2 names, descriptions, normal values, pitfalls, Radiopaedia links, click panel.
+
+**Changed from the earlier plan:** there is no `GET /atlas/slice` API. The ARIA repo must be updated to embed the viewer instead.
 
 -----
 
 ## Subagents (`subagents/`)
 
-|File               |Purpose                                             |
-|-------------------|----------------------------------------------------|
-|`atlas-exporter.md`|Runs `export.py` for a given NIfTI case, QCs output |
-|`label-writer.md`  |Drafts label JSON from clinical knowledge for review|
+|File              |Purpose                                                                          |
+|------------------|---------------------------------------------------------------------------------|
+|`case-builder.md` |Runs `build_case.py` for a new scan, checks orientation / anonymisation / W/L    |
+|`label-writer.md` |Drafts `labels/<id>.json` from clinical knowledge for your review                |
 
 -----
 
 ## Build sequence
 
 ```
-Phase A:  Data sourcing     → download TotalSegmentator · select canonical cases · IRB for cardiac
-Phase B:  Segmentation QC   → run TotalSegmentator · 3D Slicer QC · manual cardiac correction
-Phase C:  Export pipeline   → export.py · PNG + polygon JSON for all v1 CT cases · visual QC
-Phase D:  Atlas API         → FastAPI server · four endpoints · static file mount · CORS
-Phase E:  Web viewer        → index.html · SVG overlay · click panel · region selector
-Phase F:  Label content     → cardiac first · chest · abdomen · brain (ongoing)
+Phase 0:  Viewer spike    → NiiVue on a sample NIfTI · label hover · confirm WebGL2 on reading-room workstation
+Phase A:  Data            → volunteer knee scan (consent / IRB check) · in parallel apply for SKM-TEA / OAI
+Phase B:  Case build      → build_case.py · anonymised NIfTI · crop · LUT skeleton
+Phase C:  Base labels     → bones (+ cartilage / menisci if a usable open model exists) — else manual
+Phase D:  Author mode     → paint + point tools · save via serve.py
+Phase E:  Hand labelling  → work through checklists/knee.md
+Phase F:  Label content   → labels/*.json for every knee structure (drafted, then reviewed)
+Phase G:  ARIA            → sidebar mode · data/index.json · update ARIA repo
+Then:     shoulder → ankle → hip → wrist → elbow → spine → brain → CT (TotalSegmentator) → cardiac
 ```
-
-**Critical dependency for ARIA:** The API (`Phase D`) must be running before the ARIA browser interface can be built. The `/anatomy` tab calls `GET /atlas/slice` — ARIA cannot be tested end-to-end without it.
 
 -----
 
 ## Key decisions and rationale
 
-|Decision                             |Rationale                                                                                |
-|-------------------------------------|-----------------------------------------------------------------------------------------|
-|Pre-rendered PNGs, no DICOM          |Browser-native · no viewer complexity · no PHI risk                                      |
-|Polygon overlay in SVG, not canvas   |Scalable · CSS hover states · easy to maintain                                           |
-|ARIA sidebar shows name only         |Anatomy tab is a visual reference during reading, not a teaching resource                |
-|Full label content in JSON regardless|Viewer and future consumers get everything; sidebar selects what it shows                |
-|One canonical case per slot          |Curation over volume — one excellent normal beats ten mediocre ones                      |
-|Cardiac requires manual QC           |Automated segmentation is unreliable at cardiac resolution — clinical expertise needed   |
-|Self-hosted, no external dependency  |Works offline at PACS workstation · no rate-limit risk · no third-party uptime dependency|
+|Decision                          |Rationale                                                                         |
+|----------------------------------|----------------------------------------------------------------------------------|
+|Scrollable volumes, not one slice |Reading use means matching the level you are on                                   |
+|NiiVue over pre-rendered PNGs     |Scroll, any plane, W/L, sequence toggle — far less custom code                    |
+|MSK MRI first                     |Main reading need; the most-used part of e-Anatomy                                |
+|Volunteer scans as primary source |Full ownership; matches local protocols; public normal MSK MRI is scarce          |
+|3D isotropic labelling volume     |Label once, valid in all three planes and on same-session 2D series               |
+|Region + point labels             |Paint what is paintable; points for structures too small to paint                 |
+|Static files, no API              |Nothing to run at the workstation; ARIA reads the same files                      |
+|Imaging data kept out of git      |Dataset licence terms + volunteer consent                                         |
+|Non-commercial only               |Allows research-licensed datasets                                                 |
+|ARIA sidebar shows name only      |Visual reference during reading, not a teaching resource                          |
