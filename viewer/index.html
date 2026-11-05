@@ -103,9 +103,13 @@
 
   @media (max-width: 760px) {
     main { flex-direction: column; }
-    aside#panel { width: auto; max-height: 40vh; border-left: 0; border-top: 1px solid var(--border); }
+    aside#panel { width: auto; max-height: 34vh; border-left: 0; border-top: 1px solid var(--border); }
+    body:not(.has-selection) aside#panel { display: none; }
     input[type=search] { width: 100%; }
-    header { padding: 8px 16px; }
+    header { padding: 8px 16px; gap: 6px; }
+    .wide-only, #diag { display: none !important; }
+    #hoverbar { min-height: 34px; padding: 6px 16px; font-size: 16px; }
+    #sliceRow { padding: 4px 16px; }
   }
 </style>
 </head>
@@ -124,7 +128,7 @@
     <button data-overlay="outline">Outline</button>
     <button data-overlay="fill">Fill</button>
   </div>
-  <label class="inline full-only">Opacity <input id="opacity" type="range" min="0" max="100" value="40"></label>
+  <label class="inline full-only wide-only">Opacity <input id="opacity" type="range" min="0" max="100" value="40"></label>
   <div class="group">
     <button id="zoomOut" title="Zoom out">−</button>
     <button id="zoomIn" title="Zoom in">+</button>
@@ -454,6 +458,7 @@ canvas.addEventListener("pointerup", (e) => {
 
 function select(t, { center = false } = {}) {
   state.selected = t;
+  document.body.classList.toggle("has-selection", !!t);
   showHover(t);
   if (t && center) {
     const mm = t.kind === "region" ? state.lut[t.value].centroid_mm : state.points.find((p) => p.id === t.id).xyz_mm;
