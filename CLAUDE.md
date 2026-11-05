@@ -2,7 +2,7 @@
 
 > Self-hosted, MRI-first anatomy atlas for use during reading — e-Anatomy-style scrollable labelled stacks, hover to name.
 > Browser viewer (NiiVue) over local NIfTI volumes + label maps. No server needed to read.
-> Serves the ARIA `/anatomy` tab and runs standalone. Part of the five-repo ARIA ecosystem.
+> Built from public datasets. Serves the ARIA `/anatomy` tab and runs standalone. Part of the five-repo ARIA ecosystem.
 > Personal + departmental use only. Non-commercial. No patient data.
 
 -----
@@ -13,8 +13,9 @@ A locally owned alternative to e-Anatomy for the reading room. Pick the joint, s
 
 - **Stacks, not single slices.** Every case is a full volume you scroll through, in any plane.
 - **MSK MRI first.** Knee → shoulder → ankle → hip → wrist → elbow. Spine, brain, CT and cardiac later.
+- **Public datasets first.** Volunteer scans only for joints with no usable public data.
 - **Curation over volume.** One excellent normal per joint beats ten mediocre ones.
-- **Labels are the product.** Auto-segmentation covers the big structures. The clinically useful small ones (ligaments, tendons, nerves) are hand-labelled in the viewer’s author mode.
+- **Labels are the product.** Dataset labels + auto-segmentation cover the big structures. The clinically useful small ones (ligaments, tendons, nerves) are hand-labelled in the viewer’s author mode.
 - **Offline.** Everything, including JS libraries, is served from local files. Works on a PACS workstation with no internet.
 
 **Three viewer modes, one set of files:**
@@ -23,9 +24,21 @@ A locally owned alternative to e-Anatomy for the reading room. Pick the joint, s
 |-------------|----------------------------------------------|--------------------------------------------------------------------------------------------------------|
 |ARIA sidebar |`viewer/index.html?case=knee-mri&mode=sidebar`|Structure name on hover only — nothing else                                                             |
 |Standalone   |`viewer/index.html?case=knee-mri`             |Hover name + click → panel (name · TA2 · description · normal values · variants/pitfalls · Radiopaedia)|
-|Author       |`viewer/index.html?case=knee-mri&mode=author` |Paint / erase / point tools, structure picker, save. Localhost only, via `tools/serve.py`               |
+|Author       |`viewer/index.html?case=knee-mri&mode=author` |Paint / erase / point tools, structure picker, save. Localhost only, via `tools/serve.py` (Phase D)     |
 
 The label JSON always holds full content. What each mode displays is a UI decision, not a data decision.
+
+-----
+
+## Running it
+
+```
+pip install -r requirements.txt
+python tools/make_demo_case.py     # synthetic test case (shapes, not anatomy) → data/demo-knee-synthetic
+python tools/serve.py              # http://127.0.0.1:8000/
+```
+
+Opening `viewer/index.html` directly from disk does not work (browsers block `fetch` on `file://`). Use `serve.py` or any static web server.
 
 -----
 
@@ -34,21 +47,27 @@ The label JSON always holds full content. What each mode displays is a UI decisi
 ```
 volumes/*.nii.gz  (MRI sequences)  ─┐
 labels.nii.gz     (uint16 label map)├─► viewer/index.html (NiiVue, WebGL2)
-lut.json          (value → id, rgb) │     hover → LUT lookup / nearest point → name
+lut.json          (value → id, rgb) │     hover → label value / nearest point → name
 points.json       (point labels)   ─┘     click → labels/<id>.json → side panel
 ```
 
-- **Viewer:** NiiVue (BSD-2), vendored at `viewer/vendor/` — never loaded from a CDN.
+- **Viewer:** NiiVue 0.69.0 (BSD-2), vendored at `viewer/vendor/niivue.umd.js` — never loaded from a CDN.
 - **Reading is static files only.** Any static web server works (local, or a departmental web server).
-- **`tools/serve.py`:** small local server = static files + a save endpoint for author mode. Binds `127.0.0.1` only.
+- **`tools/serve.py`:** stdlib static server, binds `127.0.0.1` only. Author-mode save endpoint comes in Phase D.
 - **No API layer in v1.** ARIA reads `data/index.json` and embeds the viewer. Add a thin FastAPI wrapper over the same JSON only if a real need appears.
 
 **Two label types:**
 
-|Type  |Stored in                                       |Use for                                                                                                                       |
-|------|------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-|Region|`labels.nii.gz` voxel value → `lut.json`        |Anything paintable: bones, cartilage, menisci, ligaments, tendons, muscles, fat pads, large vessels/nerves. Valid in every plane.|
-|Point |`points.json` (world mm coordinates)            |Tiny structures and landmarks: genicular arteries, small bursae, Gerdy’s tubercle. Marker + name shown within ±1 slice.         |
+|Type  |Stored in                                |Use for                                                                                                                          |
+|------|-----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+|Region|`labels.nii.gz` voxel value → `lut.json` |Anything paintable: bones, cartilage, menisci, ligaments, tendons, muscles, fat pads, large vessels/nerves. Valid in every plane.|
+|Point |`points.json` (world mm coordinates)     |Tiny structures and landmarks: genicular arteries, small bursae, Gerdy’s tubercle. Marker shown within ±1.5 slices; hover radius 4 mm.|
+
+**NiiVue notes (0.69.0):**
+
+- The label map must have NIfTI intent `label` (1002) — this turns on NiiVue’s atlas outline and hover highlight (`opts.atlasOutline`, `opts.atlasActiveIndex`). Both build scripts set it.
+- `nv.frac2vox()` throws in this build — the viewer uses its own `frac2vox()` helper.
+- Highlight changes call `updateGLVolume()`. That is ~360 ms in software rendering (SwiftShader), so it is debounced. It should be far faster on a real GPU — check on the workstation.
 
 -----
 
@@ -57,90 +76,114 @@ points.json       (point labels)   ─┘     click → labels/<id>.json → sid
 ```
 anatomy-atlas/
   viewer/
-    index.html            # single-file viewer: sidebar / standalone / author modes
-    vendor/niivue.umd.js  # vendored, pinned version
+    index.html            # single-file viewer: sidebar / standalone (author: Phase D)
+    vendor/niivue.umd.js  # vendored, pinned 0.69.0
   data/                   # volumes + label maps gitignored — see Data storage
-    index.json            # [{case_id, region, modality, sequences[], structure_count}]
-    knee-mri/
-      meta.json           # source, licence, citation, consent ref, side, sequences[], default W/L per sequence
-      volumes/
-        pd_fs_3d.nii.gz   # labelling reference volume
-        pd_3d.nii.gz      # optional, same session
-        cor_pd_fs_2d.nii.gz  # optional clinical 2D series, same session
-      labels.nii.gz       # uint16 label map, in pd_fs_3d space
-      lut.json            # {"1": {"id": "acl", "rgb": [r,g,b]}, ...}
-      points.json         # [{"id": "gerdys_tubercle", "xyz_mm": [x,y,z]}]
+    index.json            # [{case_id, title, region, modality, sequences[], structure_count, synthetic}]
+    <case_id>/
+      meta.json           # title, source, licence, citation, side, sequences[] (file, cal_min/max), default_plane, synthetic
+      volumes/<seq>.nii.gz
+      labels.nii.gz       # uint16, intent "label", on the reference sequence grid
+      lut.json            # {"1": {"id", "name", "rgb", "voxels", "centroid_vox", "centroid_mm"}, ...}
+      points.json         # [{"id", "name", "xyz_mm": [x,y,z]}]
   labels/
-    acl.json              # content — one file per structure, shared across cases
-    ...
+    <id>.json             # content — one file per structure, shared across cases
   checklists/
     knee.md               # structures to label, ticked as done
   tools/
-    build_case.py         # DICOM → anonymised NIfTI (dcm2niix), reorient RAS, crop, write meta/lut skeleton
-    autoseg.py            # optional base layer (bones, cartilage, menisci) from open models
-    serve.py              # local static server + author-mode save endpoint
-  subagents/
+    make_demo_case.py     # synthetic test case (geometric shapes) for viewer testing
+    build_case.py         # NIfTI volume(s) + label map → case: RAS, int16/uint16, W/L, LUT, index.json
+    serve.py              # local static server (+ author-mode save, Phase D)
+    autoseg.py            # Phase C — base auto-labels (not written yet)
+  subagents/              # not written yet
     case-builder.md
     label-writer.md
+  requirements.txt
 ```
 
 -----
 
 ## Data sources
 
-### Primary: volunteer scans (recommended)
+### Knee — primary: OAIZIB-CM
 
-Healthy volunteer (often yourself) on your own scanner with your own protocols. You own the images, and their appearance matches what you read daily. Public normal MSK MRI is scarce, so this is the main path.
+|                 |                                                                                                                       |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------|
+|Where            |huggingface.co/datasets/YongchengYAO/OAIZIB-CM (also Zenodo doi 10.5281/zenodo.14934086). Free HF account, no agreement.|
+|Licence          |CC BY-NC 4.0 (from search results — confirm on the HF page). Images derive from the OAI, so OAI terms also apply. Keep internal.|
+|Images           |Sagittal 3D DESS-WE, 3T Siemens, ~0.36 × 0.36 × 0.7 mm, NIfTI. Right knees, baseline visit.                            |
+|Labels           |Femur, femoral cartilage, tibia, medial + lateral tibial cartilage. **No patella, no menisci.**                          |
+|Normals          |103 KL0 knees; 17 are KL0 + age ≤ 55 + BMI 18.5–25. Candidate: OAI 9208055 (F, 46, BMI 21.7) — not yet reviewed.         |
+|Size             |imagesTr.zip ≈ 10 GB, zip only (no single-subject download).                                                             |
 
-**Protocol per joint — one session, no repositioning:**
+- **Pick the subject yourself.** KL0 is a radiograph grade, not a normal MRI — review for meniscal, marrow and ligament findings before adopting.
+- **DESS is not PD-FS:** fluid bright, fat suppressed, cartilage well seen. Fine for anatomy.
+- No need to resample to isotropic — NiiVue reslices anisotropic voxels correctly in mm space.
+- `build_case.py --preset oaizib-cm` maps values 1–5 to the ids above. **Verify the mapping** against the dataset README — the script prints every value and voxel count.
 
-- 3D isotropic PD-FS, ~0.5–0.6 mm (CUBE / SPACE / VISTA) — the labelling volume
-- 3D isotropic PD or T1 without fat sat — anatomy contrast
-- Optional: standard clinical 2D TSE series (ax / cor / sag). Same session = same scanner coordinates, so 3D labels carry onto them via the NIfTI affine.
+**Optional add-on:** NIMH Data Archive (NDA) access to the same subject’s full OAI baseline exam: sagittal IW-TSE FS (≈ PD-FS), coronal IW-TSE, coronal 3D FLASH. Same session = same scanner coordinates, so labels carry across. Also confirms whether the subject is in the non-exposed control cohort (n = 122). NDA terms → personal copy only.
 
-**Before scanning:** written consent, an incidental-findings plan, and confirm whether your institution treats volunteer scans as research (IRB) or protocol development / QA.
+### Knee — alternatives
 
-**De-identify on conversion:** `dcm2niix -ba y`. No DICOM kept anywhere in the repo.
+|Dataset                     |Why not primary                                                                 |
+|----------------------------|--------------------------------------------------------------------------------|
+|Open Knee(s) (simtk.org)    |CC BY 4.0, bones + menisci + cartilage — but **cadaver** knees                  |
+|SKM-TEA (Stanford AIMI)     |Has meniscus labels, but ~900 GB, no partial download, no departmental hosting  |
+|fastMRI, MRNet, KneeMRI     |2D / low-res / no anatomy labels / pathology-heavy                              |
+|SKI10, K2S                  |No longer distributed                                                           |
 
-### Fallback: public datasets (non-commercial research terms)
+### Other joints
 
-|Dataset                |Content                                   |Existing labels             |Terms                         |
-|-----------------------|------------------------------------------|----------------------------|------------------------------|
-|SKM-TEA (Stanford AIMI)|Knee 3D qDESS, 155 scans                  |Cartilage, menisci          |Research use agreement        |
-|OAI + OAI-ZIB          |Knee 3D DESS, large cohort incl. controls |Femur, tibia, cartilage     |NIH data use terms; check ZIB |
-|TotalSegmentator MR    |Body MRI                                  |Hip/thigh bones and muscles |CC BY 4.0 — useful for hip    |
+No open, labelled, normal MRI found for shoulder, ankle, wrist or elbow. Hip: TotalSegmentator MR dataset (femur, hip bone, gluteals; licence unconfirmed — verify before use). For these joints, expect volunteer scans (below) + auto bone labels.
 
-These terms generally forbid redistribution. Check each agreement before hosting on a departmental server.
-Not suitable: fastMRI and MRNet (2D / low resolution, no anatomy labels, pathology-heavy).
+### Base auto-labels (Phase C)
+
+|Model                                         |Gives                                                        |Licence                         |
+|----------------------------------------------|-------------------------------------------------------------|--------------------------------|
+|OAIZIB-CM ground truth                        |Femur, tibia, femoral + tibial cartilage                     |CC BY-NC 4.0                    |
+|DOSMA `iwoai-2019-t6-normalized` (OAI DESS)   |Menisci, patellar cartilage (verify output classes)          |GPL-3.0                         |
+|TotalSegmentator `appendicular_bones_mr`      |Patella, tibia, fibula (+ other joints’ bones)               |Free non-commercial licence     |
+|TotalSegmentator `thigh_shoulder_muscles_mr`  |Thigh + shoulder muscles                                     |Free non-commercial licence     |
+|SegmentAnyBone                                |Bones for all six joints (likely one combined bone mask)     |CC BY-NC 4.0                    |
+
+Run these on your own machine — model weights and datasets are not downloadable from the Claude cloud sandbox.
+
+### Fallback: volunteer scans
+
+Only for joints with no public data. One session, no repositioning: 3D isotropic PD-FS ~0.5–0.6 mm (CUBE / SPACE / VISTA) as the labelling volume, optional 3D PD / T1 and clinical 2D series. Before scanning: written consent, incidental-findings plan, and confirm whether your institution treats it as research (IRB) or protocol development / QA. Convert with `dcm2niix -ba y -z y`.
 
 ### Data storage
 
-- Volumes and label maps **never** go to GitHub (licence terms + volunteer consent). Enforced by `.gitignore`.
+- Volumes and label maps **never** go to GitHub (dataset terms). Enforced by `.gitignore` (`*.nii*`, `*.dcm`, and everything under `data/` except JSON).
 - Keep `data/` on local disk or a departmental share, with a separate backup — hand-painted label maps are hours of work.
-- Committed: `viewer/`, `tools/`, `labels/`, `checklists/`, and small `data/**/*.json` metadata.
+- Committed: `viewer/`, `tools/`, `labels/`, `checklists/`, and per-case `meta.json` / `lut.json` / `points.json` (points are hand-placed — worth versioning). `data/index.json` and the synthetic demo are generated locally.
 
 -----
 
 ## Viewer (`viewer/index.html`)
 
-- Case (joint) picker + sequence toggle (PD-FS / PD / 2D series)
-- Plane: axial / coronal / sagittal; single large view by default, optional 3-up
-- Scroll = slice · drag = window/level · zoom / pan · touch-friendly
-- Hover → structure name (region LUT lookup, else nearest point label)
-- Click → side panel with full label content (not in sidebar mode)
-- Overlay: off / outline / filled, opacity slider
-- **Find structure:** type a name → jump to its centroid slice and highlight it
-- **Author mode:** structure picker (from `labels/` + checklist), paint / erase brush, point tool, undo, save via `serve.py`
+Built (Phase 0):
 
-**Risk:** NiiVue needs WebGL2. Confirm it runs on the reading-room workstation (and any VDI/Citrix setup) in Phase 0. Fallback if not: pre-rendered PNG stacks + SVG polygon overlay.
+- Case picker · sequence toggle · plane (sagittal / coronal / axial / 3-up)
+- Display conventions: radiological (patient right on screen left); sagittal anterior on screen left
+- Wheel or ↑/↓ = slice · slider = slice (touch) · left-drag = window/level · right-drag = pan · +/− zoom · R reset
+- Hover → structure name below the image + highlight of that structure (even with overlay off)
+- Click → side panel with full label content; “Draft — not reviewed” badge until `reviewed: true`
+- Overlay: off / outline / fill, opacity slider
+- Find structure (`/`): jumps to the structure’s centroid slice and highlights it
+- Point labels drawn as markers on nearby slices
+- WebGL2 check with a clear message if unavailable; GPU name shown at the bottom (for the workstation test)
+- `?mode=sidebar`: image, slider, case/sequence/plane, hover name — no panel, find, overlay controls
 
-MRI has no HU, so there are no fixed window presets. `build_case.py` sets a default W/L per sequence from intensity percentiles, stored in `meta.json`.
+To do: author mode (Phase D), 3-up hover markers, keyboard focus polish.
+
+**Risk:** NiiVue needs WebGL2. Confirm it runs on the reading-room workstation (and any VDI/Citrix setup). Fallback if not: pre-rendered PNG stacks + SVG polygon overlay.
 
 -----
 
 ## Label content (`labels/`)
 
-One JSON per structure, written or reviewed by you — clinical accuracy is the priority. The `label-writer` subagent drafts; you review before commit.
+One JSON per structure, written or reviewed by you — clinical accuracy is the priority. The `label-writer` subagent drafts with `"reviewed": false`; you flip it to `true` after checking.
 
 ```json
 {
@@ -148,6 +191,7 @@ One JSON per structure, written or reviewed by you — clinical accuracy is the 
   "name": "Patellar Tendon",
   "ta2_name": "Ligamentum patellae",
   "region": "knee",
+  "reviewed": false,
   "description": "Continuation of the quadriceps mechanism from the inferior patellar pole to the tibial tuberosity. Uniformly low signal.",
   "normal_values": { "insall_salvati_ratio": "0.8–1.2" },
   "variants_pitfalls": ["Magic angle: intermediate signal on short-TE sequences where fibres lie ~55° to B0"],
@@ -156,7 +200,7 @@ One JSON per structure, written or reviewed by you — clinical accuracy is the 
 }
 ```
 
-`normal_values: {}` and `variants_pitfalls: []` when not applicable — never omit the keys.
+`normal_values: {}` and `variants_pitfalls: []` when not applicable — never omit the keys. `id` must match the checklist / `lut.json` id.
 
 **Write order:** follow `checklists/knee.md`, then each new joint’s checklist.
 
@@ -167,7 +211,7 @@ One JSON per structure, written or reviewed by you — clinical accuracy is the 
 The ARIA Anatomy tab is a **pure labelled map**. Intentional — do not expand it in the sidebar.
 
 - ARIA lists cases from `data/index.json` and embeds `viewer/index.html?case=<id>&mode=sidebar`.
-- **Renders:** joint picker · scrollable image · structure name below the image on hover.
+- **Renders:** case picker · sequence + plane toggle · scrollable image · structure name below the image on hover.
 - **Does not render:** TA2 names, descriptions, normal values, pitfalls, Radiopaedia links, click panel.
 
 **Changed from the earlier plan:** there is no `GET /atlas/slice` API. The ARIA repo must be updated to embed the viewer instead.
@@ -178,18 +222,18 @@ The ARIA Anatomy tab is a **pure labelled map**. Intentional — do not expand i
 
 |File              |Purpose                                                                          |
 |------------------|---------------------------------------------------------------------------------|
-|`case-builder.md` |Runs `build_case.py` for a new scan, checks orientation / anonymisation / W/L    |
-|`label-writer.md` |Drafts `labels/<id>.json` from clinical knowledge for your review                |
+|`case-builder.md` |Runs `build_case.py` for a new dataset subject, checks orientation / label mapping / W/L|
+|`label-writer.md` |Drafts `labels/<id>.json` (`reviewed: false`) from clinical knowledge for your review|
 
 -----
 
 ## Build sequence
 
 ```
-Phase 0:  Viewer spike    → NiiVue on a sample NIfTI · label hover · confirm WebGL2 on reading-room workstation
-Phase A:  Data            → volunteer knee scan (consent / IRB check) · in parallel apply for SKM-TEA / OAI
-Phase B:  Case build      → build_case.py · anonymised NIfTI · crop · LUT skeleton
-Phase C:  Base labels     → bones (+ cartilage / menisci if a usable open model exists) — else manual
+Phase 0:  Viewer spike    → DONE in headless Chrome · TODO: open on reading-room workstation, check WebGL2 + hover speed
+Phase A:  Data            → download OAIZIB-CM · review the 17 young KL0 knees · pick one · (optional) NDA for its TSE series
+Phase B:  Case build      → build_case.py --preset oaizib-cm · verify label mapping · check orientation in viewer
+Phase C:  Base labels     → DOSMA menisci + patellar cartilage · TotalSegmentator patella/fibula/muscles · merge
 Phase D:  Author mode     → paint + point tools · save via serve.py
 Phase E:  Hand labelling  → work through checklists/knee.md
 Phase F:  Label content   → labels/*.json for every knee structure (drafted, then reviewed)
@@ -201,15 +245,15 @@ Then:     shoulder → ankle → hip → wrist → elbow → spine → brain →
 
 ## Key decisions and rationale
 
-|Decision                          |Rationale                                                                         |
-|----------------------------------|----------------------------------------------------------------------------------|
-|Scrollable volumes, not one slice |Reading use means matching the level you are on                                   |
-|NiiVue over pre-rendered PNGs     |Scroll, any plane, W/L, sequence toggle — far less custom code                    |
-|MSK MRI first                     |Main reading need; the most-used part of e-Anatomy                                |
-|Volunteer scans as primary source |Full ownership; matches local protocols; public normal MSK MRI is scarce          |
-|3D isotropic labelling volume     |Label once, valid in all three planes and on same-session 2D series               |
-|Region + point labels             |Paint what is paintable; points for structures too small to paint                 |
-|Static files, no API              |Nothing to run at the workstation; ARIA reads the same files                      |
-|Imaging data kept out of git      |Dataset licence terms + volunteer consent                                         |
-|Non-commercial only               |Allows research-licensed datasets                                                 |
-|ARIA sidebar shows name only      |Visual reference during reading, not a teaching resource                          |
+|Decision                          |Rationale                                                                          |
+|----------------------------------|-----------------------------------------------------------------------------------|
+|Scrollable volumes, not one slice |Reading use means matching the level you are on                                    |
+|NiiVue over pre-rendered PNGs     |Scroll, any plane, W/L, sequence toggle — far less custom code                     |
+|MSK MRI first                     |Main reading need; the most-used part of e-Anatomy                                 |
+|Public datasets first             |No scanning, consent or IRB overhead; OAIZIB-CM gives normal knees with base labels|
+|Region + point labels             |Paint what is paintable; points for structures too small to paint                  |
+|Static files, no API              |Nothing to run at the workstation; ARIA reads the same files                       |
+|Imaging data kept out of git      |Dataset licence terms                                                              |
+|Non-commercial only               |Allows CC BY-NC and research-licensed datasets and models                          |
+|`reviewed` flag on label content  |Drafts are visibly marked until a radiologist signs off                            |
+|ARIA sidebar shows name only      |Visual reference during reading, not a teaching resource                           |

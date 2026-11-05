@@ -1,0 +1,12 @@
+{
+  "id": "patellar_tendon",
+  "name": "Patellar Tendon",
+  "ta2_name": "Ligamentum patellae",
+  "region": "knee",
+  "reviewed": false,
+  "description": "Continuation of the quadriceps mechanism from the inferior patellar pole to the tibial tuberosity. Uniformly low signal.",
+  "normal_values": { "insall_salvati_ratio": "0.8–1.2" },
+  "variants_pitfalls": ["Magic angle: intermediate signal on short-TE sequences where fibres lie ~55° to B0"],
+  "radiopaedia_url": "https://radiopaedia.org/articles/patellar-tendon",
+  "related_structures": ["patella", "quadriceps_tendon", "hoffa_fat_pad", "tibial_tuberosity"]
+}

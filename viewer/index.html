@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anatomy Atlas</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --surface: #14181d;
+    --surface-2: #1c2128;
+    --border: #2a313a;
+    --text: #e6e9ed;
+    --muted: #8b95a1;
+    --accent: #4da3ff;
+    --accent-ink: #06121f;
+    --warn-bg: #3a2a0a;
+    --warn-text: #ffd27a;
+    --draft-bg: #2b2140;
+    --draft-text: #cdb6ff;
+    --radius: 6px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text); font: 14px/1.4 var(--font);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .group { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .group button { border: 0; border-radius: 0; }
+  .group button + button { border-left: 1px solid var(--border); }
+  button, select, input[type=search] {
+    font: inherit; color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 5px 10px; min-height: 32px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: #252c35; }
+  button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); }
+  input[type=search] { width: 220px; }
+  label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
+  .spacer { flex: 1; }
+
+  main { flex: 1; display: flex; min-height: 0; }
+  #stage { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  #canvasWrap { position: relative; flex: 1; min-height: 0; }
+  #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+  #markers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .marker {
+    position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%;
+    background: #fff; border: 2px solid #000; box-shadow: 0 0 0 1px #fff;
+  }
+  .marker.active { background: var(--accent); }
+  #banner {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 2;
+    background: var(--warn-bg); color: var(--warn-text); padding: 4px 10px; border-radius: var(--radius);
+    font-size: 12px; pointer-events: none;
+  }
+  #sliceRow { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--surface); border-top: 1px solid var(--border); }
+  #slice { flex: 1; }
+  #sliceLabel { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 70px; text-align: right; }
+  #hoverbar {
+    min-height: 40px; padding: 8px 12px; font-size: 17px; font-weight: 600;
+    background: var(--surface); border-top: 1px solid var(--border);
+  }
+  #hoverbar .none { color: var(--muted); font-weight: 400; font-size: 14px; }
+
+  aside#panel {
+    width: 340px; flex: none; overflow-y: auto; padding: 14px 16px;
+    background: var(--surface); border-left: 1px solid var(--border);
+  }
+  #panel h2 { margin: 0 0 2px; font-size: 18px; }
+  #panel .ta2 { color: var(--muted); font-style: italic; margin-bottom: 10px; }
+  #panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 16px 0 6px; }
+  #panel table { border-collapse: collapse; width: 100%; }
+  #panel td { padding: 3px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  #panel td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  #panel ul { margin: 0; padding-left: 18px; }
+  #panel a { color: var(--accent); }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--draft-bg); color: var(--draft-text); margin-left: 6px; vertical-align: middle; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips button { min-height: 26px; padding: 2px 8px; font-size: 12px; }
+  .muted { color: var(--muted); }
+  #help { font-size: 12px; color: var(--muted); }
+  #help kbd { font: 11px var(--font); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+
+  #fatal {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center; padding: 24px;
+    background: var(--bg); z-index: 5; text-align: center;
+  }
+  #fatal div { max-width: 520px; }
+  #fatal h2 { color: var(--warn-text); }
+  #diag { font-size: 11px; color: var(--muted); padding: 0 12px 6px; background: var(--surface); }
+
+  /* sidebar mode: image + name only */
+  body.sidebar .full-only { display: none !important; }
+  body.sidebar header { padding: 6px 8px; }
+  body:not(.sidebar) .sidebar-only { display: none !important; }
+
+  @media (max-width: 760px) {
+    main { flex-direction: column; }
+    aside#panel { width: auto; max-height: 40vh; border-left: 0; border-top: 1px solid var(--border); }
+    input[type=search] { width: 100%; }
+    header { padding: 8px 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <select id="caseSel" aria-label="Case"></select>
+  <div class="group" id="seqGroup" role="group" aria-label="Sequence"></div>
+  <div class="group" id="planeGroup" role="group" aria-label="Plane">
+    <button data-plane="sagittal" title="Sagittal (1)">Sag</button>
+    <button data-plane="coronal" title="Coronal (2)">Cor</button>
+    <button data-plane="axial" title="Axial (3)">Ax</button>
+    <button data-plane="multi" title="3-up (4)" class="full-only">3-up</button>
+  </div>
+  <div class="group full-only" id="overlayGroup" role="group" aria-label="Overlay">
+    <button data-overlay="off" title="Overlay off — hover still highlights (O)">Off</button>
+    <button data-overlay="outline">Outline</button>
+    <button data-overlay="fill">Fill</button>
+  </div>
+  <label class="inline full-only">Opacity <input id="opacity" type="range" min="0" max="100" value="40"></label>
+  <div class="group">
+    <button id="zoomOut" title="Zoom out">−</button>
+    <button id="zoomIn" title="Zoom in">+</button>
+    <button id="resetView" title="Reset zoom, pan and window/level (R)">Reset</button>
+  </div>
+  <span class="spacer"></span>
+  <input id="find" class="full-only" type="search" list="structList" placeholder="Find structure…" aria-label="Find structure">
+  <datalist id="structList"></datalist>
+</header>
+
+<main>
+  <div id="stage">
+    <div id="canvasWrap">
+      <canvas id="gl" tabindex="0"></canvas>
+      <div id="markers"></div>
+      <div id="banner" hidden></div>
+      <div id="fatal"><div id="fatalMsg"></div></div>
+    </div>
+    <div id="sliceRow">
+      <input id="slice" type="range" min="0" max="0" value="0" aria-label="Slice">
+      <span id="sliceLabel"></span>
+    </div>
+    <div id="hoverbar"><span class="none">Hover over a structure</span></div>
+    <div id="diag" class="full-only"></div>
+  </div>
+  <aside id="panel" class="full-only">
+    <div id="panelBody">
+      <p class="muted">Click a structure for details.</p>
+      <div id="help">
+        <p><b>Mouse:</b> wheel = scroll slices · left-drag = window/level · right-drag = pan · click = details</p>
+        <p><b>Keys:</b> <kbd>↑</kbd><kbd>↓</kbd> slice · <kbd>1</kbd>–<kbd>4</kbd> plane · <kbd>O</kbd> overlay · <kbd>R</kbd> reset · <kbd>/</kbd> find</p>
+        <p><b>Touch:</b> slider = slices · tap = name + details · drag = window/level</p>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script src="vendor/niivue.umd.js"></script>
+<script>
+"use strict";
+const params = new URLSearchParams(location.search);
+const MODE = ["sidebar", "author"].includes(params.get("mode")) ? params.get("mode") : "standalone";
+const DATA = params.get("data") || "../data/";
+const LABELS = params.get("labels") || "../labels/";
+if (MODE === "sidebar") document.body.classList.add("sidebar");
+
+const $ = (id) => document.getElementById(id);
+const PLANE_AXIS = { sagittal: 0, coronal: 1, axial: 2 };
+const POINT_RADIUS_MM = 4;
+
+const state = {
+  cases: [], caseId: null, meta: null, lut: {}, points: [],
+  seqId: null, plane: "sagittal", overlay: "off", opacity: 0.4,
+  hover: null, selected: null, mouse: null, labelCache: {},
+};
+
+function fatal(html) {
+  $("fatalMsg").innerHTML = html;
+  $("fatal").style.display = "flex";
+}
+
+// ---------- WebGL2 check (Phase 0: does this run on the reading-room workstation?) ----------
+function webglInfo() {
+  const c = document.createElement("canvas");
+  const gl = c.getContext("webgl2");
+  if (!gl) return null;
+  const ext = gl.getExtension("WEBGL_debug_renderer_info");
+  return {
+    renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+    max3D: gl.getParameter(gl.MAX_3D_TEXTURE_SIZE),
+  };
+}
+
+const glInfo = webglInfo();
+if (!glInfo) {
+  fatal(`<h2>WebGL2 not available</h2><p>This browser can't run the atlas viewer.
+  Try current Chrome, Edge or Firefox. On remote desktop / VDI, GPU acceleration may be disabled.</p>`);
+  throw new Error("no webgl2");
+}
+$("diag").textContent = `WebGL2 ✓ · ${glInfo.renderer} · max 3D texture ${glInfo.max3D}`;
+
+const nv = new niivue.Niivue({
+  backColor: [0, 0, 0, 1],
+  show3Dcrosshair: false,
+  crosshairWidth: 0,
+  isRadiologicalConvention: true, // patient right on screen left (axial, coronal)
+  sagittalNoseLeft: true,          // anterior on screen left (sagittal)
+  dragAndDropEnabled: false,
+  isOrientationTextVisible: true,
+  multiplanarShowRender: niivue.SHOW_RENDER.NEVER,
+  logLevel: "warn",
+});
+nv.setMouseEventConfig({
+  leftButton: { primary: niivue.DRAG_MODE.windowing, withShift: niivue.DRAG_MODE.pan, withCtrl: niivue.DRAG_MODE.crosshair },
+  rightButton: niivue.DRAG_MODE.pan,
+  centerButton: niivue.DRAG_MODE.pan,
+});
+nv.setTouchEventConfig({ singleTouch: niivue.DRAG_MODE.windowing, doubleTouch: niivue.DRAG_MODE.pan });
+
+// ---------- data loading ----------
+async function getJSON(url) {
+  const r = await fetch(url, { cache: "no-cache" });
+  if (!r.ok) throw new Error(`${r.status} ${url}`);
+  return r.json();
+}
+
+async function init() {
+  await nv.attachToCanvas($("gl"));
+  try {
+    state.cases = await getJSON(DATA + "index.json");
+  } catch (e) {
+    const fileHint = location.protocol === "file:"
+      ? "<p>Opened as a local file. Browsers block that — run <code>python tools/serve.py</code> and open the address it prints.</p>"
+      : `<p>Could not load <code>${DATA}index.json</code>. Run <code>python tools/make_demo_case.py</code> to create the test case.</p>`;
+    fatal(`<h2>No atlas data</h2>${fileHint}`);
+    return;
+  }
+  const sel = $("caseSel");
+  sel.innerHTML = state.cases.map((c) => `<option value="${c.case_id}">${c.title || c.case_id}</option>`).join("");
+  const want = params.get("case");
+  const first = state.cases.find((c) => c.case_id === want) || state.cases[0];
+  if (!first) return fatal("<h2>No cases in data/index.json</h2>");
+  sel.value = first.case_id;
+  await loadCase(first.case_id);
+}
+
+async function loadCase(caseId) {
+  const base = `${DATA}${caseId}/`;
+  const [meta, lut, points] = await Promise.all([
+    getJSON(base + "meta.json"),
+    getJSON(base + "lut.json"),
+    getJSON(base + "points.json").catch(() => []),
+  ]);
+  Object.assign(state, { caseId, meta, lut, points, selected: null, hover: null });
+  $("banner").hidden = !meta.synthetic;
+  $("banner").textContent = "Synthetic test data — shapes, not anatomy";
+
+  $("seqGroup").innerHTML = meta.sequences
+    .map((s) => `<button data-seq="${s.id}">${s.label}</button>`).join("");
+  $("seqGroup").hidden = meta.sequences.length < 2;
+
+  const names = [
+    ...Object.values(lut).map((l) => l.name),
+    ...points.map((p) => p.name || p.id),
+  ].sort();
+  $("structList").innerHTML = names.map((n) => `<option value="${n}">`).join("");
+
+  state.plane = params.get("plane") || meta.default_plane || "sagittal";
+  await loadSequence(params.get("seq") || meta.reference_sequence || meta.sequences[0].id, true);
+}
+
+function buildColormap(lut) {
+  const max = Math.max(0, ...Object.keys(lut).map(Number));
+  const cm = { R: [], G: [], B: [], A: [], I: [], labels: [] };
+  for (let i = 0; i <= max; i++) {
+    const l = lut[i];
+    cm.I.push(i);
+    cm.R.push(l ? l.rgb[0] : 0); cm.G.push(l ? l.rgb[1] : 0); cm.B.push(l ? l.rgb[2] : 0);
+    cm.A.push(l ? 255 : 0);
+    cm.labels.push(l ? l.name : "");
+  }
+  return cm;
+}
+
+async function loadSequence(seqId, fresh = false) {
+  const seq = state.meta.sequences.find((s) => s.id === seqId) || state.meta.sequences[0];
+  const keepMM = !fresh && nv.volumes.length ? nv.frac2mm(nv.scene.crosshairPos) : null;
+  const keepPan = !fresh && nv.volumes.length ? [...nv.scene.pan2Dxyzmm] : null;
+  const base = `${DATA}${state.caseId}/`;
+  await nv.loadVolumes([
+    { url: base + seq.file, cal_min: seq.cal_min, cal_max: seq.cal_max },
+    { url: base + "labels.nii.gz", opacity: 0 },
+  ]);
+  const labelVol = nv.volumes[1];
+  labelVol.setColormapLabel(buildColormap(state.lut));
+  state.seqId = seq.id;
+  if (keepMM) nv.scene.crosshairPos = nv.mm2frac(keepMM);
+  if (keepPan) nv.scene.pan2Dxyzmm = keepPan;
+  applyOverlay();
+  setPlane(state.plane);
+  pressed("seqGroup", "seq", seq.id);
+}
+
+// ---------- view state ----------
+function pressed(groupId, attr, value) {
+  for (const b of $(groupId).querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset[attr] === value));
+}
+
+function setPlane(plane) {
+  state.plane = plane;
+  const st = { sagittal: nv.sliceTypeSagittal, coronal: nv.sliceTypeCoronal, axial: nv.sliceTypeAxial, multi: nv.sliceTypeMultiplanar }[plane];
+  nv.setCrosshairWidth(plane === "multi" ? 1 : 0);
+  nv.setSliceType(st);
+  pressed("planeGroup", "plane", plane);
+  $("sliceRow").style.visibility = plane === "multi" ? "hidden" : "visible";
+  syncSlider();
+}
+
+function applyOverlay() {
+  if (nv.volumes.length < 2) return;
+  const o = state.overlay;
+  nv.opts.atlasOutline = o === "outline" ? 1 : 0;
+  nv.opts.atlasActiveIndex = activeValue();
+  nv.setOpacity(1, o === "fill" ? state.opacity : o === "outline" ? Math.min(state.opacity, 0.15) : 0);
+  pressed("overlayGroup", "overlay", o);
+}
+
+function activeValue() {
+  const t = state.hover || state.selected;
+  return t && t.kind === "region" ? t.value : 0;
+}
+
+// Highlight = re-render the label layer. Debounced so slow GPUs don't lag while the mouse moves.
+let lastActive = -1, highlightTimer = 0;
+function refreshHighlight(now = false) {
+  clearTimeout(highlightTimer);
+  const run = () => {
+    const v = activeValue();
+    if (v === lastActive) return;
+    lastActive = v;
+    nv.opts.atlasActiveIndex = v;
+    nv.updateGLVolume();
+  };
+  if (now) run(); else highlightTimer = setTimeout(run, 60);
+}
+
+function axisDims() {
+  const d = nv.volumes[0].dimsRAS;
+  return [d[1], d[2], d[3]];
+}
+
+// fraction (0–1, RAS) → RAS voxel index for volume i
+function frac2vox(frac, i = 0) {
+  const d = nv.volumes[i].dimsRAS;
+  return [0, 1, 2].map((a) => Math.max(0, Math.min(d[a + 1] - 1, Math.round(frac[a] * d[a + 1] - 0.5))));
+}
+
+function currentVox() {
+  return frac2vox(nv.scene.crosshairPos, 0);
+}
+
+function syncSlider() {
+  if (!nv.volumes.length || state.plane === "multi") return;
+  const ax = PLANE_AXIS[state.plane];
+  const n = axisDims()[ax];
+  const v = Math.round(currentVox()[ax]);
+  $("slice").max = n - 1;
+  $("slice").value = v;
+  $("sliceLabel").textContent = `${v + 1} / ${n}`;
+}
+
+function setSlice(index) {
+  const ax = PLANE_AXIS[state.plane];
+  const n = axisDims()[ax];
+  const i = Math.max(0, Math.min(n - 1, index));
+  const frac = [...nv.scene.crosshairPos];
+  frac[ax] = (i + 0.5) / n;
+  nv.scene.crosshairPos = frac;
+  nv.drawScene();
+  nv.createOnLocationChange();
+}
+
+// ---------- picking ----------
+function pickAt(cssX, cssY) {
+  if (nv.volumes.length < 2) return null;
+  const dpr = nv.uiData.dpr || window.devicePixelRatio || 1;
+  const frac = nv.canvasPos2frac([cssX * dpr, cssY * dpr]);
+  if (!frac || frac[0] < 0) return null;
+  const mm = nv.frac2mm(frac);
+  // points first: small structures win over the region they sit in
+  let best = null;
+  for (const p of state.points) {
+    const d = Math.hypot(p.xyz_mm[0] - mm[0], p.xyz_mm[1] - mm[1], p.xyz_mm[2] - mm[2]);
+    if (d <= POINT_RADIUS_MM && (!best || d < best.d)) best = { d, p };
+  }
+  if (best) return { kind: "point", id: best.p.id, name: best.p.name || best.p.id };
+  const vox = frac2vox(frac, 1);
+  const value = nv.volumes[1].getValue(vox[0], vox[1], vox[2]);
+  const l = state.lut[value];
+  return l ? { kind: "region", value, id: l.id, name: l.name } : null;
+}
+
+function showHover(t) {
+  $("hoverbar").innerHTML = t ? escapeHTML(t.name) : '<span class="none">Hover over a structure</span>';
+}
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+const canvas = $("gl");
+canvas.addEventListener("mousemove", (e) => {
+  state.mouse = [e.offsetX, e.offsetY];
+  if (e.buttons) return; // dragging (W/L, pan)
+  updateHover();
+});
+canvas.addEventListener("mouseleave", () => {
+  state.mouse = null;
+  state.hover = null;
+  showHover(state.selected);
+  refreshHighlight();
+});
+
+function updateHover() {
+  if (!state.mouse) return;
+  const t = pickAt(...state.mouse);
+  const same = t && state.hover && t.id === state.hover.id;
+  if (same) return;
+  state.hover = t;
+  showHover(t || state.selected);
+  refreshHighlight();
+  drawMarkers();
+}
+
+// click = small movement between pointerdown and pointerup
+let down = null;
+canvas.addEventListener("pointerdown", (e) => { down = [e.offsetX, e.offsetY, e.button]; });
+canvas.addEventListener("pointerup", (e) => {
+  if (!down || down[2] !== 0) return;
+  const moved = Math.hypot(e.offsetX - down[0], e.offsetY - down[1]);
+  down = null;
+  if (moved > 4) return;
+  const t = pickAt(e.offsetX, e.offsetY);
+  select(t);
+  if (e.pointerType !== "mouse") { state.hover = null; showHover(t); }
+});
+
+function select(t, { center = false } = {}) {
+  state.selected = t;
+  showHover(t);
+  if (t && center) {
+    const mm = t.kind === "region" ? state.lut[t.value].centroid_mm : state.points.find((p) => p.id === t.id).xyz_mm;
+    nv.scene.crosshairPos = nv.mm2frac(mm);
+    nv.drawScene();
+    nv.createOnLocationChange();
+  }
+  lastActive = -1;
+  refreshHighlight(true);
+  drawMarkers();
+  if (MODE !== "sidebar") showPanel(t);
+}
+
+nv.onLocationChange = () => {
+  syncSlider();
+  updateHover();
+  drawMarkers();
+};
+
+// ---------- point markers ----------
+function drawMarkers() {
+  const layer = $("markers");
+  layer.innerHTML = "";
+  if (state.plane === "multi" || !nv.volumes.length || !state.points.length) return;
+  const ax = PLANE_AXIS[state.plane];
+  const here = nv.frac2mm(nv.scene.crosshairPos);
+  const dpr = nv.uiData.dpr || window.devicePixelRatio || 1;
+  const pix = nv.volumes[0].pixDimsRAS ? nv.volumes[0].pixDimsRAS[ax + 1] : 1;
+  for (const p of state.points) {
+    if (Math.abs(p.xyz_mm[ax] - here[ax]) > Math.max(1.5, pix * 1.5)) continue;
+    const pos = nv.frac2canvasPos(nv.mm2frac(p.xyz_mm));
+    if (!pos) continue;
+    const m = document.createElement("div");
+    const active = (state.hover && state.hover.id === p.id) || (state.selected && state.selected.id === p.id);
+    m.className = "marker" + (active ? " active" : "");
+    m.style.left = pos[0] / dpr + "px";
+    m.style.top = pos[1] / dpr + "px";
+    layer.appendChild(m);
+  }
+}
+const _drawScene = nv.drawScene.bind(nv);
+nv.drawScene = function () {
+  const r = _drawScene();
+  requestAnimationFrame(drawMarkers);
+  return r;
+};
+
+// ---------- label panel ----------
+async function loadLabel(id) {
+  if (!(id in state.labelCache)) {
+    state.labelCache[id] = await getJSON(`${LABELS}${id}.json`).catch(() => null);
+  }
+  return state.labelCache[id];
+}
+
+async function showPanel(t) {
+  const body = $("panelBody");
+  if (!t) {
+    body.innerHTML = '<p class="muted">Click a structure for details.</p>' + $("help").outerHTML;
+    return;
+  }
+  const L = await loadLabel(t.id);
+  if (state.selected !== t) return; // a newer click won
+  if (!L) {
+    body.innerHTML = `<h2>${escapeHTML(t.name)}</h2>
+      <p class="muted">No label content yet. Add <code>labels/${escapeHTML(t.id)}.json</code>.</p>`;
+    return;
+  }
+  const nvals = Object.entries(L.normal_values || {});
+  const pits = L.variants_pitfalls || [];
+  const rel = L.related_structures || [];
+  body.innerHTML = `
+    <h2>${escapeHTML(L.name)}${L.reviewed ? "" : '<span class="badge">Draft — not reviewed</span>'}</h2>
+    ${L.ta2_name ? `<div class="ta2">${escapeHTML(L.ta2_name)}</div>` : ""}
+    <p>${escapeHTML(L.description || "")}</p>
+    ${nvals.length ? `<h3>Normal values</h3><table>${nvals.map(([k, v]) =>
+      `<tr><td>${escapeHTML(k.replace(/_/g, " "))}</td><td>${escapeHTML(v)}</td></tr>`).join("")}</table>` : ""}
+    ${pits.length ? `<h3>Variants &amp; pitfalls</h3><ul>${pits.map((p) => `<li>${escapeHTML(p)}</li>`).join("")}</ul>` : ""}
+    ${rel.length ? `<h3>Related</h3><div class="chips">${rel.map((r) =>
+      `<button data-goto="${escapeHTML(r)}">${escapeHTML(nameFor(r))}</button>`).join("")}</div>` : ""}
+    ${L.radiopaedia_url ? `<h3>Reference</h3><a href="${escapeHTML(L.radiopaedia_url)}" target="_blank" rel="noopener">Radiopaedia ↗</a>` : ""}
+  `;
+  for (const b of body.querySelectorAll("[data-goto]")) {
+    const target = findById(b.dataset.goto);
+    if (!target) b.disabled = true;
+    b.addEventListener("click", () => target && select(target, { center: true }));
+  }
+}
+
+function findById(id) {
+  for (const [value, l] of Object.entries(state.lut)) {
+    if (l.id === id) return { kind: "region", value: Number(value), id, name: l.name };
+  }
+  const p = state.points.find((p) => p.id === id);
+  return p ? { kind: "point", id, name: p.name || id } : null;
+}
+
+function findByName(name) {
+  const q = name.trim().toLowerCase();
+  if (!q) return null;
+  const all = [
+    ...Object.entries(state.lut).map(([v, l]) => ({ kind: "region", value: Number(v), id: l.id, name: l.name })),
+    ...state.points.map((p) => ({ kind: "point", id: p.id, name: p.name || p.id })),
+  ];
+  return all.find((t) => t.name.toLowerCase() === q) || all.find((t) => t.name.toLowerCase().includes(q)) || null;
+}
+
+function nameFor(id) {
+  const t = findById(id);
+  return t ? t.name : id.replace(/_/g, " ");
+}
+
+// ---------- controls ----------
+$("caseSel").addEventListener("change", (e) => loadCase(e.target.value));
+$("seqGroup").addEventListener("click", (e) => { const s = e.target.dataset.seq; if (s && s !== state.seqId) loadSequence(s); });
+$("planeGroup").addEventListener("click", (e) => { const p = e.target.dataset.plane; if (p) setPlane(p); });
+$("overlayGroup").addEventListener("click", (e) => { const o = e.target.dataset.overlay; if (o) { state.overlay = o; applyOverlay(); nv.updateGLVolume(); } });
+$("opacity").addEventListener("input", (e) => {
+  state.opacity = e.target.value / 100;
+  if (state.overlay === "off") state.overlay = "fill";
+  applyOverlay();
+});
+$("slice").addEventListener("input", (e) => setSlice(Number(e.target.value)));
+$("zoomIn").addEventListener("click", () => zoom(1.25));
+$("zoomOut").addEventListener("click", () => zoom(0.8));
+$("resetView").addEventListener("click", resetView);
+$("find").addEventListener("change", (e) => {
+  const t = findByName(e.target.value);
+  if (t) { select(t, { center: true }); e.target.blur(); }
+});
+
+function zoom(f) {
+  const p = [...nv.scene.pan2Dxyzmm];
+  p[3] = Math.max(0.5, Math.min(8, p[3] * f));
+  nv.setPan2Dxyzmm(p);
+}
+
+function resetView() {
+  const seq = state.meta.sequences.find((s) => s.id === state.seqId);
+  const v = nv.volumes[0];
+  v.cal_min = seq.cal_min; v.cal_max = seq.cal_max;
+  nv.setPan2Dxyzmm([0, 0, 0, 1]);
+  nv.updateGLVolume();
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" && e.target.type === "search") return;
+  const k = e.key;
+  if (k === "ArrowUp" || k === "PageUp") { setSlice(Number($("slice").value) + 1); e.preventDefault(); }
+  else if (k === "ArrowDown" || k === "PageDown") { setSlice(Number($("slice").value) - 1); e.preventDefault(); }
+  else if (k === "1") setPlane("sagittal");
+  else if (k === "2") setPlane("coronal");
+  else if (k === "3") setPlane("axial");
+  else if (k === "4" && MODE !== "sidebar") setPlane("multi");
+  else if ((k === "o" || k === "O") && MODE !== "sidebar") {
+    state.overlay = { off: "outline", outline: "fill", fill: "off" }[state.overlay];
+    applyOverlay(); nv.updateGLVolume();
+  }
+  else if (k === "r" || k === "R") resetView();
+  else if (k === "/" && MODE !== "sidebar") { $("find").focus(); e.preventDefault(); }
+  else if (k === "Escape") select(null);
+});
+
+window.atlas = { nv, state, pickAt, select, findByName, setSlice, setPlane }; // for testing / console
+init().catch((e) => { console.error(e); fatal(`<h2>Failed to load</h2><p>${escapeHTML(e.message)}</p>`); });
+</script>
+</body>
+</html>

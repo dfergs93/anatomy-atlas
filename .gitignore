@@ -15,3 +15,7 @@ data/**
 __pycache__/
 *.pyc
 .venv/
+
+# Generated locally (regenerate with tools/make_demo_case.py / build_case.py)
+data/index.json
+data/demo-*/
