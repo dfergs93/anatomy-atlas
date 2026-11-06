@@ -3,7 +3,9 @@
 > Self-hosted, MRI-first anatomy atlas for use during reading — e-Anatomy-style scrollable labelled stacks, hover to name.
 > Browser viewer (NiiVue) over local NIfTI volumes + label maps. No server needed to read.
 > Built from public datasets. Serves the ARIA `/anatomy` tab and runs standalone. Part of the five-repo ARIA ecosystem.
-> Personal + departmental use only. Non-commercial. No patient data.
+> Personal use only, on the owner's own Mac and laptop. Non-commercial. No patient data.
+>
+> **Design (2026-11-05, approved):** `docs/superpowers/specs/2026-11-05-anatomy-atlas-design.md` — wins over this file where they differ. Plans: `docs/superpowers/plans/`.
 
 -----
 
@@ -12,11 +14,12 @@
 A locally owned alternative to e-Anatomy for the reading room. Pick the joint, scroll to the level you are reading, hover a structure to see its name.
 
 - **Stacks, not single slices.** Every case is a full volume you scroll through, in any plane.
-- **MSK MRI first.** Knee → shoulder → ankle → hip → wrist → elbow. Spine, brain, CT and cardiac later.
+- **MSK MRI first.** Knee → hip. Shoulder, rectal pelvis, ankle, wrist, elbow, spine, brain, CT and cardiac later.
 - **Public datasets first.** Volunteer scans only for joints with no usable public data.
 - **Curation over volume.** One excellent normal per joint beats ten mediocre ones.
 - **Labels are the product.** Dataset labels + auto-segmentation cover the big structures. The clinically useful small ones (ligaments, tendons, nerves) are hand-labelled in the viewer’s author mode.
-- **Offline.** Everything, including JS libraries, is served from local files. Works on a PACS workstation with no internet.
+- **Offline.** Everything, including JS libraries, is served from local files.
+- **Where it runs.** On the owner's own Mac, opened in a browser on that laptop beside the reading workstation. (A departmental server or the hospital workstation is only an optional future idea.)
 
 **Three viewer modes, one set of files:**
 
@@ -24,7 +27,7 @@ A locally owned alternative to e-Anatomy for the reading room. Pick the joint, s
 |-------------|----------------------------------------------|--------------------------------------------------------------------------------------------------------|
 |ARIA sidebar |`viewer/index.html?case=knee-mri&mode=sidebar`|Structure name on hover only — nothing else                                                             |
 |Standalone   |`viewer/index.html?case=knee-mri`             |Hover name + click → panel (name · TA2 · description · normal values · variants/pitfalls · Radiopaedia)|
-|Author       |`viewer/index.html?case=knee-mri&mode=author` |Paint / erase / point tools, structure picker, save. Localhost only, via `tools/serve.py` (Phase D)     |
+|Author       |`viewer/index.html?case=knee-mri&mode=author` |Painting mode (spec §5): checklist-driven, smart fill, fill between slices, save. Localhost only, via `tools/serve.py`|
 
 The label JSON always holds full content. What each mode displays is a UI decision, not a data decision.
 
@@ -35,7 +38,7 @@ The label JSON always holds full content. What each mode displays is a UI decisi
 ```
 pip install -r requirements.txt
 python tools/make_demo_case.py     # synthetic test case (shapes, not anatomy) → data/demo-knee-synthetic
-python tools/serve.py              # http://127.0.0.1:8000/
+python tools/serve.py              # http://127.0.0.1:8004/
 ```
 
 Opening `viewer/index.html` directly from disk does not work (browsers block `fetch` on `file://`). Use `serve.py` or any static web server.
@@ -52,8 +55,8 @@ points.json       (point labels)   ─┘     click → labels/<id>.json → sid
 ```
 
 - **Viewer:** NiiVue 0.69.0 (BSD-2), vendored at `viewer/vendor/niivue.umd.js` — never loaded from a CDN.
-- **Reading is static files only.** Any static web server works (local, or a departmental web server).
-- **`tools/serve.py`:** stdlib static server, binds `127.0.0.1` only. Author-mode save endpoint comes in Phase D.
+- **Reading is static files only.** Served locally by `tools/serve.py`.
+- **`tools/serve.py`:** stdlib static server, binds `127.0.0.1` only, port **8004** (8000 is protocol_manager's MkDocs). The painting-mode save endpoint comes with the painting plan.
 - **No API layer in v1.** ARIA reads `data/index.json` and embeds the viewer. Add a thin FastAPI wrapper over the same JSON only if a real need appears.
 
 **Two label types:**
@@ -67,7 +70,7 @@ points.json       (point labels)   ─┘     click → labels/<id>.json → sid
 
 - The label map must have NIfTI intent `label` (1002) — this turns on NiiVue’s atlas outline and hover highlight (`opts.atlasOutline`, `opts.atlasActiveIndex`). Both build scripts set it.
 - `nv.frac2vox()` throws in this build — the viewer uses its own `frac2vox()` helper.
-- Highlight changes call `updateGLVolume()`. That is ~360 ms in software rendering (SwiftShader), so it is debounced. It should be far faster on a real GPU — check on the workstation.
+- Highlight changes call `updateGLVolume()`. That is ~360 ms in software rendering (SwiftShader), so it is debounced. It should be far faster on a real GPU — check on the Mac.
 
 -----
 
@@ -229,16 +232,16 @@ The ARIA Anatomy tab is a **pure labelled map**. Intentional — do not expand i
 
 ## Build sequence
 
+From the design (spec §9). Phase 0 (viewer spike) is done; its workstation test is dropped.
+
 ```
-Phase 0:  Viewer spike    → DONE in headless Chrome · TODO: open on reading-room workstation, check WebGL2 + hover speed
-Phase A:  Data            → download OAIZIB-CM · review the 17 young KL0 knees · pick one · (optional) NDA for its TSE series
-Phase B:  Case build      → build_case.py --preset oaizib-cm · verify label mapping · check orientation in viewer
-Phase C:  Base labels     → DOSMA menisci + patellar cartilage · TotalSegmentator patella/fibula/muscles · merge
-Phase D:  Author mode     → paint + point tools · save via serve.py
-Phase E:  Hand labelling  → work through checklists/knee.md
-Phase F:  Label content   → labels/*.json for every knee structure (drafted, then reviewed)
-Phase G:  ARIA            → sidebar mode · data/index.json · update ARIA repo
-Then:     shoulder → ankle → hip → wrist → elbow → spine → brain → CT (TotalSegmentator) → cardiac
+1. Real knee       → download OAIZIB-CM · owner reviews the 17 candidates and picks one · build + verify mapping/orientation · mirrored left copy
+2. Getting oriented→ reference lines + shared cursor · follow a structure (spec §4)
+3. Auto-labels     → big structures: DOSMA menisci + patellar cartilage · TotalSegmentator patella/fibula/muscles (spec §7.1)
+4. Painting mode   → checklist-driven, smart fill, fill between slices, grow, points, expected locations, save + backups, helper merge (spec §5)
+5. Core knee set   → owner paints; Claude drafts labels/*.json, owner reviews
+6. Hip             → find data or volunteer scan · checklists/hip.md · two linked cases (spec §7.2)
+Then:              ARIA sidebar embed (unchanged contract) · shoulder · rectal pelvis · others
 ```
 
 -----
@@ -252,8 +255,8 @@ Then:     shoulder → ankle → hip → wrist → elbow → spine → brain →
 |MSK MRI first                     |Main reading need; the most-used part of e-Anatomy                                 |
 |Public datasets first             |No scanning, consent or IRB overhead; OAIZIB-CM gives normal knees with base labels|
 |Region + point labels             |Paint what is paintable; points for structures too small to paint                  |
-|Static files, no API              |Nothing to run at the workstation; ARIA reads the same files                       |
+|Static files, no API              |Nothing to deploy; ARIA reads the same files                                       |
 |Imaging data kept out of git      |Dataset licence terms                                                              |
 |Non-commercial only               |Allows CC BY-NC and research-licensed datasets and models                          |
 |`reviewed` flag on label content  |Drafts are visibly marked until a radiologist signs off                            |
-|ARIA sidebar shows name only      |Visual reference during reading, not a teaching resource                           |
+|ARIA sidebar shows name only      |A quick visual reference inside ARIA; the teaching lives in the standalone panel   |

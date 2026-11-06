@@ -7,12 +7,20 @@ Self-hosted MSK MRI anatomy atlas: scroll a normal scan, hover a structure to se
 ```
 pip install -r requirements.txt
 python tools/make_demo_case.py   # synthetic test knee (shapes, not anatomy)
-python tools/serve.py            # open http://127.0.0.1:8000/
+python tools/serve.py            # open http://127.0.0.1:8004/
 ```
 
-Sidebar view (as embedded in ARIA): `http://127.0.0.1:8000/viewer/?mode=sidebar`
+Sidebar view (as embedded in ARIA): `http://127.0.0.1:8004/viewer/?mode=sidebar`
 
-**Controls:** mouse wheel or ↑/↓ = slice · left-drag = window/level · right-drag = pan · click = details · `1`–`4` plane · `O` overlay · `/` find · `R` reset
+**Controls:** mouse wheel or ↑/↓ = slice · left-drag = window/level · right-drag = pan · click = details · click a small view to jump there · `1`–`3` plane · `O` overlay · `/` find · `R` reset · `Esc` clear
+
+## Tests
+
+```
+venv/bin/pip install -r requirements-dev.txt
+venv/bin/python -m pytest
+node --test tests/viewer/
+```
 
 ## Add a real case
 

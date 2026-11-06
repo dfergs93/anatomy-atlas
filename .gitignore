@@ -19,3 +19,8 @@ __pycache__/
 # Generated locally (regenerate with tools/make_demo_case.py / build_case.py)
 data/index.json
 data/demo-*/
+data/knee-mri-left/   # mirrored copy, rebuilt by tools/mirror_case.py
+data/cand-*/          # temporary OAIZIB-CM candidate cases
+
+# Brainstorm mockups and plan workspaces
+.superpowers/

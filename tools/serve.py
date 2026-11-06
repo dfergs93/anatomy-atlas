@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Serve the atlas locally (standard library only).
 
-    python tools/serve.py            # http://127.0.0.1:8000/
+    python tools/serve.py            # http://127.0.0.1:8004/
     python tools/serve.py --port 9000
 
 Serves the repo root; "/" redirects to the viewer. Binds to 127.0.0.1 only.
-For departmental use, put the repo behind a proper web server instead.
 .nii.gz files are sent as-is (no Content-Encoding) — NiiVue decompresses them.
 Author-mode save endpoint: Phase D.
 """
@@ -17,6 +16,7 @@ import http.server
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PORT = 8004  # 8000 is protocol_manager's MkDocs
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -47,7 +47,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--port", type=int, default=DEFAULT_PORT)
     args = ap.parse_args()
     handler = functools.partial(Handler, directory=str(ROOT))
     with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), handler) as httpd:
