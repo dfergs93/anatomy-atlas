@@ -55,20 +55,58 @@ test("tileAt handles a tile drawn flipped (negative width or height)", () => {
   assert.equal(core.tileAt(tiles, 800, 600), -1);
 });
 
-const ident = (mm) => Math.round(mm);
+// cand-049 (OAI DESS): RAS affine, ~4° oblique — row-major, as NiiVue's volume.matRAS.
+const CAND = [0.6982881426811218, 0.025432050228118896, 0.0, 8.507220268249512,
+  -0.04882906749844551, 0.3636952340602875, 8.095376441806596e-17, -70.65251922607422,
+  1.084223100155002e-17, 0.0, 0.3645833432674408, -85.64833068847656, 0, 0, 0, 1];
+const CAND_DIMS = [160, 384, 384];
+const mul = (m, v) => [0, 1, 2].map((r) => m[r * 4] * v[0] + m[r * 4 + 1] * v[1] + m[r * 4 + 2] * v[2] + m[r * 4 + 3]);
+const frac = (vox, dims) => vox.map((v, a) => (v + 0.5) / dims[a]);
+const close = (a, b, tol) => a.forEach((v, i) => assert.ok(Math.abs(v - b[i]) <= tol, `${a} vs ${b}`));
 
-test("sliceRange is null without an extent (old lut.json)", () => {
-  assert.equal(core.sliceRange(undefined, ident, 100), null);
-  assert.equal(core.sliceRange(null, ident, 100), null);
+test("fracToWorld uses the volume's own (oblique) affine", () => {
+  close(core.fracToWorld(CAND, CAND_DIMS, frac([80, 370, 370], CAND_DIMS)), [73.7801, 60.0084, 49.2475], 1e-3);
+  close(core.fracToWorld(CAND, CAND_DIMS, frac([0, 0, 0], CAND_DIMS)), [8.5072, -70.6525, -85.6483], 1e-3);
 });
 
-test("sliceRange converts mm to slices and sorts a reversed range", () => {
-  assert.deepEqual(core.sliceRange({ start_mm: 10, end_mm: 20, widest_mm: 14 }, ident, 100), { start: 10, end: 20, widest: 14 });
-  assert.deepEqual(core.sliceRange({ start_mm: 20, end_mm: 10, widest_mm: 14 }, ident, 100), { start: 10, end: 20, widest: 14 });
+test("worldToFrac puts a world point back on its own voxel on an oblique grid", () => {
+  for (const vox of [[0, 0, 0], [80, 370, 370], [159, 383, 383]]) {
+    const f = core.worldToFrac(CAND, CAND_DIMS, mul(CAND, vox));
+    close(f.map((x, a) => x * CAND_DIMS[a] - 0.5), vox, 1e-6);
+  }
 });
 
-test("sliceRange clamps to the volume", () => {
-  assert.deepEqual(core.sliceRange({ start_mm: -3, end_mm: 120, widest_mm: 130 }, ident, 100), { start: 0, end: 99, widest: 99 });
+// lut.json extent for one plane, built the way tools/atlaslib.py does: slice coordinate =
+// world coordinate along the axis of voxel (slice, anchor's other indices).
+function extentFor(m, axis, anchorVox, start, end, widest) {
+  const at = (s) => { const v = [...anchorVox]; v[axis] = s; return mul(m, v)[axis]; };
+  return { start_mm: at(start), end_mm: at(end), widest_mm: at(widest), anchor_mm: mul(m, anchorVox) };
+}
+
+test("extentSlices recovers the exact slices on an oblique grid, whatever the cursor", () => {
+  const sag = extentFor(CAND, 0, [70, 200, 190], 60, 85, 70);
+  assert.deepEqual(core.extentSlices(sag, 0, CAND, CAND, CAND_DIMS), { start: 60, end: 85, widest: 70 });
+  const cor = extentFor(CAND, 1, [70, 200, 190], 150, 260, 200);
+  assert.deepEqual(core.extentSlices(cor, 1, CAND, CAND, CAND_DIMS), { start: 150, end: 260, widest: 200 });
+});
+
+test("extentSlices maps onto a different sequence grid through world space", () => {
+  const coarse = [...CAND];
+  for (const r of [0, 1, 2]) for (const c of [0, 1, 2]) coarse[r * 4 + c] *= 2; // same origin, 2× voxels
+  const sag = extentFor(CAND, 0, [70, 200, 190], 60, 84, 70);
+  assert.deepEqual(core.extentSlices(sag, 0, CAND, coarse, [80, 192, 192]), { start: 30, end: 42, widest: 35 });
+});
+
+const IDENT = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+
+test("extentSlices is null without an extent (old lut.json) or with a missing value", () => {
+  assert.equal(core.extentSlices(undefined, 0, IDENT, IDENT, [100, 100, 100]), null);
+  assert.equal(core.extentSlices({ start_mm: 1, widest_mm: 2, anchor_mm: [2, 5, 5] }, 0, IDENT, IDENT, [100, 100, 100]), null);
+});
+
+test("extentSlices sorts a reversed range and clamps to the volume", () => {
+  const ext = { start_mm: 120, end_mm: -3, widest_mm: 130, anchor_mm: [50, 50, 50] };
+  assert.deepEqual(core.extentSlices(ext, 0, IDENT, IDENT, [100, 100, 100]), { start: 0, end: 99, widest: 99 });
 });
 
 test("pointRange clamps at both ends", () => {

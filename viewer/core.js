@@ -50,12 +50,61 @@
 
   const clamp = (v, n) => Math.max(0, Math.min(n - 1, v));
 
-  // A structure's extent on one plane (mm, from lut.json) → slice numbers on the current grid.
-  function sliceRange(planeExtent, mmToIndex, n) {
-    if (!planeExtent) return null;
-    const s = clamp(mmToIndex(planeExtent.start_mm), n);
-    const e = clamp(mmToIndex(planeExtent.end_mm), n);
-    return { start: Math.min(s, e), end: Math.max(s, e), widest: clamp(mmToIndex(planeExtent.widest_mm), n) };
+  // ---- world (scanner mm) ↔ volume, using the volume's own affine ----
+  // NiiVue shows oblique volumes (OAI DESS is ~4°) in voxel space, and its frac2mm / mm2frac follow
+  // a straightened matrix, not the NIfTI affine — up to ~1 cm out. Stored positions (lut.json,
+  // points.json, mirroring) are true world mm, so convert with the volume's matRAS (row-major 4×4).
+  function applyAffine(m, v) {
+    return [0, 1, 2].map((r) => m[r * 4] * v[0] + m[r * 4 + 1] * v[1] + m[r * 4 + 2] * v[2] + m[r * 4 + 3]);
+  }
+
+  function invertAffine(m) {
+    const [a, b, c, d, e, f, g, h, i] = [m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]];
+    const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g;
+    const det = a * A + b * B + c * C;
+    const inv3 = [A, -(b * i - c * h), b * f - c * e, B, a * i - c * g, -(a * f - c * d), C, -(a * h - b * g), a * e - b * d]
+      .map((x) => x / det);
+    const t = [m[3], m[7], m[11]];
+    const out = [];
+    for (let r = 0; r < 3; r++) {
+      const row = inv3.slice(r * 3, r * 3 + 3);
+      out.push(...row, -(row[0] * t[0] + row[1] * t[1] + row[2] * t[2]));
+    }
+    return [...out, 0, 0, 0, 1];
+  }
+
+  function worldToVox(m, mm) {
+    return applyAffine(invertAffine(m), mm);
+  }
+
+  // NiiVue frac = (voxel + 0.5) / dim on each axis.
+  function worldToFrac(m, dims, mm) {
+    return worldToVox(m, mm).map((v, a) => (v + 0.5) / dims[a]);
+  }
+
+  function fracToWorld(m, dims, frac) {
+    return applyAffine(m, frac.map((f, a) => f * dims[a] - 0.5));
+  }
+
+  // A structure's extent on one plane (lut.json, world mm on the label grid) → slice numbers on the
+  // reference grid. start/end/widest_mm are world coordinates along the axis of voxel
+  // (slice, anchor's other indices), so solve for that slice exactly on the label grid, then carry
+  // the voxel through world space onto the reference grid. Independent of where the cursor is.
+  function extentSlices(planeExt, axis, labelM, refM, refDims) {
+    const keys = ["start_mm", "end_mm", "widest_mm"];
+    if (!planeExt || !keys.every((k) => Number.isFinite(planeExt[k])) ||
+        !Array.isArray(planeExt.anchor_mm) || !planeExt.anchor_mm.every(Number.isFinite)) return null;
+    const anchor = worldToVox(labelM, planeExt.anchor_mm).map(Math.round);
+    const refInv = invertAffine(refM);
+    const n = refDims[axis];
+    const [s, e, w] = keys.map((k) => {
+      let rest = labelM[axis * 4 + 3];
+      for (let b = 0; b < 3; b++) if (b !== axis) rest += labelM[axis * 4 + b] * anchor[b];
+      const vox = [...anchor];
+      vox[axis] = (planeExt[k] - rest) / labelM[axis * 4 + axis];
+      return clamp(Math.round(applyAffine(refInv, applyAffine(labelM, vox))[axis]), n);
+    });
+    return { start: Math.min(s, e), end: Math.max(s, e), widest: w };
   }
 
   // Slices on which a point label's marker shows.
@@ -92,6 +141,7 @@
 
   return {
     PLANES, PLANE_AXIS, HERO_FRACTION, otherPlanes, layoutFor, refLineOrientation, tileRect, tileAt,
-    sliceRange, pointRange, trackGradient, mirrorMM, counterpart, pickerGroups,
+    applyAffine, invertAffine, worldToVox, worldToFrac, fracToWorld, extentSlices,
+    pointRange, trackGradient, mirrorMM, counterpart, pickerGroups,
   };
 });

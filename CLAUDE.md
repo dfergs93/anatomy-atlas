@@ -70,6 +70,7 @@ points.json       (point labels)   ─┘     click → labels/<id>.json → sid
 
 - The label map must have NIfTI intent `label` (1002) — this turns on NiiVue’s atlas outline and hover highlight (`opts.atlasOutline`, `opts.atlasActiveIndex`). Both build scripts set it.
 - `nv.frac2vox()` throws in this build — the viewer uses its own `frac2vox()` helper.
+- **Oblique volumes:** NiiVue draws them in voxel space, and its `frac2mm()` / `mm2frac()` follow a straightened matrix, not the NIfTI affine — on OAI DESS (~4°) that is up to ~1 cm / 7–13 slices out. Stored positions (`lut.json`, `points.json`, mirroring) are true world mm, so the viewer converts with each volume's own `matRAS` (`core.worldToFrac` / `fracToWorld` / `extentSlices`). Never use `nv.frac2mm` / `nv.mm2frac` for stored positions.
 - Highlight changes call `updateGLVolume()`. That is ~360 ms in software rendering (SwiftShader), so it is debounced. It should be far faster on a real GPU — check on the Mac.
 
 -----

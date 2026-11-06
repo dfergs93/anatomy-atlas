@@ -345,7 +345,7 @@ function buildColormap(lut) {
 
 async function loadSequence(seqId, fresh = false) {
   const seq = state.meta.sequences.find((s) => s.id === seqId) || state.meta.sequences[0];
-  const keepMM = !fresh && nv.volumes.length ? nv.frac2mm(nv.scene.crosshairPos) : null;
+  const keepMM = !fresh && nv.volumes.length ? cursorWorld() : null;
   const keepPan = !fresh && nv.volumes.length ? [...nv.scene.pan2Dxyzmm] : null;
   const base = `${DATA}${state.caseId}/`;
   await nv.loadVolumes([
@@ -355,7 +355,7 @@ async function loadSequence(seqId, fresh = false) {
   const labelVol = nv.volumes[1];
   labelVol.setColormapLabel(buildColormap(state.lut));
   state.seqId = seq.id;
-  if (keepMM) nv.scene.crosshairPos = nv.mm2frac(keepMM);
+  if (keepMM) nv.scene.crosshairPos = worldToFrac(keepMM);
   if (keepPan) nv.scene.pan2Dxyzmm = keepPan;
   applyOverlay();
   setPlane(state.plane);
@@ -432,6 +432,42 @@ function axisDims() {
   return [d[1], d[2], d[3]];
 }
 
+// ---------- world mm ↔ volume ----------
+// lut.json, points.json and mirroring use true world mm (the NIfTI affine). NiiVue's own
+// frac2mm / mm2frac follow a straightened matrix on oblique scans (OAI DESS is ~4°) and can be
+// ~1 cm out, so always convert with the volume's own matRAS (see core.js).
+function volM(i = 0) {
+  return Array.from(nv.volumes[i].matRAS);
+}
+
+function volDims(i = 0) {
+  const d = nv.volumes[i].dimsRAS;
+  return [d[1], d[2], d[3]];
+}
+
+function worldToFrac(mm, i = 0) {
+  return core.worldToFrac(volM(i), volDims(i), mm);
+}
+
+function fracToWorld(frac, i = 0) {
+  return core.fracToWorld(volM(i), volDims(i), Array.from(frac).slice(0, 3));
+}
+
+function cursorWorld() {
+  return fracToWorld(nv.scene.crosshairPos);
+}
+
+// Slice (on axis ax of the reference volume) that a point label sits on.
+function pointSlice(p, ax) {
+  return Math.round(core.worldToVox(volM(), p.xyz_mm)[ax]);
+}
+
+// A point's marker shows within 1.5 mm (or 1.5 voxels) of its slice — in whole slices.
+function pointHalfWidth(ax) {
+  const pix = nv.volumes[0].pixDimsRAS ? nv.volumes[0].pixDimsRAS[ax + 1] : 1;
+  return Math.floor(Math.max(1.5, 1.5 * pix) / pix);
+}
+
 // fraction (0–1, RAS) → RAS voxel index for volume i
 function frac2vox(frac, i = 0) {
   const d = nv.volumes[i].dimsRAS;
@@ -494,7 +530,7 @@ function pickAt(cssX, cssY) {
   if (nv.volumes.length < 2) return null;
   const frac = fracAt(cssX, cssY);
   if (!frac) return null;
-  const mm = nv.frac2mm(frac);
+  const mm = fracToWorld(frac);
   // points first: small structures win over the region they sit in
   let best = null;
   for (const p of state.points) {
@@ -587,7 +623,7 @@ function select(t, { toWidest = false } = {}) {
     if (followRange()) jump("widest");
     else {  // no extent in lut.json (older case): centre on the centroid as before
       const mm = t.kind === "region" ? state.lut[t.value].centroid_mm : state.points.find((p) => p.id === t.id).xyz_mm;
-      moveCursor(nv.mm2frac(mm));
+      moveCursor(worldToFrac(mm));
     }
   }
   lastActive = -1;
@@ -598,14 +634,6 @@ function select(t, { toWidest = false } = {}) {
 }
 
 // ---------- follow a structure ----------
-// Slice (on the main plane, current sequence grid) at world coordinate mm along that plane's axis.
-function mmToIndex(mm) {
-  const ax = PLANE_AXIS[state.plane];
-  const p = Array.from(nv.frac2mm(nv.scene.crosshairPos)).slice(0, 3);
-  p[ax] = mm;
-  return frac2vox(nv.mm2frac(p), 0)[ax];
-}
-
 // Slices the selected structure is on in the main plane: {start, end, widest}, or null.
 function followRange() {
   const t = state.selected;
@@ -614,13 +642,10 @@ function followRange() {
   const n = axisDims()[ax];
   if (t.kind === "region") {
     const ext = state.lut[t.value] && state.lut[t.value].extent;
-    return core.sliceRange(ext && ext[state.plane], mmToIndex, n);
+    return core.extentSlices(ext && ext[state.plane], ax, volM(1), volM(0), volDims(0));
   }
   const p = state.points.find((q) => q.id === t.id);
-  if (!p) return null;
-  const pix = nv.volumes[0].pixDimsRAS ? nv.volumes[0].pixDimsRAS[ax + 1] : 1;
-  const half = Math.floor(Math.max(1.5, 1.5 * pix) / pix); // same window drawMarkers shows the marker in
-  return core.pointRange(frac2vox(nv.mm2frac(p.xyz_mm), 0)[ax], half, n);
+  return p ? core.pointRange(pointSlice(p, ax), pointHalfWidth(ax), n) : null;
 }
 
 function jump(which) {
@@ -630,7 +655,7 @@ function jump(which) {
   if (which !== "widest") return setSlice(r[which]);
   // widest: main view on that slice, small views through the structure
   const mm = t.kind === "region" ? state.lut[t.value].extent[state.plane].anchor_mm : state.points.find((p) => p.id === t.id).xyz_mm;
-  moveCursor(nv.mm2frac(mm));
+  moveCursor(worldToFrac(mm));
 }
 
 function updateFollow() {
@@ -657,12 +682,14 @@ function drawMarkers() {
   layer.innerHTML = "";
   if (!nv.volumes.length || !state.points.length) return;
   const ax = PLANE_AXIS[state.plane];
-  const here = nv.frac2mm(nv.scene.crosshairPos);
+  const here = currentVox()[ax];
+  const half = pointHalfWidth(ax);
   const dpr = dprOf();
-  const pix = nv.volumes[0].pixDimsRAS ? nv.volumes[0].pixDimsRAS[ax + 1] : 1;
   for (const p of state.points) {
-    if (Math.abs(p.xyz_mm[ax] - here[ax]) > Math.max(1.5, pix * 1.5)) continue;
-    const hit = nv.frac2canvasPosWithTile(nv.mm2frac(p.xyz_mm), mainSliceType());
+    if (Math.abs(pointSlice(p, ax) - here) > half) continue;
+    const f = worldToFrac(p.xyz_mm);
+    f[ax] = nv.scene.crosshairPos[ax]; // draw it on the slice being shown
+    const hit = nv.frac2canvasPosWithTile(f, mainSliceType());
     if (!hit) continue;
     const pos = hit.pos;
     const m = document.createElement("div");
@@ -799,10 +826,10 @@ $("sideGroup").addEventListener("click", (e) => {
 async function switchSide() {
   const other = core.counterpart(state.cases, state.caseId);
   if (!other) return;
-  const mm = Array.from(nv.frac2mm(nv.scene.crosshairPos)).slice(0, 3);
+  const mm = cursorWorld();
   const selId = state.selected && state.selected.id;
   await loadCase(other, { keepPlane: true });
-  moveCursor(nv.mm2frac(core.mirrorMM(mm)));
+  moveCursor(worldToFrac(core.mirrorMM(mm)));
   const t = selId && findById(selId);
   if (t) select(t);
 }
@@ -854,7 +881,7 @@ document.addEventListener("keydown", (e) => {
   else if (k === "Escape") select(null);
 });
 
-window.atlas = { nv, state, core, pickAt, select, findByName, setSlice, setPlane, applyLayout, isHero, followRange, jump, mmToIndex, switchSide }; // for testing / console
+window.atlas = { nv, state, core, pickAt, select, findByName, setSlice, setPlane, applyLayout, isHero, followRange, jump, switchSide, worldToFrac, fracToWorld }; // for testing / console
 init().catch((e) => { console.error(e); fatal(`<h2>Failed to load</h2><p>${escapeHTML(e.message)}</p>`); });
 </script>
 </body>
