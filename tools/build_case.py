@@ -32,6 +32,8 @@ from pathlib import Path
 import nibabel as nib
 import numpy as np
 
+from atlaslib import build_lut, clean_header, load_ras, register_case, same_grid
+
 ROOT = Path(__file__).resolve().parents[1]
 
 # value → structure id. VERIFY against the dataset's own README before trusting a preset:
@@ -64,9 +66,9 @@ def colour(sid: str, i: int) -> list[int]:
     return [int(min(255, c * f)) for c in rgb]
 
 
-def checklist_names(region: str) -> dict[str, str]:
+def checklist_names(root: Path, region: str) -> dict[str, str]:
     """id → display name from checklists/<region>.md tables."""
-    path = ROOT / "checklists" / f"{region}.md"
+    path = Path(root) / "checklists" / f"{region}.md"
     names: dict[str, str] = {}
     if path.exists():
         for line in path.read_text().splitlines():
@@ -76,23 +78,84 @@ def checklist_names(region: str) -> dict[str, str]:
     return names
 
 
-def load_ras(path: Path) -> nib.Nifti1Image:
-    img = nib.as_closest_canonical(nib.load(str(path)))
-    if img.ndim != 3:
-        sys.exit(f"{path}: expected a 3D volume, got shape {img.shape}")
-    return img
+def build_case(root: Path, case_id: str, *, title: str, region: str,
+               seqs: list[tuple[str, str, Path]], labels: Path | None = None,
+               mapping: dict[int, str] | None = None, side: str = "", plane: str = "sagittal",
+               source: str, licence: str, citation: str = "",
+               index_extra: dict | None = None) -> dict:
+    """Write data/<case_id>/ (volumes, labels, meta, lut, points) and register it. Returns meta."""
+    root = Path(root)
+    out = root / "data" / case_id
+    (out / "volumes").mkdir(parents=True, exist_ok=True)
 
+    # ---- volumes ----
+    seq_meta, ref = [], None
+    for sid, label, path in seqs:
+        img = load_ras(Path(path).expanduser())
+        if ref is None:
+            ref = img
+        elif not same_grid(img, ref):
+            print(f"note: {sid} is on a different grid from {seqs[0][0]} — "
+                  "fine if same session (scanner coordinates); labels follow the reference grid")
+        data = np.asanyarray(img.dataobj).astype(np.float32)
+        body = data[data > np.percentile(data, 5)]
+        lo, hi = np.percentile(body, [1, 99.5])
+        if data.max() > 32767 or data.min() < -32768 or (data.max() - data.min()) < 100:
+            scale = 4000.0 / max(hi - lo, 1e-6)  # rescale floats / tiny ranges into int16
+            data, lo, hi = (data - lo) * scale, 0.0, (hi - lo) * scale
+        vol = nib.Nifti1Image(np.round(data).astype(np.int16), img.affine)
+        clean_header(vol)
+        nib.save(vol, out / "volumes" / f"{sid}.nii.gz")
+        seq_meta.append({"id": sid, "label": label, "file": f"volumes/{sid}.nii.gz",
+                         "cal_min": round(float(lo)), "cal_max": round(float(hi))})
+        print(f"{sid}: shape={img.shape} voxel={tuple(round(float(z), 3) for z in img.header.get_zooms())} W/L {lo:.0f}–{hi:.0f}")
 
-def clean_header(img: nib.Nifti1Image) -> None:
-    h = img.header
-    for field in ("descrip", "aux_file", "db_name", "intent_name"):
-        if field in h:
-            h[field] = b""
-    h.set_xyzt_units("mm")
+    # ---- labels ----
+    mapping = dict(mapping or {})
+    names = checklist_names(root, region)
+    lut = {}
+    if labels:
+        lab = load_ras(Path(labels).expanduser())
+        if not same_grid(lab, ref):
+            sys.exit("label map grid does not match the reference sequence — resample it first")
+        arr = np.asanyarray(lab.dataobj)
+        if not np.allclose(arr, np.round(arr)):
+            sys.exit("label map has non-integer values")
+        arr = np.round(arr).astype(np.uint16)
+        values, counts = np.unique(arr[arr > 0], return_counts=True)
+        base = {}
+        print("label values found:")
+        for v, n in zip(values.tolist(), counts.tolist()):
+            sid = mapping.get(v, f"label_{v}")
+            base[v] = {"id": sid, "name": names.get(sid, sid.replace("_", " ").capitalize()), "rgb": colour(sid, v)}
+            flag = "" if v in mapping else "   <-- unmapped: add to --label-names"
+            print(f"  {v:>4}  {n:>9} vox  {sid}{flag}")
+        lut = build_lut(arr, lab.affine, base)
+        out_lab = nib.Nifti1Image(arr, lab.affine)
+    else:
+        # empty label map on the reference grid, ready for painting mode
+        out_lab = nib.Nifti1Image(np.zeros(ref.shape, np.uint16), ref.affine)
+    clean_header(out_lab)
+    out_lab.header.set_intent("label")
+    nib.save(out_lab, out / "labels.nii.gz")
 
+    meta = {
+        "case_id": case_id, "title": title, "region": region, "side": side,
+        "modality": "MR", "synthetic": False, "source": source, "licence": licence,
+        "citation": citation, "reference_sequence": seq_meta[0]["id"], "sequences": seq_meta,
+        "default_plane": plane,
+    }
+    (out / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
+    (out / "lut.json").write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n")
+    if not (out / "points.json").exists():
+        (out / "points.json").write_text("[]\n")
+    points = json.loads((out / "points.json").read_text())
 
-def same_grid(a: nib.Nifti1Image, b: nib.Nifti1Image) -> bool:
-    return a.shape == b.shape and np.allclose(a.affine, b.affine, atol=1e-3)
+    register_case(root, {"case_id": case_id, "title": title, "region": region, "modality": "MR",
+                         "sequences": [s["id"] for s in seq_meta], "structure_count": len(lut) + len(points),
+                         "synthetic": False, "side": side, **(index_extra or {})})
+    print(f"wrote {out}  ({len(lut)} labelled structures)")
+    return meta
 
 
 def main() -> None:
@@ -113,90 +176,13 @@ def main() -> None:
     ap.add_argument("--citation", default="")
     args = ap.parse_args()
 
-    out = ROOT / "data" / args.case_id
-    (out / "volumes").mkdir(parents=True, exist_ok=True)
-
-    # ---- volumes ----
-    seqs, ref = [], None
-    for sid, label, path in args.seq:
-        img = load_ras(Path(path).expanduser())
-        if ref is None:
-            ref = img
-        elif not same_grid(img, ref):
-            print(f"note: {sid} is on a different grid from {args.seq[0][0]} — "
-                  "fine if same session (scanner coordinates); labels follow the reference grid")
-        data = np.asanyarray(img.dataobj).astype(np.float32)
-        body = data[data > np.percentile(data, 5)]
-        lo, hi = np.percentile(body, [1, 99.5])
-        if data.max() > 32767 or data.min() < -32768 or (data.max() - data.min()) < 100:
-            scale = 4000.0 / max(hi - lo, 1e-6)  # rescale floats / tiny ranges into int16
-            data, lo, hi = (data - lo) * scale, 0.0, (hi - lo) * scale
-        vol = nib.Nifti1Image(np.round(data).astype(np.int16), img.affine)
-        clean_header(vol)
-        nib.save(vol, out / "volumes" / f"{sid}.nii.gz")
-        seqs.append({"id": sid, "label": label, "file": f"volumes/{sid}.nii.gz",
-                     "cal_min": round(float(lo)), "cal_max": round(float(hi))})
-        print(f"{sid}: shape={img.shape} voxel={tuple(round(float(z), 3) for z in img.header.get_zooms())} W/L {lo:.0f}–{hi:.0f}")
-
-    # ---- labels ----
     mapping: dict[int, str] = dict(PRESETS.get(args.preset, {}))
     if args.label_names:
         mapping = {int(k): v for k, v in json.loads(args.label_names.read_text()).items()}
-    names = checklist_names(args.region)
-    lut = {}
-    if args.labels:
-        lab = load_ras(args.labels.expanduser())
-        if not same_grid(lab, ref):
-            sys.exit("label map grid does not match the reference sequence — resample it first")
-        arr = np.asanyarray(lab.dataobj)
-        if not np.allclose(arr, np.round(arr)):
-            sys.exit("label map has non-integer values")
-        arr = np.round(arr).astype(np.uint16)
-        values, counts = np.unique(arr[arr > 0], return_counts=True)
-        print("label values found:")
-        for v, n in zip(values.tolist(), counts.tolist()):
-            sid = mapping.get(v, f"label_{v}")
-            idx = np.argwhere(arr == v)
-            c = idx[np.argmin(((idx - idx.mean(0)) ** 2).sum(1))]  # voxel inside, nearest centroid
-            lut[str(v)] = {
-                "id": sid, "name": names.get(sid, sid.replace("_", " ").capitalize()),
-                "rgb": colour(sid, v), "voxels": n,
-                "centroid_vox": [int(x) for x in c],
-                "centroid_mm": [round(float(x), 1) for x in (lab.affine @ np.r_[c, 1])[:3]],
-            }
-            flag = "" if v in mapping else "   <-- unmapped: add to --label-names"
-            print(f"  {v:>4}  {n:>9} vox  {sid}{flag}")
-        out_lab = nib.Nifti1Image(arr, lab.affine)
-        clean_header(out_lab)
-        out_lab.header.set_intent("label")
-        nib.save(out_lab, out / "labels.nii.gz")
-    else:
-        # empty label map on the reference grid, ready for author mode
-        empty = nib.Nifti1Image(np.zeros(ref.shape, np.uint16), ref.affine)
-        clean_header(empty)
-        empty.header.set_intent("label")
-        nib.save(empty, out / "labels.nii.gz")
-
-    meta = {
-        "case_id": args.case_id, "title": args.title, "region": args.region, "side": args.side,
-        "modality": "MR", "synthetic": False, "source": args.source, "licence": args.licence,
-        "citation": args.citation, "reference_sequence": seqs[0]["id"], "sequences": seqs,
-        "default_plane": args.plane,
-    }
-    (out / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
-    (out / "lut.json").write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n")
-    if not (out / "points.json").exists():
-        (out / "points.json").write_text("[]\n")
-    points = json.loads((out / "points.json").read_text())
-
-    idx_path = ROOT / "data" / "index.json"
-    cases = json.loads(idx_path.read_text()) if idx_path.exists() else []
-    cases = [c for c in cases if c["case_id"] != args.case_id]
-    cases.append({"case_id": args.case_id, "title": args.title, "region": args.region, "modality": "MR",
-                  "sequences": [s["id"] for s in seqs], "structure_count": len(lut) + len(points),
-                  "synthetic": False})
-    idx_path.write_text(json.dumps(cases, indent=2, ensure_ascii=False) + "\n")
-    print(f"wrote {out.relative_to(ROOT)}  ({len(lut)} labelled structures)")
+    build_case(ROOT, args.case_id, title=args.title, region=args.region,
+               seqs=[(sid, label, Path(path)) for sid, label, path in args.seq],
+               labels=args.labels, mapping=mapping, side=args.side, plane=args.plane,
+               source=args.source, licence=args.licence, citation=args.citation)
 
 
 if __name__ == "__main__":

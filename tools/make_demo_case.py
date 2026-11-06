@@ -18,6 +18,8 @@ import nibabel as nib
 import numpy as np
 from scipy import ndimage as ndi
 
+from atlaslib import lut_entry, register_case
+
 ROOT = Path(__file__).resolve().parents[1]
 CASE_ID = "demo-knee-synthetic"
 OUT = ROOT / "data" / CASE_ID
@@ -250,17 +252,8 @@ def main() -> None:
         if k == "bone":  # dark cortex
             cortex = m & ~erode(m, 1.6)
             pdfs[cortex], pd[cortex] = 60, 60
-        idx = np.argwhere(m)
-        c_vox = idx.mean(0) if len(idx) else np.zeros(3)
-        # centroid snapped to a voxel inside the structure
-        if len(idx):
-            c_vox = idx[np.argmin(((idx - c_vox) ** 2).sum(1))]
-        c_mm = (AFFINE @ np.r_[c_vox, 1])[:3]
-        lut[str(i)] = {
-            "id": sid, "name": NAMES[sid], "rgb": jitter(rgb, i), "class": k,
-            "voxels": int(m.sum()), "centroid_vox": [int(v) for v in c_vox],
-            "centroid_mm": [round(float(v), 1) for v in c_mm],
-        }
+        if m.any():
+            lut[str(i)] = {**lut_entry(m, AFFINE, sid, NAMES[sid], jitter(rgb, i)), "class": k}
 
     # MRI-ish: blur, bias field, noise
     bias = 1 + 0.12 * (Y / 60) - 0.06 * (np.abs(Z) / 75)
@@ -313,13 +306,9 @@ def main() -> None:
     (OUT / "lut.json").write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n")
     (OUT / "points.json").write_text(json.dumps(points, indent=2, ensure_ascii=False) + "\n")
 
-    idx_path = ROOT / "data" / "index.json"
-    cases = json.loads(idx_path.read_text()) if idx_path.exists() else []
-    cases = [c for c in cases if c["case_id"] != CASE_ID]
-    cases.append({"case_id": CASE_ID, "title": meta["title"], "region": "knee", "modality": "MR",
-                  "sequences": [s["id"] for s in seqs], "structure_count": len(lut) + len(points),
-                  "synthetic": True})
-    idx_path.write_text(json.dumps(cases, indent=2, ensure_ascii=False) + "\n")
+    register_case(ROOT, {"case_id": CASE_ID, "title": meta["title"], "region": "knee", "modality": "MR",
+                         "sequences": [s["id"] for s in seqs], "structure_count": len(lut) + len(points),
+                         "synthetic": True, "side": "right"})
     print(f"wrote {OUT.relative_to(ROOT)}  shape={SHAPE}  regions={len(lut)}  points={len(points)}")
 
 
