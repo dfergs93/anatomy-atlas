@@ -70,7 +70,13 @@
     font-size: 12px; pointer-events: none;
   }
   #sliceRow { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--surface); border-top: 1px solid var(--border); }
-  #slice { flex: 1; }
+  #sliderWrap { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  #slice { width: 100%; }
+  #followBar { height: 4px; margin: 0 8px; border-radius: 2px; }
+  #followRow { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  #followRow[hidden], #followBar[hidden] { display: none; }
+  #followName { font-weight: 600; max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+  #followRow .group button { min-height: 26px; padding: 2px 8px; font-size: 12px; }
   #sliceLabel { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 70px; text-align: right; }
   #hoverbar {
     min-height: 40px; padding: 8px 12px; font-size: 17px; font-weight: 600;
@@ -119,6 +125,7 @@
     .wide-only, #diag { display: none !important; }
     #hoverbar { min-height: 34px; padding: 6px 16px; font-size: 16px; }
     #sliceRow { padding: 4px 16px; }
+    #followName { display: none; }
   }
 </style>
 </head>
@@ -157,8 +164,19 @@
       <div id="fatal"><div id="fatalMsg"></div></div>
     </div>
     <div id="sliceRow">
-      <input id="slice" type="range" min="0" max="0" value="0" aria-label="Slice">
+      <div id="sliderWrap">
+        <input id="slice" type="range" min="0" max="0" value="0" aria-label="Slice">
+        <div id="followBar" hidden></div>
+      </div>
       <span id="sliceLabel"></span>
+      <span id="followRow" class="full-only" hidden>
+        <span id="followName"></span><span id="followRange" class="muted"></span>
+        <span class="group" role="group" aria-label="Jump within the structure">
+          <button data-jump="start" title="First slice it is on">Start</button>
+          <button data-jump="widest" title="Where it looks widest">Widest</button>
+          <button data-jump="end" title="Last slice it is on">End</button>
+        </span>
+      </span>
     </div>
     <div id="hoverbar"><span class="none">Hover over a structure</span></div>
     <div id="diag" class="full-only"></div>
@@ -358,6 +376,7 @@ function setPlane(plane) {
   applyLayout();
   pressed("planeGroup", "plane", state.plane);
   syncSlider();
+  updateFollow();
 }
 narrowMQ.addEventListener("change", () => { if (nv.volumes.length) applyLayout(); });
 
@@ -371,7 +390,7 @@ function applyOverlay() {
 }
 
 function activeValue() {
-  const t = state.hover || state.selected;
+  const t = state.selected || state.hover; // the followed structure stays lit; hover only names others
   return t && t.kind === "region" ? t.value : 0;
 }
 
@@ -540,21 +559,72 @@ canvas.addEventListener("pointerup", (e) => {
   if (e.pointerType !== "mouse") { state.hover = null; showHover(t || state.selected); }
 });
 
-function select(t, { center = false } = {}) {
+// Selecting a structure = following it. toWidest (find, related chips): jump to where it looks widest.
+function select(t, { toWidest = false } = {}) {
   state.selected = t;
   document.body.classList.toggle("has-selection", !!t);
   showHover(t);
-  if (t && center) {
-    const mm = t.kind === "region" ? state.lut[t.value].centroid_mm : state.points.find((p) => p.id === t.id).xyz_mm;
-    nv.scene.crosshairPos = nv.mm2frac(mm);
-    nv.drawScene();
-    nv.createOnLocationChange();
+  if (t && toWidest) {
+    if (followRange()) jump("widest");
+    else {  // no extent in lut.json (older case): centre on the centroid as before
+      const mm = t.kind === "region" ? state.lut[t.value].centroid_mm : state.points.find((p) => p.id === t.id).xyz_mm;
+      moveCursor(nv.mm2frac(mm));
+    }
   }
   lastActive = -1;
   refreshHighlight(true);
   drawMarkers();
+  updateFollow();
   if (MODE !== "sidebar") showPanel(t);
 }
+
+// ---------- follow a structure ----------
+// Slice (on the main plane, current sequence grid) at world coordinate mm along that plane's axis.
+function mmToIndex(mm) {
+  const ax = PLANE_AXIS[state.plane];
+  const p = Array.from(nv.frac2mm(nv.scene.crosshairPos)).slice(0, 3);
+  p[ax] = mm;
+  return frac2vox(nv.mm2frac(p), 0)[ax];
+}
+
+// Slices the selected structure is on in the main plane: {start, end, widest}, or null.
+function followRange() {
+  const t = state.selected;
+  if (!t || !nv.volumes.length) return null;
+  const ax = PLANE_AXIS[state.plane];
+  const n = axisDims()[ax];
+  if (t.kind === "region") {
+    const ext = state.lut[t.value] && state.lut[t.value].extent;
+    return core.sliceRange(ext && ext[state.plane], mmToIndex, n);
+  }
+  const p = state.points.find((q) => q.id === t.id);
+  if (!p) return null;
+  const pix = nv.volumes[0].pixDimsRAS ? nv.volumes[0].pixDimsRAS[ax + 1] : 1;
+  const half = Math.floor(Math.max(1.5, 1.5 * pix) / pix); // same window drawMarkers shows the marker in
+  return core.pointRange(frac2vox(nv.mm2frac(p.xyz_mm), 0)[ax], half, n);
+}
+
+function jump(which) {
+  const t = state.selected;
+  const r = followRange();
+  if (!t || !r) return;
+  if (which !== "widest") return setSlice(r[which]);
+  // widest: main view on that slice, small views through the structure
+  const mm = t.kind === "region" ? state.lut[t.value].extent[state.plane].anchor_mm : state.points.find((p) => p.id === t.id).xyz_mm;
+  moveCursor(nv.mm2frac(mm));
+}
+
+function updateFollow() {
+  const r = MODE === "sidebar" ? null : followRange();
+  $("followRow").hidden = !r;
+  $("followBar").hidden = !r;
+  if (!r) { $("followBar").style.background = ""; return; }
+  const n = axisDims()[PLANE_AXIS[state.plane]];
+  $("followName").textContent = state.selected.name;
+  $("followRange").textContent = r.start === r.end ? `slice ${r.start + 1}` : `slices ${r.start + 1}–${r.end + 1}`;
+  $("followBar").style.background = core.trackGradient(r.start, r.end, n, "var(--refline)", "transparent");
+}
+$("followRow").addEventListener("click", (e) => { const w = e.target.dataset.jump; if (w) jump(w); });
 
 nv.onLocationChange = () => {
   syncSlider();
@@ -640,10 +710,12 @@ async function loadLabel(id) {
   return state.labelCache[id];
 }
 
+const HELP_HTML = $("help").outerHTML; // kept: the panel body is replaced when a structure is shown
+
 async function showPanel(t) {
   const body = $("panelBody");
   if (!t) {
-    body.innerHTML = '<p class="muted">Click a structure for details.</p>' + $("help").outerHTML;
+    body.innerHTML = '<p class="muted">Click a structure for details.</p>' + HELP_HTML;
     return;
   }
   const L = await loadLabel(t.id);
@@ -670,7 +742,7 @@ async function showPanel(t) {
   for (const b of body.querySelectorAll("[data-goto]")) {
     const target = findById(b.dataset.goto);
     if (!target) b.disabled = true;
-    b.addEventListener("click", () => target && select(target, { center: true }));
+    b.addEventListener("click", () => target && select(target, { toWidest: true }));
   }
 }
 
@@ -713,7 +785,7 @@ $("zoomOut").addEventListener("click", () => zoom(0.8));
 $("resetView").addEventListener("click", resetView);
 $("find").addEventListener("change", (e) => {
   const t = findByName(e.target.value);
-  if (t) { select(t, { center: true }); e.target.blur(); }
+  if (t) { select(t, { toWidest: true }); e.target.blur(); }
 });
 
 function zoom(f) {
@@ -747,7 +819,7 @@ document.addEventListener("keydown", (e) => {
   else if (k === "Escape") select(null);
 });
 
-window.atlas = { nv, state, core, pickAt, select, findByName, setSlice, setPlane, applyLayout, isHero }; // for testing / console
+window.atlas = { nv, state, core, pickAt, select, findByName, setSlice, setPlane, applyLayout, isHero, followRange, jump, mmToIndex }; // for testing / console
 init().catch((e) => { console.error(e); fatal(`<h2>Failed to load</h2><p>${escapeHTML(e.message)}</p>`); });
 </script>
 </body>
