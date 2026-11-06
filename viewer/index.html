@@ -138,6 +138,10 @@
     <button data-plane="coronal" title="Coronal (2)">Cor</button>
     <button data-plane="axial" title="Axial (3)">Ax</button>
   </div>
+  <div class="group full-only" id="sideGroup" role="group" aria-label="Side" hidden>
+    <button data-side="right" title="Right knee">R</button>
+    <button data-side="left" title="Left knee (mirrored copy)">L</button>
+  </div>
   <div class="group full-only" id="overlayGroup" role="group" aria-label="Overlay">
     <button data-overlay="off" title="Overlay off — hover still highlights (O)">Off</button>
     <button data-overlay="outline">Outline</button>
@@ -277,7 +281,10 @@ async function init() {
     return;
   }
   const sel = $("caseSel");
-  sel.innerHTML = state.cases.map((c) => `<option value="${c.case_id}">${c.title || c.case_id}</option>`).join("");
+  const opts = (list) => list.map((c) => `<option value="${escapeHTML(c.case_id)}">${escapeHTML(c.title || c.case_id)}</option>`).join("");
+  const groups = core.pickerGroups(state.cases);
+  sel.innerHTML = `<optgroup label="Cases">${opts(groups.cases)}</optgroup>` +
+    (groups.candidates.length ? `<optgroup label="Candidates — pick one">${opts(groups.candidates)}</optgroup>` : "");
   const want = params.get("case");
   const first = state.cases.find((c) => c.case_id === want) || state.cases[0];
   if (!first) return fatal("<h2>No cases in data/index.json</h2>");
@@ -285,7 +292,9 @@ async function init() {
   await loadCase(first.case_id);
 }
 
-async function loadCase(caseId) {
+const OTHER_SIDE = { right: "left", left: "right" };
+
+async function loadCase(caseId, { keepPlane = false } = {}) {
   const base = `${DATA}${caseId}/`;
   const [meta, lut, points] = await Promise.all([
     getJSON(base + "meta.json"),
@@ -293,8 +302,16 @@ async function loadCase(caseId) {
     getJSON(base + "points.json").catch(() => []),
   ]);
   Object.assign(state, { caseId, meta, lut, points, selected: null, hover: null });
-  $("banner").hidden = !meta.synthetic;
-  $("banner").textContent = "Synthetic test data — shapes, not anatomy";
+  $("caseSel").value = caseId;
+  document.body.classList.remove("has-selection");
+  if (MODE !== "sidebar") showPanel(null);
+  const notes = [];
+  if (meta.synthetic) notes.push("Synthetic test data — shapes, not anatomy");
+  if (meta.mirror_of) notes.push(`Mirrored copy of the ${OTHER_SIDE[meta.side] || "other"} ${meta.region || "side"}`);
+  $("banner").hidden = !notes.length;
+  $("banner").textContent = notes.join(" · ");
+  $("sideGroup").hidden = !core.counterpart(state.cases, caseId);
+  pressed("sideGroup", "side", meta.side);
 
   $("seqGroup").innerHTML = meta.sequences
     .map((s) => `<button data-seq="${s.id}">${s.label}</button>`).join("");
@@ -306,8 +323,10 @@ async function loadCase(caseId) {
   ].sort();
   $("structList").innerHTML = names.map((n) => `<option value="${n}">`).join("");
 
-  const wantPlane = params.get("plane") || meta.default_plane;
-  state.plane = wantPlane in PLANE_AXIS ? wantPlane : "sagittal";
+  if (!keepPlane) {
+    const wantPlane = params.get("plane") || meta.default_plane;
+    state.plane = wantPlane in PLANE_AXIS ? wantPlane : "sagittal";
+  }
   await loadSequence(params.get("seq") || meta.reference_sequence || meta.sequences[0].id, true);
 }
 
@@ -771,6 +790,22 @@ function nameFor(id) {
 
 // ---------- controls ----------
 $("caseSel").addEventListener("change", (e) => loadCase(e.target.value));
+$("sideGroup").addEventListener("click", (e) => {
+  const side = e.target.dataset.side;
+  if (side && side !== state.meta.side) switchSide();
+});
+
+// Right ↔ left: open the mirrored copy at the mirrored spot, same plane, same structure.
+async function switchSide() {
+  const other = core.counterpart(state.cases, state.caseId);
+  if (!other) return;
+  const mm = Array.from(nv.frac2mm(nv.scene.crosshairPos)).slice(0, 3);
+  const selId = state.selected && state.selected.id;
+  await loadCase(other, { keepPlane: true });
+  moveCursor(nv.mm2frac(core.mirrorMM(mm)));
+  const t = selId && findById(selId);
+  if (t) select(t);
+}
 $("seqGroup").addEventListener("click", (e) => { const s = e.target.dataset.seq; if (s && s !== state.seqId) loadSequence(s); });
 $("planeGroup").addEventListener("click", (e) => { const p = e.target.dataset.plane; if (p) setPlane(p); });
 $("overlayGroup").addEventListener("click", (e) => { const o = e.target.dataset.overlay; if (o) { state.overlay = o; applyOverlay(); nv.updateGLVolume(); } });
@@ -819,7 +854,7 @@ document.addEventListener("keydown", (e) => {
   else if (k === "Escape") select(null);
 });
 
-window.atlas = { nv, state, core, pickAt, select, findByName, setSlice, setPlane, applyLayout, isHero, followRange, jump, mmToIndex }; // for testing / console
+window.atlas = { nv, state, core, pickAt, select, findByName, setSlice, setPlane, applyLayout, isHero, followRange, jump, mmToIndex, switchSide }; // for testing / console
 init().catch((e) => { console.error(e); fatal(`<h2>Failed to load</h2><p>${escapeHTML(e.message)}</p>`); });
 </script>
 </body>

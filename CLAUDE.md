@@ -165,22 +165,24 @@ Only for joints with no public data. One session, no repositioning: 3D isotropic
 
 ## Viewer (`viewer/index.html`)
 
-Built (Phase 0):
+Built:
 
-- Case picker · sequence toggle · plane (sagittal / coronal / axial / 3-up)
+- Case picker (grouped: cases, then any "Candidates — pick one") · sequence toggle · plane (sagittal / coronal / axial, keys `1`–`3`)
+- **Main view + two small reference views** (standalone, window wider than 760 px): the main plane large on the left, the other two planes stacked on the right. Each small view draws a reference line where the main slice cuts it; pointing in the main view puts a ring at that spot in both small views (they do not move on hover). Click in the main view → small views move through that point (+ details if a structure is there; empty space keeps the selection). Click a small view → the main view jumps there. Wheel over a small view does nothing; over the main view it steps the main slice (handled by the viewer, so the small views stay put). Sidebar mode and narrow windows keep a single view.
+- **Follow a structure**: selecting (click, find `/`, related chips) keeps it lit — hover only names others — and marks its slice range on a bar under the slider, with Start / Widest / End jumps. Find and chips land on its widest slice with the small views through it. Ranges come from per-plane `extent` (mm) in `lut.json`; cases without it just hide the follow controls. `Esc` clears.
+- **Right / left**: a case and its mirrored copy (`tools/mirror_case.py`, world x → −x) are linked in `data/index.json` (`mirror` / `mirror_of`); the R | L switch opens the other at the mirrored spot with the same plane and structure. A banner marks mirrored copies.
 - Display conventions: radiological (patient right on screen left); sagittal anterior on screen left
-- Wheel or ↑/↓ = slice · slider = slice (touch) · left-drag = window/level · right-drag = pan · +/− zoom · R reset
-- Hover → structure name below the image + highlight of that structure (even with overlay off)
+- ↑/↓ = slice · slider = slice (touch) · left-drag = window/level · right-drag = pan · +/− zoom · R reset
 - Click → side panel with full label content; “Draft — not reviewed” badge until `reviewed: true`
 - Overlay: off / outline / fill, opacity slider
-- Find structure (`/`): jumps to the structure’s centroid slice and highlights it
-- Point labels drawn as markers on nearby slices
-- WebGL2 check with a clear message if unavailable; GPU name shown at the bottom (for the workstation test)
-- `?mode=sidebar`: image, slider, case/sequence/plane, hover name — no panel, find, overlay controls
+- Point labels drawn as markers on nearby slices (main view only)
+- WebGL2 check with a clear message if unavailable; GPU name shown at the bottom
+- `?mode=sidebar`: image, slider, case/sequence/plane, hover name — no panel, find, overlay or follow controls
+- Pure helpers live in `viewer/core.js` (tested: `node --test "tests/viewer/*.test.mjs"`); NiiVue glue stays in `index.html`
 
-To do: author mode (Phase D), 3-up hover markers, keyboard focus polish.
+To do: painting mode (spec §5), keyboard focus polish.
 
-**Risk:** NiiVue needs WebGL2. Confirm it runs on the reading-room workstation (and any VDI/Citrix setup). Fallback if not: pre-rendered PNG stacks + SVG polygon overlay.
+**Checked:** NiiVue (WebGL2) runs on the owner's M4 Pro Mac (ANGLE Metal). OAI DESS volumes are ~4° oblique; NiiVue warns and shows them in voxel space.
 
 -----
 
