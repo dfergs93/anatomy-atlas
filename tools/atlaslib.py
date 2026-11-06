@@ -112,7 +112,7 @@ def read_index(root: Path) -> list[dict]:
     return json.loads(p.read_text()) if p.exists() else []
 
 
-def _write_index(root: Path, cases: list[dict]) -> None:
+def write_index(root: Path, cases: list[dict]) -> None:
     p = index_path(root)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(cases, indent=2, ensure_ascii=False) + "\n")
@@ -122,7 +122,7 @@ def register_case(root: Path, entry: dict) -> None:
     """Add entry to data/index.json, replacing any entry with the same case_id."""
     cases = [c for c in read_index(root) if c["case_id"] != entry["case_id"]]
     cases.append(entry)
-    _write_index(root, cases)
+    write_index(root, cases)
 
 
 def patch_case(root: Path, case_id: str, fields: dict) -> None:
@@ -133,4 +133,4 @@ def patch_case(root: Path, case_id: str, fields: dict) -> None:
             break
     else:
         raise KeyError(f"{case_id} is not in data/index.json")
-    _write_index(root, cases)
+    write_index(root, cases)
