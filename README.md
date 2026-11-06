@@ -19,7 +19,7 @@ Sidebar view (as embedded in ARIA): `http://127.0.0.1:8004/viewer/?mode=sidebar`
 ```
 venv/bin/pip install -r requirements-dev.txt
 venv/bin/python -m pytest
-node --test tests/viewer/
+node --test "tests/viewer/*.test.mjs"
 ```
 
 ## Add a real case
