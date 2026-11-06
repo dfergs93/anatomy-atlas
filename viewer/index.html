@@ -19,6 +19,7 @@
     --draft-bg: #2b2140;
     --draft-text: #cdb6ff;
     --radius: 6px;
+    --refline: #e0a458;
     --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; }
@@ -55,6 +56,14 @@
     background: #fff; border: 2px solid #000; box-shadow: 0 0 0 1px #fff;
   }
   .marker.active { background: var(--accent); }
+  #reflines { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .refline { position: absolute; background: var(--refline); opacity: .85; }
+  .refline.v { width: 1px; }
+  .refline.h { height: 1px; }
+  .hovermark {
+    position: absolute; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 50%;
+    border: 2px solid var(--refline); box-shadow: 0 0 0 1px #000;
+  }
   #banner {
     position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 2;
     background: var(--warn-bg); color: var(--warn-text); padding: 4px 10px; border-radius: var(--radius);
@@ -121,7 +130,6 @@
     <button data-plane="sagittal" title="Sagittal (1)">Sag</button>
     <button data-plane="coronal" title="Coronal (2)">Cor</button>
     <button data-plane="axial" title="Axial (3)">Ax</button>
-    <button data-plane="multi" title="3-up (4)" class="full-only">3-up</button>
   </div>
   <div class="group full-only" id="overlayGroup" role="group" aria-label="Overlay">
     <button data-overlay="off" title="Overlay off — hover still highlights (O)">Off</button>
@@ -144,6 +152,7 @@
     <div id="canvasWrap">
       <canvas id="gl" tabindex="0"></canvas>
       <div id="markers"></div>
+      <div id="reflines"></div>
       <div id="banner" hidden></div>
       <div id="fatal"><div id="fatalMsg"></div></div>
     </div>
@@ -158,8 +167,8 @@
     <div id="panelBody">
       <p class="muted">Click a structure for details.</p>
       <div id="help">
-        <p><b>Mouse:</b> wheel = scroll slices · left-drag = window/level · right-drag = pan · click = details</p>
-        <p><b>Keys:</b> <kbd>↑</kbd><kbd>↓</kbd> slice · <kbd>1</kbd>–<kbd>4</kbd> plane · <kbd>O</kbd> overlay · <kbd>R</kbd> reset · <kbd>/</kbd> find</p>
+        <p><b>Mouse:</b> wheel = scroll slices · left-drag = window/level · right-drag = pan · click = details · click a small view to jump there</p>
+        <p><b>Keys:</b> <kbd>↑</kbd><kbd>↓</kbd> slice · <kbd>1</kbd>–<kbd>3</kbd> plane · <kbd>O</kbd> overlay · <kbd>R</kbd> reset · <kbd>/</kbd> find · <kbd>Esc</kbd> clear</p>
         <p><b>Touch:</b> slider = slices · tap = name + details · drag = window/level</p>
       </div>
     </div>
@@ -167,6 +176,7 @@
 </main>
 
 <script src="vendor/niivue.umd.js"></script>
+<script src="core.js"></script>
 <script>
 "use strict";
 const params = new URLSearchParams(location.search);
@@ -176,13 +186,15 @@ const LABELS = params.get("labels") || "../labels/";
 if (MODE === "sidebar") document.body.classList.add("sidebar");
 
 const $ = (id) => document.getElementById(id);
-const PLANE_AXIS = { sagittal: 0, coronal: 1, axial: 2 };
+const core = window.atlasCore;
+const PLANE_AXIS = core.PLANE_AXIS;
+const narrowMQ = matchMedia("(max-width: 760px)");
 const POINT_RADIUS_MM = 4;
 
 const state = {
   cases: [], caseId: null, meta: null, lut: {}, points: [],
   seqId: null, plane: "sagittal", overlay: "off", opacity: 0.4,
-  hover: null, selected: null, mouse: null, labelCache: {},
+  hover: null, selected: null, mouse: null, hoverFrac: null, labelCache: {},
 };
 
 function fatal(html) {
@@ -190,7 +202,7 @@ function fatal(html) {
   $("fatal").style.display = "flex";
 }
 
-// ---------- WebGL2 check (Phase 0: does this run on the reading-room workstation?) ----------
+// ---------- WebGL2 check ----------
 function webglInfo() {
   const c = document.createElement("canvas");
   const gl = c.getContext("webgl2");
@@ -276,7 +288,8 @@ async function loadCase(caseId) {
   ].sort();
   $("structList").innerHTML = names.map((n) => `<option value="${n}">`).join("");
 
-  state.plane = params.get("plane") || meta.default_plane || "sagittal";
+  const wantPlane = params.get("plane") || meta.default_plane;
+  state.plane = wantPlane in PLANE_AXIS ? wantPlane : "sagittal";
   await loadSequence(params.get("seq") || meta.reference_sequence || meta.sequences[0].id, true);
 }
 
@@ -317,15 +330,36 @@ function pressed(groupId, attr, value) {
   for (const b of $(groupId).querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset[attr] === value));
 }
 
+function sliceTypes() {
+  return { sagittal: nv.sliceTypeSagittal, coronal: nv.sliceTypeCoronal, axial: nv.sliceTypeAxial };
+}
+
+function mainSliceType() {
+  return sliceTypes()[state.plane];
+}
+
+function planeOfType(type) {
+  return core.PLANES.find((p) => sliceTypes()[p] === type);
+}
+
+// Main view + two small reference views: standalone mode on a wide enough window.
+function isHero() {
+  return MODE === "standalone" && !narrowMQ.matches;
+}
+
+function applyLayout() {
+  if (isHero()) nv.setCustomLayout(core.layoutFor(state.plane, sliceTypes()));
+  else { nv.clearCustomLayout(); nv.setSliceType(mainSliceType()); }
+  drawRefLines();
+}
+
 function setPlane(plane) {
-  state.plane = plane;
-  const st = { sagittal: nv.sliceTypeSagittal, coronal: nv.sliceTypeCoronal, axial: nv.sliceTypeAxial, multi: nv.sliceTypeMultiplanar }[plane];
-  nv.setCrosshairWidth(plane === "multi" ? 1 : 0);
-  nv.setSliceType(st);
-  pressed("planeGroup", "plane", plane);
-  $("sliceRow").style.visibility = plane === "multi" ? "hidden" : "visible";
+  state.plane = plane in PLANE_AXIS ? plane : "sagittal";
+  applyLayout();
+  pressed("planeGroup", "plane", state.plane);
   syncSlider();
 }
+narrowMQ.addEventListener("change", () => { if (nv.volumes.length) applyLayout(); });
 
 function applyOverlay() {
   if (nv.volumes.length < 2) return;
@@ -371,7 +405,7 @@ function currentVox() {
 }
 
 function syncSlider() {
-  if (!nv.volumes.length || state.plane === "multi") return;
+  if (!nv.volumes.length) return;
   const ax = PLANE_AXIS[state.plane];
   const n = axisDims()[ax];
   const v = Math.round(currentVox()[ax]);
@@ -392,11 +426,36 @@ function setSlice(index) {
 }
 
 // ---------- picking ----------
+function dprOf() {
+  return nv.uiData.dpr || window.devicePixelRatio || 1;
+}
+
+// Volume fraction under a CSS-pixel canvas point, or null off the image.
+function fracAt(cssX, cssY) {
+  const dpr = dprOf();
+  const frac = nv.canvasPos2frac([cssX * dpr, cssY * dpr]);
+  return frac && frac[0] >= 0 ? frac : null;
+}
+
+// Which tile a CSS-pixel point is over: "main", "small" or null (gap / off the image).
+function tileKind(cssX, cssY) {
+  if (!isHero()) return "main";
+  const dpr = dprOf();
+  const i = core.tileAt(nv.screenSlices, cssX * dpr, cssY * dpr);
+  if (i < 0) return null;
+  return nv.screenSlices[i].axCorSag === mainSliceType() ? "main" : "small";
+}
+
+function moveCursor(frac) {
+  nv.scene.crosshairPos = frac;
+  nv.drawScene();
+  nv.createOnLocationChange();
+}
+
 function pickAt(cssX, cssY) {
   if (nv.volumes.length < 2) return null;
-  const dpr = nv.uiData.dpr || window.devicePixelRatio || 1;
-  const frac = nv.canvasPos2frac([cssX * dpr, cssY * dpr]);
-  if (!frac || frac[0] < 0) return null;
+  const frac = fracAt(cssX, cssY);
+  if (!frac) return null;
   const mm = nv.frac2mm(frac);
   // points first: small structures win over the region they sit in
   let best = null;
@@ -423,14 +482,28 @@ const canvas = $("gl");
 canvas.addEventListener("mousemove", (e) => {
   state.mouse = [e.offsetX, e.offsetY];
   if (e.buttons) return; // dragging (W/L, pan)
+  state.hoverFrac = tileKind(e.offsetX, e.offsetY) === "main" ? fracAt(e.offsetX, e.offsetY) : null;
   updateHover();
+  drawRefLines();
 });
 canvas.addEventListener("mouseleave", () => {
   state.mouse = null;
   state.hover = null;
+  state.hoverFrac = null;
   showHover(state.selected);
   refreshHighlight();
+  drawRefLines();
 });
+
+// In the main + small views layout the wheel only steps the main view's slice. NiiVue's own wheel
+// handling would also move the cursor to the pointer (and so the small views); over a small view
+// the wheel does nothing.
+$("canvasWrap").addEventListener("wheel", (e) => {
+  if (!isHero()) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (tileKind(e.offsetX, e.offsetY) === "main" && e.deltaY) setSlice(Number($("slice").value) + (e.deltaY > 0 ? 1 : -1)); // same direction as NiiVue's
+}, { capture: true, passive: false });
 
 function updateHover() {
   if (!state.mouse) return;
@@ -451,9 +524,20 @@ canvas.addEventListener("pointerup", (e) => {
   const moved = Math.hypot(e.offsetX - down[0], e.offsetY - down[1]);
   down = null;
   if (moved > 4) return;
+  if (!isHero()) {  // single view (sidebar, phone): as before — tap empty space to clear
+    const t = pickAt(e.offsetX, e.offsetY);
+    select(t);
+    if (e.pointerType !== "mouse") { state.hover = null; showHover(t); }
+    return;
+  }
+  const kind = tileKind(e.offsetX, e.offsetY);
+  const frac = fracAt(e.offsetX, e.offsetY);
+  if (!kind || !frac) return;
+  if (kind === "small") { moveCursor(frac); return; }  // jump the main view there; selection unchanged
   const t = pickAt(e.offsetX, e.offsetY);
-  select(t);
-  if (e.pointerType !== "mouse") { state.hover = null; showHover(t); }
+  moveCursor(frac);  // small views now pass through the clicked point
+  if (t) select(t);  // empty space keeps what is being followed; Esc clears
+  if (e.pointerType !== "mouse") { state.hover = null; showHover(t || state.selected); }
 });
 
 function select(t, { center = false } = {}) {
@@ -482,15 +566,16 @@ nv.onLocationChange = () => {
 function drawMarkers() {
   const layer = $("markers");
   layer.innerHTML = "";
-  if (state.plane === "multi" || !nv.volumes.length || !state.points.length) return;
+  if (!nv.volumes.length || !state.points.length) return;
   const ax = PLANE_AXIS[state.plane];
   const here = nv.frac2mm(nv.scene.crosshairPos);
-  const dpr = nv.uiData.dpr || window.devicePixelRatio || 1;
+  const dpr = dprOf();
   const pix = nv.volumes[0].pixDimsRAS ? nv.volumes[0].pixDimsRAS[ax + 1] : 1;
   for (const p of state.points) {
     if (Math.abs(p.xyz_mm[ax] - here[ax]) > Math.max(1.5, pix * 1.5)) continue;
-    const pos = nv.frac2canvasPos(nv.mm2frac(p.xyz_mm));
-    if (!pos) continue;
+    const hit = nv.frac2canvasPosWithTile(nv.mm2frac(p.xyz_mm), mainSliceType());
+    if (!hit) continue;
+    const pos = hit.pos;
     const m = document.createElement("div");
     const active = (state.hover && state.hover.id === p.id) || (state.selected && state.selected.id === p.id);
     m.className = "marker" + (active ? " active" : "");
@@ -499,10 +584,51 @@ function drawMarkers() {
     layer.appendChild(m);
   }
 }
+// ---------- reference lines (small views) ----------
+// Each small view shows a line where the main view's slice cuts it, and — while the pointer is
+// over the main view — a ring at the pointer's spot projected onto that view.
+function drawRefLines() {
+  const layer = $("reflines");
+  layer.innerHTML = "";
+  if (!isHero() || !nv.volumes.length) return;
+  const dpr = dprOf();
+  const main = mainSliceType();
+  for (const tile of nv.screenSlices) {
+    const type = tile.axCorSag;
+    const plane = planeOfType(type);
+    if (type === main || !plane) continue;
+    const [l, t, w, h] = core.tileRect(tile.leftTopWidthHeight);
+    const hit = nv.frac2canvasPosWithTile(nv.scene.crosshairPos, type);
+    if (hit) {
+      const line = document.createElement("div");
+      if (core.refLineOrientation(state.plane, plane) === "vertical") {
+        line.className = "refline v";
+        Object.assign(line.style, { left: hit.pos[0] / dpr + "px", top: t / dpr + "px", height: h / dpr + "px" });
+      } else {
+        line.className = "refline h";
+        Object.assign(line.style, { left: l / dpr + "px", top: hit.pos[1] / dpr + "px", width: w / dpr + "px" });
+      }
+      layer.appendChild(line);
+    }
+    if (state.hoverFrac) {
+      const f = [...state.hoverFrac];
+      const ax = PLANE_AXIS[plane];
+      f[ax] = nv.scene.crosshairPos[ax]; // onto this small view's slice
+      const mark = nv.frac2canvasPosWithTile(f, type);
+      if (mark) {
+        const ring = document.createElement("div");
+        ring.className = "hovermark";
+        Object.assign(ring.style, { left: mark.pos[0] / dpr + "px", top: mark.pos[1] / dpr + "px" });
+        layer.appendChild(ring);
+      }
+    }
+  }
+}
+
 const _drawScene = nv.drawScene.bind(nv);
 nv.drawScene = function () {
   const r = _drawScene();
-  requestAnimationFrame(drawMarkers);
+  requestAnimationFrame(() => { drawMarkers(); drawRefLines(); });
   return r;
 };
 
@@ -612,7 +738,6 @@ document.addEventListener("keydown", (e) => {
   else if (k === "1") setPlane("sagittal");
   else if (k === "2") setPlane("coronal");
   else if (k === "3") setPlane("axial");
-  else if (k === "4" && MODE !== "sidebar") setPlane("multi");
   else if ((k === "o" || k === "O") && MODE !== "sidebar") {
     state.overlay = { off: "outline", outline: "fill", fill: "off" }[state.overlay];
     applyOverlay(); nv.updateGLVolume();
@@ -622,7 +747,7 @@ document.addEventListener("keydown", (e) => {
   else if (k === "Escape") select(null);
 });
 
-window.atlas = { nv, state, pickAt, select, findByName, setSlice, setPlane }; // for testing / console
+window.atlas = { nv, state, core, pickAt, select, findByName, setSlice, setPlane, applyLayout, isHero }; // for testing / console
 init().catch((e) => { console.error(e); fatal(`<h2>Failed to load</h2><p>${escapeHTML(e.message)}</p>`); });
 </script>
 </body>

@@ -48,6 +48,13 @@ test("tileAt finds the tile under a point, -1 in gaps and off-canvas", () => {
   assert.equal(core.tileAt(tiles, -5, 10), -1);
 });
 
+test("tileAt handles a tile drawn flipped (negative width or height)", () => {
+  const tiles = [{ leftTopWidthHeight: [700, 0, -700, 900] }, { leftTopWidthHeight: [704, 448, 296, -448] }];
+  assert.equal(core.tileAt(tiles, 350, 450), 0);
+  assert.equal(core.tileAt(tiles, 800, 100), 1);
+  assert.equal(core.tileAt(tiles, 800, 600), -1);
+});
+
 const ident = (mm) => Math.round(mm);
 
 test("sliceRange is null without an extent (old lut.json)", () => {

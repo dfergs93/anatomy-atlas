@@ -31,10 +31,18 @@
     return PLANE_AXIS[main] === screenX ? "vertical" : "horizontal";
   }
 
+  // A tile rectangle [left, top, width, height] with positive width and height (NiiVue flips some).
+  function tileRect(ltwh) {
+    let [l, t, w, h] = ltwh;
+    if (w < 0) { l += w; w = -w; }
+    if (h < 0) { t += h; h = -h; }
+    return [l, t, w, h];
+  }
+
   // Index of the tile (nv.screenSlices) containing canvas point x, y; -1 when none.
   function tileAt(tiles, x, y) {
     for (let i = 0; i < tiles.length; i++) {
-      const [l, t, w, h] = tiles[i].leftTopWidthHeight;
+      const [l, t, w, h] = tileRect(tiles[i].leftTopWidthHeight);
       if (x > l && y > t && x < l + w && y < t + h) return i;
     }
     return -1;
@@ -83,7 +91,7 @@
   }
 
   return {
-    PLANES, PLANE_AXIS, HERO_FRACTION, otherPlanes, layoutFor, refLineOrientation, tileAt,
+    PLANES, PLANE_AXIS, HERO_FRACTION, otherPlanes, layoutFor, refLineOrientation, tileRect, tileAt,
     sliceRange, pointRange, trackGradient, mirrorMM, counterpart, pickerGroups,
   };
 });
