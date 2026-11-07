@@ -1,0 +1,262 @@
+{
+ "1": {
+  "id": "femur",
+  "name": "Femur",
+  "rgb": [
+   242,
+   223,
+   177
+  ],
+  "voxels": 2177005,
+  "centroid_vox": [
+   80,
+   209,
+   252
+  ],
+  "centroid_mm": [
+   60.6,
+   3.6,
+   15.6
+  ],
+  "extent": {
+   "sagittal": {
+    "start_mm": 15.16,
+    "end_mm": 101.75,
+    "widest_mm": 80.1,
+    "anchor_mm": [
+     80.1,
+     2.27,
+     18.86
+    ]
+   },
+   "coronal": {
+    "start_mm": -32.58,
+    "end_mm": 34.34,
+    "widest_mm": 1.6,
+    "anchor_mm": [
+     58.3,
+     1.6,
+     18.14
+    ]
+   },
+   "axial": {
+    "start_mm": -21.97,
+    "end_mm": 63.34,
+    "widest_mm": 7.93,
+    "anchor_mm": [
+     58.98,
+     1.19,
+     7.93
+    ]
+   }
+  }
+ },
+ "2": {
+  "id": "femoral_cartilage",
+  "name": "Femoral cartilage",
+  "rgb": [
+   63,
+   126,
+   208
+  ],
+  "voxels": 168309,
+  "centroid_vox": [
+   90,
+   184,
+   181
+  ],
+  "centroid_mm": [
+   66.9,
+   -5.9,
+   -10.3
+  ],
+  "extent": {
+   "sagittal": {
+    "start_mm": 18.82,
+    "end_mm": 95.63,
+    "widest_mm": 73.98,
+    "anchor_mm": [
+     73.98,
+     -4.97,
+     -14.68
+    ]
+   },
+   "coronal": {
+    "start_mm": -36.57,
+    "end_mm": 34.72,
+    "widest_mm": -33.29,
+    "anchor_mm": [
+     71.3,
+     -33.29,
+     2.82
+    ]
+   },
+   "axial": {
+    "start_mm": -25.25,
+    "end_mm": 21.42,
+    "widest_mm": -17.23,
+    "anchor_mm": [
+     71.29,
+     -3.32,
+     -17.23
+    ]
+   }
+  }
+ },
+ "3": {
+  "id": "tibia",
+  "name": "Tibia",
+  "rgb": [
+   255,
+   241,
+   191
+  ],
+  "voxels": 1468069,
+  "centroid_vox": [
+   84,
+   184,
+   87
+  ],
+  "centroid_mm": [
+   62.7,
+   -5.6,
+   -44.6
+  ],
+  "extent": {
+   "sagittal": {
+    "start_mm": 21.01,
+    "end_mm": 103.41,
+    "widest_mm": 66.4,
+    "anchor_mm": [
+     66.4,
+     -2.98,
+     -47.85
+    ]
+   },
+   "coronal": {
+    "start_mm": -35.37,
+    "end_mm": 25.73,
+    "widest_mm": -9.19,
+    "anchor_mm": [
+     61.06,
+     -9.19,
+     -45.3
+    ]
+   },
+   "axial": {
+    "start_mm": -76.29,
+    "end_mm": -15.04,
+    "widest_mm": -32.54,
+    "anchor_mm": [
+     61.13,
+     -8.1,
+     -32.54
+    ]
+   }
+  }
+ },
+ "4": {
+  "id": "medial_tibial_cartilage",
+  "name": "Medial tibial cartilage",
+  "rgb": [
+   69,
+   138,
+   227
+  ],
+  "voxels": 17885,
+  "centroid_vox": [
+   48,
+   175,
+   143
+  ],
+  "centroid_mm": [
+   37.3,
+   -7.2,
+   -24.2
+  ],
+  "extent": {
+   "sagittal": {
+    "start_mm": 22.13,
+    "end_mm": 50.76,
+    "widest_mm": 47.97,
+    "anchor_mm": [
+     47.97,
+     -5.71,
+     -19.78
+    ]
+   },
+   "coronal": {
+    "start_mm": -29.03,
+    "end_mm": 17.88,
+    "widest_mm": -7.94,
+    "anchor_mm": [
+     37.99,
+     -7.94,
+     -23.79
+    ]
+   },
+   "axial": {
+    "start_mm": -28.17,
+    "end_mm": -15.41,
+    "widest_mm": -25.61,
+    "anchor_mm": [
+     33.9,
+     -6.19,
+     -25.61
+    ]
+   }
+  }
+ },
+ "5": {
+  "id": "lateral_tibial_cartilage",
+  "name": "Lateral tibial cartilage",
+  "rgb": [
+   59,
+   119,
+   196
+  ],
+  "voxels": 26848,
+  "centroid_vox": [
+   112,
+   155,
+   149
+  ],
+  "centroid_mm": [
+   81.5,
+   -17.6,
+   -22.0
+  ],
+  "extent": {
+   "sagittal": {
+    "start_mm": 66.14,
+    "end_mm": 99.65,
+    "widest_mm": 78.7,
+    "anchor_mm": [
+     78.7,
+     -17.73,
+     -22.7
+    ]
+   },
+   "coronal": {
+    "start_mm": -35.7,
+    "end_mm": 6.13,
+    "widest_mm": -22.24,
+    "anchor_mm": [
+     80.49,
+     -22.24,
+     -21.6
+    ]
+   },
+   "axial": {
+    "start_mm": -26.34,
+    "end_mm": -13.58,
+    "widest_mm": -22.33,
+    "anchor_mm": [
+     84.47,
+     -15.58,
+     -22.33
+    ]
+   }
+  }
+ }
+}

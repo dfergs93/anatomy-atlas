@@ -117,7 +117,7 @@ anatomy-atlas/
 |Licence          |CC BY-NC 4.0 (from search results — confirm on the HF page). Images derive from the OAI, so OAI terms also apply. Keep internal.|
 |Images           |Sagittal 3D DESS-WE, 3T Siemens, ~0.36 × 0.36 × 0.7 mm, NIfTI. Right knees, baseline visit.                            |
 |Labels           |Femur, femoral cartilage, tibia, medial + lateral tibial cartilage. **No patella, no menisci.**                          |
-|Normals          |103 KL0 knees; 17 are KL0 + age ≤ 55 + BMI 18.5–25. Candidate: OAI 9208055 (F, 46, BMI 21.7) — not yet reviewed.         |
+|Normals          |103 KL0 knees; 17 are KL0 + age ≤ 55 + BMI 18.5–25 (`tools/oaizib.py list`). **Chosen (owner, 2026-11-06): CMT-ID 036 = OAI 9172581 (M, 49, BMI 24.2), train split** → case `knee-mri`; `knee-mri-left` is its mirrored copy, generated locally with `tools/mirror_case.py knee-mri`.|
 |Size             |imagesTr.zip ≈ 10 GB, zip only (no single-subject download).                                                             |
 
 - **Pick the subject yourself.** KL0 is a radiograph grade, not a normal MRI — review for meniscal, marrow and ligament findings before adopting.
@@ -238,8 +238,8 @@ The ARIA Anatomy tab is a **pure labelled map**. Intentional — do not expand i
 From the design (spec §9). Phase 0 (viewer spike) is done; its workstation test is dropped.
 
 ```
-1. Real knee       → download OAIZIB-CM · owner reviews the 17 candidates and picks one · build + verify mapping/orientation · mirrored left copy
-2. Getting oriented→ reference lines + shared cursor · follow a structure (spec §4)
+1. Real knee       → download OAIZIB-CM · owner reviews the 17 candidates and picks one · build + verify mapping/orientation · mirrored left copy   ✓ done 2026-11-06 (subject 036)
+2. Getting oriented→ reference lines + shared cursor · follow a structure (spec §4)   ✓ done 2026-11-06
 3. Auto-labels     → big structures: DOSMA menisci + patellar cartilage · TotalSegmentator patella/fibula/muscles (spec §7.1)
 4. Painting mode   → checklist-driven, smart fill, fill between slices, grow, points, expected locations, save + backups, helper merge (spec §5)
 5. Core knee set   → owner paints; Claude drafts labels/*.json, owner reviews
