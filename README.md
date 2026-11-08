@@ -42,6 +42,6 @@ python3.13 -m venv venv-autoseg && venv-autoseg/bin/pip install -r requirements-
 venv/bin/python tools/autolabels.py knee-mri
 ```
 
-Existing labels always win, the case is backed up first, and the mirrored left copy is rebuilt. Patella and fibula need a free TotalSegmentator academic licence; see `CLAUDE.md` → Base auto-labels.
+Existing labels always win, the case is backed up first, and the mirrored left copy is rebuilt. Patella and fibula are painted; TotalSegmentator could add them with a free academic licence (see `CLAUDE.md` → Base auto-labels).
 
 Imaging files stay out of git. See `CLAUDE.md` for the full plan.

@@ -153,7 +153,7 @@ Checked on the owner's M4 Pro with subject 036 (2026-11-06):
 |----------------------------------------------|--------------------------------------------------------------|--------------------------------|
 |OAIZIB-CM ground truth                        |Femur, tibia, femoral + medial/lateral tibial cartilage       |CC BY-NC 4.0                    |
 |DOSMA `iwoai-2019-t6-normalized` (OAI DESS)   |Menisci (→ medial/lateral × anterior horn / body / posterior horn), patellar cartilage. CPU ~18 s; femoral cartilage Dice 0.756 vs ground truth (not used: ground truth wins)|GPL-3.0 (DOSMA's docs); weights public on Hugging Face `arjundd/dosma-models`|
-|TotalSegmentator `appendicular_bones_mr`      |Patella, fibula (tibia not used). MPS ~15 s; works at 1.5 mm, so outlines are blocky|Free academic licence, owner only — not set yet|
+|TotalSegmentator `appendicular_bones_mr`      |Patella, fibula (tibia not used). MPS ~15 s; works at 1.5 mm, so outlines are blocky|Free academic licence — **owner declined 2026-11-07** ("not worth it for two bones"): patella and fibula are painted|
 |TotalSegmentator `total_mr` (open)            |Only the femur on this knee. Covers gluteals, iliopsoas, hip bone → useful for the hip|Open                            |
 |Knee muscles (gastrocnemius, popliteus …)     |No model covers them → **painted**                            |—                               |
 
@@ -165,7 +165,7 @@ Checked on the owner's M4 Pro with subject 036 (2026-11-06):
   - DOSMA's package breaks on NumPy 2, so `tools/autoseg/dosma_unet.py` rebuilds its U-Net with tf_keras. Weights download once to `~/.cache/anatomy-atlas/dosma/`, checked against a pinned sha256.
   - Meniscus thirds are cut by angle round each meniscus's own ring centre, with the opening facing the notch. On knee-mri: medial 26 / 19 / 55 % (the posterior horn is the widest part), lateral 31 / 33 / 36 %.
   - The viewer's panel says "Outline drawn automatically (…) — not yet checked" for any structure with `"auto"`.
-- **Patella and fibula (owner's step):** fill the form at https://backend.totalsegmentator.com/license-academic/ (name, email, institution; internal non-commercial use) asking for `appendicular_bones_mr`, then `venv-autoseg/bin/totalseg_set_license -l aca_…` and re-run `tools/autolabels.py knee-mri`. The key lives in `~/.totalsegmentator/config.json`, never in the repo.
+- **Patella and fibula are painted** (owner declined the licence 2026-11-07). If that ever changes: fill the form at https://backend.totalsegmentator.com/license-academic/ (name, email, institution; internal non-commercial use) asking for `appendicular_bones_mr`, then `venv-autoseg/bin/totalseg_set_license -l aca_…` and re-run `tools/autolabels.py knee-mri`. The key lives in `~/.totalsegmentator/config.json`, never in the repo.
 - **Usage stats:** the owner's `~/.totalsegmentator/config.json` has `send_usage_stats: true` — each run sends the task name, platform and an install id, never images. Set it to `false` to stop that.
 - `thigh_shoulder_muscles_mr` gives compartments only, and its licence is by email. SegmentAnyBone (CC BY-NC 4.0) remains an option for other joints' bones.
 
@@ -257,7 +257,7 @@ From the design (spec §9). Phase 0 (viewer spike) is done; its workstation test
 ```
 1. Real knee       → download OAIZIB-CM · owner reviews the 17 candidates and picks one · build + verify mapping/orientation · mirrored left copy   ✓ done 2026-11-06 (subject 036)
 2. Getting oriented→ reference lines + shared cursor · follow a structure (spec §4)   ✓ done 2026-11-06
-3. Auto-labels     → big structures: DOSMA menisci (thirds) + patellar cartilage   ✓ done 2026-11-07 · patella/fibula wait for the owner's TotalSegmentator licence · muscles: none available for the knee — painted
+3. Auto-labels     → big structures: DOSMA menisci (thirds) + patellar cartilage   ✓ done 2026-11-07 · patella/fibula: painted (owner declined the TotalSegmentator licence) · muscles: none available for the knee — painted
 4. Painting mode   → checklist-driven, smart fill, fill between slices, grow, points, expected locations, save + backups, helper merge (spec §5)
 5. Core knee set   → owner paints; Claude drafts labels/*.json, owner reviews
 6. Hip             → find data or volunteer scan · checklists/hip.md · two linked cases (spec §7.2)
