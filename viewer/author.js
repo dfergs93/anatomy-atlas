@@ -104,10 +104,11 @@ function makeAuthor(ctx) {
     tool: "brush", size: AUTHOR_OPTS.sizeDefault, overwrite: false, paintShown: true,
     undo: [], edits: 0, savedEdits: 0,
     checked: new Set(),      // ids marked checked since the last save (K, a later task)
-    token: null, saving: null, refused: false, filter: "", noteKind: null, lastSaveMs: null,
+    token: null, saving: null, refused: false, filter: "", noteKind: null, lastSaveMs: null, enterAfterStroke: false,
   };
   let before = null;         // the accepted drawing (mirror of nv.drawBitmap)
   let suspended = false;     // drawing switched off for a gesture that started outside the main view
+  let stroking = false;      // a left-button gesture that started in the main view with drawing on
 
   // ---------- drawing ----------
   function loadDrawing() {
@@ -195,8 +196,8 @@ function makeAuthor(ctx) {
     if (ch.restored) {
       note("info", (S.tool === "eraser" ? `The eraser clears only ${name}` : `The brush paints only empty voxels and ${name}`) +
         "; other structures were left as they were. Tick “Paint over other structures” to change them.");
-    } else if (S.noteKind === "info") {
-      clearNote();
+    } else if (ch.idx.length && S.noteKind === "info") {
+      clearNote(); // a clean stroke clears an old hint; a repeat call with no changes leaves it
     }
   }
 
@@ -256,6 +257,7 @@ function makeAuthor(ctx) {
   }
 
   async function enterNext() {
+    if (stroking) { S.enterAfterStroke = true; return; } // the stroke belongs to this structure: guard it first
     if (S.saving) return;
     if (unsaved() && !(await save())) return; // a failed save keeps you on this structure
     const row = nextRow();
@@ -300,7 +302,8 @@ function makeAuthor(ctx) {
     const t0 = performance.now();
     // snapshot everything the save sends now: painting may go on while it is in flight
     const seq = S.edits;
-    const raw = new Blob([nv.drawBitmap || before]); // copies the bytes; `before` = the accepted paint if the drawing is closed
+    // `before` is the accepted drawing: a stroke still in progress (or never guarded) can't be saved.
+    const raw = new Blob([before]); // copies the bytes
     const values = {};
     for (const [v, e] of Object.entries(S.savedLut)) values[v] = e.id;
     for (const [id, v] of S.assigned) values[v] = id;
@@ -575,13 +578,30 @@ function makeAuthor(ctx) {
     if (ctx.tileKind(e.offsetX, e.offsetY) !== "main") {
       nv.opts.drawingEnabled = false;
       suspended = true;
+    } else {
+      stroking = true;
     }
   }
 
   function onPointerEnd() {
-    if (!suspended) return;
-    suspended = false;
-    nv.opts.drawingEnabled = canPaint();
+    stroking = false;
+    if (suspended) {
+      suspended = false;
+      nv.opts.drawingEnabled = canPaint();
+    }
+    if (S.enterAfterStroke) { // after NiiVue's mouseup has fired "draw" for this stroke
+      S.enterAfterStroke = false;
+      setTimeout(enterNext, 0);
+    }
+  }
+
+  // A stroke that leaves the canvas: NiiVue's mouseleave ends it without firing "draw" (it only resets
+  // the pen), so its voxels would stay unchecked. Registered after NiiVue's listener, so this runs after
+  // that reset; coming back in with the button held doesn't resume the stroke.
+  function onCanvasLeave() {
+    if (!stroking) return;
+    stroking = false;
+    afterEdit();
   }
 
   // Case switching reloads the page in author mode, so leaving with unsaved paint is asked about first.
@@ -626,6 +646,7 @@ function makeAuthor(ctx) {
   render();
   nv.onDrawingChanged = (a) => a === "draw" && afterEdit();
   $("gl").addEventListener("pointerdown", onPointerDown);
+  $("gl").addEventListener("mouseleave", onCanvasLeave);
   window.addEventListener("pointerup", onPointerEnd);
   window.addEventListener("pointercancel", onPointerEnd);
   document.addEventListener("change", onCaseChange, true);
