@@ -39,6 +39,12 @@ def mirror_image(img: nib.Nifti1Image) -> nib.Nifti1Image:
     return out
 
 
+def mirror_id(meta: dict, src_id: str) -> str | None:
+    """Id of the mirrored copy of a case with this meta, or None when it has no right/left side."""
+    side = OTHER_SIDE.get(meta.get("side", ""))
+    return f"{src_id}-{side}" if side else None
+
+
 def mirror_case(root: Path, src_id: str, dst_id: str | None = None, *, volumes: bool = True) -> str:
     """volumes=False: when the copy already exists, keep its volumes and rewrite only the label files."""
     root = Path(root)
@@ -49,7 +55,7 @@ def mirror_case(root: Path, src_id: str, dst_id: str | None = None, *, volumes: 
     side = OTHER_SIDE.get(meta.get("side", ""))
     if not side:
         raise ValueError(f"{src_id} has side {meta.get('side')!r}; need 'right' or 'left' to mirror")
-    dst_id = dst_id or f"{src_id}-{side}"
+    dst_id = dst_id or mirror_id(meta, src_id)
     out = root / "data" / dst_id
     if out.exists():
         old = json.loads((out / "meta.json").read_text()) if (out / "meta.json").exists() else {}

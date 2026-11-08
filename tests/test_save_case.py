@@ -182,3 +182,44 @@ def test_save_rebuilds_mirror_labels_only(tmp_path):
     src = json.loads((case / "lut.json").read_text())
     assert mlut["3"]["id"] == "patella"
     assert mlut["3"]["centroid_mm"][0] == pytest.approx(-src["3"]["centroid_mm"][0], abs=0.15)
+
+
+def test_unrelated_folder_at_mirror_destination_refused_before_any_write(tmp_path):
+    case = make_case(tmp_path)
+    (tmp_path / "data" / "knee-t-left").mkdir()
+    (tmp_path / "data" / "knee-t-left" / "notes.txt").write_text("mine")
+    before = snapshot(tmp_path / "data")
+    with pytest.raises(SaveError, match="knee-t-left") as e:
+        save(tmp_path, case, paint_new(case), GOOD)
+    assert e.value.status == 400
+    assert snapshot(tmp_path / "data") == before
+    assert not (case / "backups").exists()
+
+
+def test_sided_case_not_in_index_saves_with_warning(tmp_path):
+    case = make_case(tmp_path)
+    (tmp_path / "data" / "index.json").write_text("[]")
+    res = save(tmp_path, case, paint_new(case), GOOD)
+    assert res["mirror"] is None and res["token"] == case_token(case)
+    assert any("index.json" in w for w in res["warnings"])
+    assert not (tmp_path / "data" / "knee-t-left").exists()
+    assert json.loads((case / "lut.json").read_text())["3"]["id"] == "patella"
+
+
+def test_late_failure_becomes_warning_after_files_written(tmp_path, monkeypatch):
+    import save_case as sc
+    case = make_case(tmp_path)
+
+    def boom(*a, **k):
+        raise OSError("disk says no")
+    monkeypatch.setattr(sc, "set_labelled", boom)
+    monkeypatch.setattr(sc, "mirror_case", boom)
+    res = save(tmp_path, case, paint_new(case), GOOD)
+    assert res["token"] == case_token(case)
+    assert len(res["warnings"]) == 2 and all("disk says no" in w for w in res["warnings"])
+    assert json.loads((case / "lut.json").read_text())["3"]["id"] == "patella"
+
+
+def test_clean_save_has_empty_warnings(tmp_path):
+    case = make_case(tmp_path, side="")
+    assert save(tmp_path, case, paint_new(case), GOOD)["warnings"] == []

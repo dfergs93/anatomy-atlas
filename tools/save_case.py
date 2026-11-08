@@ -17,7 +17,7 @@ from atlaslib import backup_case, build_lut, clean_header, patch_case, read_inde
 from autolabels import _replace, voxel_print
 from build_case import colour
 from checklist import read_checklist, set_labelled
-from mirror_case import mirror_case
+from mirror_case import mirror_case, mirror_id
 
 
 class SaveError(Exception):
@@ -92,6 +92,11 @@ def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int
         if sid not in known:
             raise SaveError(f"{sid} is not in the {meta['region']} checklist or the case")
     points = _check_points(points, set(rows))
+    mirror_dir = (root / "data" / mirror_id(meta, case_id)) if mirror_id(meta, case_id) else None
+    if mirror_dir and mirror_dir.exists():
+        theirs = json.loads((mirror_dir / "meta.json").read_text()) if (mirror_dir / "meta.json").exists() else {}
+        if theirs.get("mirror_of") != case_id:
+            raise SaveError(f"data/{mirror_dir.name} exists and is not the mirror of {case_id}; move it aside")
 
     # ---- write ----
     backup_case(case)
@@ -120,12 +125,25 @@ def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int
     _replace(lambda p: nib.save(out, str(p)), case / "labels.nii.gz")
     _replace(lambda p: p.write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n"), case / "lut.json")
     _replace(lambda p: p.write_text(json.dumps(points, indent=2, ensure_ascii=False) + "\n"), case / "points.json")
-    if any(c["case_id"] == case_id for c in read_index(root)):
-        patch_case(root, case_id, {"structure_count": len(lut) + len(points)})
-    mirror = None
-    if meta.get("side") in ("right", "left"):
-        mirror = mirror_case(root, case_id, volumes=False)
+    warnings, mirror = [], None
+    indexed = any(c["case_id"] == case_id for c in read_index(root))
+    try:
+        if indexed:
+            patch_case(root, case_id, {"structure_count": len(lut) + len(points)})
+    except Exception as e:
+        warnings.append(f"index not updated: {e}")
+    try:
+        if mirror_dir and indexed:
+            mirror = mirror_case(root, case_id, volumes=False)
+        elif mirror_dir:
+            warnings.append("not in data/index.json: left copy not rebuilt")
+    except Exception as e:
+        warnings.append(f"mirror not rebuilt: {e}")
     labelled = sorted({e["id"] for e in lut.values() if not e.get("auto")} | {p["id"] for p in points})
-    if checklist_path.exists():
-        set_labelled(checklist_path, set(labelled))
-    return {"token": case_token(case), "structures": len(lut), "labelled": labelled, "mirror": mirror}
+    try:
+        if checklist_path.exists():
+            set_labelled(checklist_path, set(labelled))
+    except Exception as e:
+        warnings.append(f"checklist not updated: {e}")
+    return {"token": case_token(case), "structures": len(lut), "labelled": labelled, "mirror": mirror,
+            "warnings": warnings}
