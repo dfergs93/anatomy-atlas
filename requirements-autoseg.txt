@@ -1,0 +1,10 @@
+# Model packages for tools/autolabels.py, kept out of the main venv (spec §5.6: the helper's
+# painting path stays light). Install: python3.13 -m venv venv-autoseg &&
+# venv-autoseg/bin/pip install -r requirements-autoseg.txt
+tensorflow==2.21.0
+tf_keras==2.21.0
+h5py==3.14.0
+TotalSegmentator==2.18.0
+nibabel>=5
+numpy>=1.24,<2.6
+scipy>=1.10

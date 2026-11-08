@@ -3,6 +3,10 @@
 data/**
 !data/**/
 !data/**/*.json
+# Backups before every write (they hold lut.json copies, which the line above would let in)
+data/*/backups/
+# Raw model predictions from tools/autolabels.py
+data/*/auto/
 
 # Belt and braces: no imaging files anywhere in the repo
 *.nii
@@ -15,6 +19,8 @@ data/**
 __pycache__/
 *.pyc
 .venv/
+# Model venv for tools/autolabels.py (requirements-autoseg.txt)
+venv-autoseg/
 
 # Generated locally (regenerate with tools/make_demo_case.py / build_case.py)
 data/index.json
