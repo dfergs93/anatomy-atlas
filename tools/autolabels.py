@@ -10,6 +10,8 @@ import nibabel as nib
 import numpy as np
 from scipy import ndimage as ndi
 
+from build_case import colour
+
 CONNECT_26 = np.ones((3, 3, 3), bool)
 
 
@@ -61,3 +63,43 @@ def meniscus_thirds(mask: np.ndarray, affine: np.ndarray, centre_xy, mid_x: floa
     return (_mask_of(mask.shape, idx[ang >= c2]),
             _mask_of(mask.shape, idx[(ang >= c1) & (ang < c2)]),
             _mask_of(mask.shape, idx[ang < c1]))
+
+
+def merge_auto(arr: np.ndarray, lut: dict[str, dict], additions: dict[str, np.ndarray], source: str,
+               names: dict[str, str], date: str) -> tuple[np.ndarray, dict[str, dict], dict]:
+    """Merge automatic masks (id → mask on arr's grid) into a label map and its lut.json dict.
+
+    Existing labels win: only voxels that are 0 are written, and an id already in the lut
+    without an "auto" key (ground truth, or painted) is refused. An id this tool added before
+    keeps its value; all such ids are cleared first, so a re-run replaces only its own voxels.
+    New ids take the next values in the order given. Returns copies plus a report:
+    {"written": {id: n}, "blocked": {id: n}, "refused": [id]}. Entries get id, name, rgb and
+    "auto": {source, date}; run build_lut afterwards for voxels, centroids and extents.
+    """
+    arr = np.array(arr, copy=True)
+    lut = {k: dict(v) for k, v in lut.items()}
+    by_id = {e["id"]: int(k) for k, e in lut.items()}
+    top = max([int(k) for k in lut] + [int(arr.max()) if arr.size else 0])
+    report: dict = {"written": {}, "blocked": {}, "refused": []}
+    todo = []
+    for sid, mask in additions.items():
+        if sid in by_id and "auto" not in lut[str(by_id[sid])]:
+            report["refused"].append(sid)
+            continue
+        if sid in by_id:
+            value = by_id[sid]
+        else:
+            top += 1
+            value = top
+        todo.append((sid, value, np.asarray(mask, bool)))
+    for _, value, _ in todo:
+        arr[arr == value] = 0
+    for sid, value, mask in todo:
+        free = mask & (arr == 0)
+        arr[free] = value
+        report["written"][sid] = int(free.sum())
+        report["blocked"][sid] = int((mask & ~free).sum())
+        lut[str(value)] = {**lut.get(str(value), {}), "id": sid,
+                           "name": names.get(sid, sid.replace("_", " ").capitalize()),
+                           "rgb": colour(sid, value), "auto": {"source": source, "date": date}}
+    return arr, lut, report

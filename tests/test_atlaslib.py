@@ -66,3 +66,50 @@ def test_register_case_replaces_and_patch_merges(tmp_path):
     assert [c["case_id"] for c in cases] == ["b", "a"]
     a = atlaslib.read_index(tmp_path)[1]
     assert a == {"case_id": "a", "title": "A2", "mirror": "a-left"}
+
+
+# ---- backups ----
+
+def make_case_files(case):
+    case.mkdir(parents=True, exist_ok=True)
+    (case / "labels.nii.gz").write_bytes(b"labels")
+    (case / "lut.json").write_text("{}\n")
+    (case / "points.json").write_text("[]\n")
+
+
+def test_backup_case_keeps_newest_20(tmp_path):
+    case = tmp_path / "knee"
+    make_case_files(case)
+    made = []
+    for i in range(22):
+        (case / "lut.json").write_text(f'{{"n": {i}}}\n')
+        made.append(atlaslib.backup_case(case))
+    left = sorted(p.name for p in (case / "backups").iterdir())
+    assert len(left) == 20
+    assert left == sorted(p.name for p in made[2:])
+    assert json.loads((made[-1] / "lut.json").read_text()) == {"n": 21}
+    assert sorted(p.name for p in made[-1].iterdir()) == ["labels.nii.gz", "lut.json", "points.json"]
+
+
+def test_backup_case_never_overwrites(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+
+    case = tmp_path / "knee"
+    make_case_files(case)
+    frozen = datetime(2026, 11, 7, 12, 0, 0, 0, timezone.utc)
+    monkeypatch.setattr(atlaslib, "_utcnow", lambda: frozen)
+    a = atlaslib.backup_case(case)
+    (case / "lut.json").write_text('{"second": 1}\n')
+    b = atlaslib.backup_case(case)
+    assert a != b and a.name == "20261107T120000000000Z"
+    assert (a / "lut.json").read_text() == "{}\n"
+
+
+def test_backup_case_leaves_other_folders_alone(tmp_path):
+    case = tmp_path / "knee"
+    make_case_files(case)
+    (case / "backups" / "keep-me").mkdir(parents=True)
+    for _ in range(3):
+        atlaslib.backup_case(case, keep=1)
+    assert sorted(p.name for p in (case / "backups").iterdir())[-1] == "keep-me"
+    assert len(list((case / "backups").iterdir())) == 2

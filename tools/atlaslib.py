@@ -7,7 +7,10 @@ the viewer can turn them into slice numbers on any sequence's grid.
 from __future__ import annotations
 
 import json
+import re
+import shutil
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import nibabel as nib
@@ -134,3 +137,35 @@ def patch_case(root: Path, case_id: str, fields: dict) -> None:
     else:
         raise KeyError(f"{case_id} is not in data/index.json")
     write_index(root, cases)
+
+
+# ---- backups (spec §5.5): the previous files, kept before every write ----
+
+CASE_FILES = ("labels.nii.gz", "lut.json", "points.json")
+BACKUP_NAME = re.compile(r"\d{8}T\d{12}Z")  # UTC, to the microsecond: sorts oldest first
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def backup_case(case_dir: Path, keep: int = 20) -> Path:
+    """Copy the case's label files into backups/<UTC timestamp>/ and keep the newest `keep`.
+    Never reuses a folder; leaves anything in backups/ that isn't a timestamp folder alone."""
+    case_dir = Path(case_dir)
+    root = case_dir / "backups"
+    t = _utcnow()
+    while True:
+        out = root / t.strftime("%Y%m%dT%H%M%S%fZ")
+        try:
+            out.mkdir(parents=True)
+            break
+        except FileExistsError:
+            t += timedelta(microseconds=1)
+    for name in CASE_FILES:
+        if (case_dir / name).exists():
+            shutil.copy2(case_dir / name, out / name)
+    stamps = sorted(p for p in root.iterdir() if p.is_dir() and BACKUP_NAME.fullmatch(p.name))
+    for old in stamps[:max(0, len(stamps) - keep)]:
+        shutil.rmtree(old)
+    return out

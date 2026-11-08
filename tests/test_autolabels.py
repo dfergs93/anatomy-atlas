@@ -95,3 +95,75 @@ def test_thirds_mirror_side():
 def test_thirds_of_nothing_is_nothing():
     parts = autolabels.meniscus_thirds(np.zeros((5, 5, 5), bool), EYE, (2, 2), 0)
     assert len(parts) == 3 and not any(p.any() for p in parts)
+
+
+# ---- merging into a case ----
+
+def base_lut():
+    return {"1": {"id": "femur", "name": "Femur", "rgb": [1, 2, 3]}}
+
+
+def merge(arr, lut, additions):
+    return autolabels.merge_auto(arr, lut, additions, source="DOSMA test", names={"patellar_cartilage": "Patellar cartilage"},
+                                 date="2026-11-07")
+
+
+def test_merge_never_overwrites():
+    arr = np.zeros((10, 10, 10), np.uint16)
+    arr[:5] = 1
+    add = np.zeros(arr.shape, bool)
+    add[3:7, 2:4, 2:4] = True  # half on the femur
+    out, lut, report = merge(arr, base_lut(), {"patellar_cartilage": add})
+    assert (out[:5] == 1).all()
+    assert (out[5:7, 2:4, 2:4] == 2).all() and (out == 2).sum() == 8
+    assert report["written"]["patellar_cartilage"] == 8 and report["blocked"]["patellar_cartilage"] == 8
+    assert (arr[5:] == 0).all()  # the caller's array is not changed in place
+
+
+def test_rerun_replaces_own_auto_only():
+    arr = np.zeros((10, 10, 10), np.uint16)
+    arr[0] = 1
+    add = np.zeros(arr.shape, bool)
+    add[2:4, 2:4, 2:4] = True
+    out, lut, _ = merge(arr, base_lut(), {"patellar_cartilage": add})
+    moved = np.roll(add, 4, axis=0)
+    out2, lut2, _ = merge(out, lut, {"patellar_cartilage": moved})
+    assert ((out2 == 2) == moved).all()  # old voxels gone, same value
+    assert (out2[0] == 1).all()
+    assert lut2["2"]["id"] == "patellar_cartilage"
+
+
+def test_rerun_moved_boundaries_not_blocked_by_own_old_voxels():
+    arr = np.zeros((10, 10, 10), np.uint16)
+    a = np.zeros(arr.shape, bool)
+    a[:5] = True
+    out, lut, _ = merge(arr, {}, {"medial_meniscus_body": a, "medial_meniscus_anterior_horn": ~a})
+    out2, lut2, report = merge(out, lut, {"medial_meniscus_body": ~a, "medial_meniscus_anterior_horn": a})
+    assert report["blocked"] == {"medial_meniscus_body": 0, "medial_meniscus_anterior_horn": 0}
+    assert (out2[5:] == 1).all() and (out2[:5] == 2).all()
+
+
+def test_refuses_non_auto_id_clash():
+    arr = np.zeros((10, 10, 10), np.uint16)
+    arr[:3] = 1
+    add = np.ones(arr.shape, bool)
+    out, lut, report = merge(arr, base_lut(), {"femur": add})
+    assert report["refused"] == ["femur"]
+    assert np.array_equal(out, arr) and lut == base_lut()
+
+
+def test_new_ids_get_next_values_and_auto_key():
+    from build_case import colour
+
+    arr = np.zeros((10, 10, 10), np.uint16)
+    arr[0] = 1
+    arr[1] = 5
+    lut = {**base_lut(), "5": {"id": "tibia", "name": "Tibia", "rgb": [4, 5, 6]}}
+    a, b = np.zeros(arr.shape, bool), np.zeros(arr.shape, bool)
+    a[3], b[4] = True, True
+    out, lut2, _ = merge(arr, lut, {"patellar_cartilage": a, "lateral_meniscus_body": b})
+    assert (out[3] == 6).all() and (out[4] == 7).all()
+    assert lut2["6"] == {"id": "patellar_cartilage", "name": "Patellar cartilage", "rgb": colour("patellar_cartilage", 6),
+                         "auto": {"source": "DOSMA test", "date": "2026-11-07"}}
+    assert lut2["7"]["name"] == "Lateral meniscus body" and lut2["7"]["auto"]["source"] == "DOSMA test"
+    assert lut2["1"] == lut["1"] and lut2["5"] == lut["5"]
