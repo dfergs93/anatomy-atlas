@@ -766,8 +766,10 @@ async function showPanel(t) {
   }
   const L = await loadLabel(t.id);
   if (state.selected !== t) return; // a newer click won
+  const note = t.kind === "region" ? core.autoNote(state.lut[t.value]) : null;
+  const noteHTML = note ? `<p class="muted">${escapeHTML(note)}</p>` : "";
   if (!L) {
-    body.innerHTML = `<h2>${escapeHTML(t.name)}</h2>
+    body.innerHTML = `<h2>${escapeHTML(t.name)}</h2>${noteHTML}
       <p class="muted">No label content yet. Add <code>labels/${escapeHTML(t.id)}.json</code>.</p>`;
     return;
   }
@@ -776,6 +778,7 @@ async function showPanel(t) {
   const rel = L.related_structures || [];
   body.innerHTML = `
     <h2>${escapeHTML(L.name)}${L.reviewed ? "" : '<span class="badge">Draft — not reviewed</span>'}</h2>
+    ${noteHTML}
     ${L.ta2_name ? `<div class="ta2">${escapeHTML(L.ta2_name)}</div>` : ""}
     <p>${escapeHTML(L.description || "")}</p>
     ${nvals.length ? `<h3>Normal values</h3><table>${nvals.map(([k, v]) =>

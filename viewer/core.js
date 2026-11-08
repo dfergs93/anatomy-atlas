@@ -135,6 +135,11 @@
     return copy ? copy.case_id : null;
   }
 
+  // Panel line for a structure drawn by tools/autolabels.py and not yet checked by hand.
+  function autoNote(entry) {
+    return entry && entry.auto ? `Outline drawn automatically (${entry.auto.source}) — not yet checked` : null;
+  }
+
   function pickerGroups(cases) {
     return { cases: cases.filter((c) => !c.candidate), candidates: cases.filter((c) => c.candidate) };
   }
@@ -142,6 +147,6 @@
   return {
     PLANES, PLANE_AXIS, HERO_FRACTION, otherPlanes, layoutFor, refLineOrientation, tileRect, tileAt,
     applyAffine, invertAffine, worldToVox, worldToFrac, fracToWorld, extentSlices,
-    pointRange, trackGradient, mirrorMM, counterpart, pickerGroups,
+    pointRange, trackGradient, mirrorMM, counterpart, pickerGroups, autoNote,
   };
 });

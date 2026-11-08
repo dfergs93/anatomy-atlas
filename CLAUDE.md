@@ -88,8 +88,10 @@ anatomy-atlas/
       meta.json           # title, source, licence, citation, side, sequences[] (file, cal_min/max), default_plane, synthetic
       volumes/<seq>.nii.gz
       labels.nii.gz       # uint16, intent "label", on the reference sequence grid
-      lut.json            # {"1": {"id", "name", "rgb", "voxels", "centroid_vox", "centroid_mm"}, ...}
+      lut.json            # {"1": {"id", "name", "rgb", "voxels", "centroid_vox", "centroid_mm", "extent"}, ...}; model outlines add "auto": {source, date}
       points.json         # [{"id", "name", "xyz_mm": [x,y,z]}]
+      backups/<UTC time>/ # labels + lut + points before every write; newest 20 kept (gitignored)
+      auto/               # raw model predictions from tools/autolabels.py (gitignored)
   labels/
     <id>.json             # content — one file per structure, shared across cases
   checklists/
@@ -98,11 +100,14 @@ anatomy-atlas/
     make_demo_case.py     # synthetic test case (geometric shapes) for viewer testing
     build_case.py         # NIfTI volume(s) + label map → case: RAS, int16/uint16, W/L, LUT, index.json
     serve.py              # local static server (+ author-mode save, Phase D)
-    autoseg.py            # Phase C — base auto-labels (not written yet)
+    mirror_case.py        # right knee → mirrored left copy (rebuilt, never painted)
+    autolabels.py         # model labels merged into a case (main venv): menisci in thirds, patellar cartilage, bones if licensed
+    autoseg/dosma_unet.py # DOSMA knee U-Net runner (venv-autoseg; GPL-3.0, this file only)
   subagents/              # not written yet
     case-builder.md
     label-writer.md
   requirements.txt
+  requirements-autoseg.txt  # model packages for venv-autoseg only (TensorFlow, TotalSegmentator)
 ```
 
 -----
@@ -140,17 +145,27 @@ anatomy-atlas/
 
 No open, labelled, normal MRI found for shoulder, ankle, wrist or elbow. Hip: TotalSegmentator MR dataset (femur, hip bone, gluteals; licence unconfirmed — verify before use). For these joints, expect volunteer scans (below) + auto bone labels.
 
-### Base auto-labels (Phase C)
+### Base auto-labels (build step 3, done 2026-11-07)
 
-|Model                                         |Gives                                                        |Licence                         |
-|----------------------------------------------|-------------------------------------------------------------|--------------------------------|
-|OAIZIB-CM ground truth                        |Femur, tibia, femoral + tibial cartilage                     |CC BY-NC 4.0                    |
-|DOSMA `iwoai-2019-t6-normalized` (OAI DESS)   |Menisci, patellar cartilage (verify output classes)          |GPL-3.0                         |
-|TotalSegmentator `appendicular_bones_mr`      |Patella, tibia, fibula (+ other joints’ bones)               |Free non-commercial licence     |
-|TotalSegmentator `thigh_shoulder_muscles_mr`  |Thigh + shoulder muscles                                     |Free non-commercial licence     |
-|SegmentAnyBone                                |Bones for all six joints (likely one combined bone mask)     |CC BY-NC 4.0                    |
+Checked on the owner's M4 Pro with subject 036 (2026-11-06):
 
-Run these on your own machine — model weights and datasets are not downloadable from the Claude cloud sandbox.
+|Model                                         |Gives on knee-mri                                             |Licence / status                |
+|----------------------------------------------|--------------------------------------------------------------|--------------------------------|
+|OAIZIB-CM ground truth                        |Femur, tibia, femoral + medial/lateral tibial cartilage       |CC BY-NC 4.0                    |
+|DOSMA `iwoai-2019-t6-normalized` (OAI DESS)   |Menisci (→ medial/lateral × anterior horn / body / posterior horn), patellar cartilage. CPU ~18 s; femoral cartilage Dice 0.756 vs ground truth (not used: ground truth wins)|GPL-3.0 (DOSMA's docs); weights public on Hugging Face `arjundd/dosma-models`|
+|TotalSegmentator `appendicular_bones_mr`      |Patella, fibula (tibia not used). MPS ~15 s; works at 1.5 mm, so outlines are blocky|Free academic licence, owner only — not set yet|
+|TotalSegmentator `total_mr` (open)            |Only the femur on this knee. Covers gluteals, iliopsoas, hip bone → useful for the hip|Open                            |
+|Knee muscles (gastrocnemius, popliteus …)     |No model covers them → **painted**                            |—                               |
+
+- **Setup, once:** `python3.13 -m venv venv-autoseg && venv-autoseg/bin/pip install -r requirements-autoseg.txt` (~3.5 GB). The main `venv` stays light for a helper who only paints (spec §5.6).
+- **Run:** `venv/bin/python tools/autolabels.py knee-mri` (`--no-totalseg` to skip the bones).
+  - It backs up the case, fills only empty voxels, never replaces a structure without an `"auto"` key in `lut.json`, re-runs replace only its own earlier voxels, and rebuilds `knee-mri-left`. Mirrored copies are refused.
+  - DOSMA's package breaks on NumPy 2, so `tools/autoseg/dosma_unet.py` rebuilds its U-Net with tf_keras. Weights download once to `~/.cache/anatomy-atlas/dosma/`, checked against a pinned sha256.
+  - Meniscus thirds are cut by angle round each meniscus's own ring centre, with the opening facing the notch. On knee-mri: medial 26 / 19 / 55 % (the posterior horn is the widest part), lateral 31 / 33 / 36 %.
+  - The viewer's panel says "Outline drawn automatically (…) — not yet checked" for any structure with `"auto"`.
+- **Patella and fibula (owner's step):** fill the form at https://backend.totalsegmentator.com/license-academic/ (name, email, institution; internal non-commercial use) asking for `appendicular_bones_mr`, then `venv-autoseg/bin/totalseg_set_license -l aca_…` and re-run `tools/autolabels.py knee-mri`. The key lives in `~/.totalsegmentator/config.json`, never in the repo.
+- **Usage stats:** the owner's `~/.totalsegmentator/config.json` has `send_usage_stats: true` — each run sends the task name, platform and an install id, never images. Set it to `false` to stop that.
+- `thigh_shoulder_muscles_mr` gives compartments only, and its licence is by email. SegmentAnyBone (CC BY-NC 4.0) remains an option for other joints' bones.
 
 ### Fallback: volunteer scans
 
@@ -240,7 +255,7 @@ From the design (spec §9). Phase 0 (viewer spike) is done; its workstation test
 ```
 1. Real knee       → download OAIZIB-CM · owner reviews the 17 candidates and picks one · build + verify mapping/orientation · mirrored left copy   ✓ done 2026-11-06 (subject 036)
 2. Getting oriented→ reference lines + shared cursor · follow a structure (spec §4)   ✓ done 2026-11-06
-3. Auto-labels     → big structures: DOSMA menisci + patellar cartilage · TotalSegmentator patella/fibula/muscles (spec §7.1)
+3. Auto-labels     → big structures: DOSMA menisci (thirds) + patellar cartilage   ✓ done 2026-11-07 · patella/fibula wait for the owner's TotalSegmentator licence · muscles: none available for the knee — painted
 4. Painting mode   → checklist-driven, smart fill, fill between slices, grow, points, expected locations, save + backups, helper merge (spec §5)
 5. Core knee set   → owner paints; Claude drafts labels/*.json, owner reviews
 6. Hip             → find data or volunteer scan · checklists/hip.md · two linked cases (spec §7.2)

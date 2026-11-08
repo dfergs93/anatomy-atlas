@@ -152,3 +152,13 @@ test("pickerGroups separates candidates; mirrored copies stay with the cases", (
   assert.deepEqual(g.cases.map((c) => c.case_id), ["knee", "knee-left"]);
   assert.deepEqual(g.candidates.map((c) => c.case_id), ["cand-049", "cand-414"]);
 });
+
+test("autoNote names the source", () => {
+  assert.equal(core.autoNote({ id: "lateral_meniscus_body", auto: { source: "DOSMA iwoai-2019-t6-normalized", date: "2026-11-07" } }),
+    "Outline drawn automatically (DOSMA iwoai-2019-t6-normalized) — not yet checked");
+});
+
+test("autoNote is null without auto", () => {
+  assert.equal(core.autoNote({ id: "femur" }), null);
+  assert.equal(core.autoNote(undefined), null);
+});

@@ -33,4 +33,15 @@ python tools/build_case.py knee-mri --title "Knee — OAI 3D DESS" --region knee
   --source "OAIZIB-CM" --licence "CC BY-NC 4.0"
 ```
 
+## Auto-labels
+
+Models add the menisci (split into anterior horn, body and posterior horn) and the patellar cartilage, so painting starts from them. They run in their own venv:
+
+```
+python3.13 -m venv venv-autoseg && venv-autoseg/bin/pip install -r requirements-autoseg.txt
+venv/bin/python tools/autolabels.py knee-mri
+```
+
+Existing labels always win, the case is backed up first, and the mirrored left copy is rebuilt. Patella and fibula need a free TotalSegmentator academic licence; see `CLAUDE.md` → Base auto-labels.
+
 Imaging files stay out of git. See `CLAUDE.md` for the full plan.
