@@ -39,7 +39,8 @@ def mirror_image(img: nib.Nifti1Image) -> nib.Nifti1Image:
     return out
 
 
-def mirror_case(root: Path, src_id: str, dst_id: str | None = None) -> str:
+def mirror_case(root: Path, src_id: str, dst_id: str | None = None, *, volumes: bool = True) -> str:
+    """volumes=False: when the copy already exists, keep its volumes and rewrite only the label files."""
     root = Path(root)
     src = root / "data" / src_id
     meta = json.loads((src / "meta.json").read_text())
@@ -54,11 +55,15 @@ def mirror_case(root: Path, src_id: str, dst_id: str | None = None) -> str:
         old = json.loads((out / "meta.json").read_text()) if (out / "meta.json").exists() else {}
         if old.get("mirror_of") != src_id:
             raise ValueError(f"data/{dst_id} exists and is not a mirror of {src_id}; not overwriting it")
-        shutil.rmtree(out)
-    (out / "volumes").mkdir(parents=True)
+        if volumes:
+            shutil.rmtree(out)
+    else:
+        volumes = True
+    (out / "volumes").mkdir(parents=True, exist_ok=True)
 
-    for seq in meta["sequences"]:
-        nib.save(mirror_image(nib.load(src / seq["file"])), out / seq["file"])
+    if volumes:
+        for seq in meta["sequences"]:
+            nib.save(mirror_image(nib.load(src / seq["file"])), out / seq["file"])
     labels = mirror_image(nib.load(src / "labels.nii.gz"))
     nib.save(labels, out / "labels.nii.gz")
 

@@ -102,3 +102,32 @@ def test_refuses_to_mirror_a_mirror(tmp_path):
     mirror_case(tmp_path, "knee-t")
     with pytest.raises(ValueError):
         mirror_case(tmp_path, "knee-t-left")
+
+
+def test_mirror_labels_only_keeps_volumes(tmp_path):
+    import os
+    make_right_knee(tmp_path)
+    mirror_case(tmp_path, "knee-t")
+    out = tmp_path / "data" / "knee-t-left"
+    vol = out / "volumes" / "dess_3d.nii.gz"
+    os.utime(vol, (1_000_000, 1_000_000))
+    (out / "extra.txt").write_text("keep")
+    lut = load(tmp_path, "knee-t", "lut.json")
+    lut["1"]["name"] = "Renamed"
+    (tmp_path / "data" / "knee-t" / "lut.json").write_text(json.dumps(lut))
+    assert mirror_case(tmp_path, "knee-t", volumes=False) == "knee-t-left"
+    assert vol.stat().st_mtime == 1_000_000 and (out / "extra.txt").exists()
+    assert load(tmp_path, "knee-t-left", "lut.json")["1"]["name"] == "Renamed"
+
+
+def test_mirror_labels_only_builds_when_no_copy_yet(tmp_path):
+    make_right_knee(tmp_path)
+    mirror_case(tmp_path, "knee-t", volumes=False)
+    assert (tmp_path / "data" / "knee-t-left" / "volumes" / "dess_3d.nii.gz").exists()
+
+
+def test_mirror_labels_only_still_refuses_unrelated_folder(tmp_path):
+    make_right_knee(tmp_path)
+    (tmp_path / "data" / "knee-t-left").mkdir()
+    with pytest.raises(ValueError):
+        mirror_case(tmp_path, "knee-t", volumes=False)
