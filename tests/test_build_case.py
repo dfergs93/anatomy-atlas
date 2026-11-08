@@ -51,3 +51,17 @@ def test_build_case_without_labels_writes_empty_map(tmp_path):
     assert lab.shape == (20, 20, 20) and not np.asanyarray(lab.dataobj).any()
     entry = json.loads((tmp_path / "data" / "index.json").read_text())[0]
     assert entry["candidate"] is True
+
+
+def test_meniscus_parts_have_distinct_colours():
+    from build_case import colour
+
+    parts = ("anterior_horn", "body", "posterior_horn")
+    for side, values in (("medial", (6, 7, 8)), ("lateral", (9, 10, 11))):
+        rgb = [np.array(colour(f"{side}_meniscus_{p}", v), float) for p, v in zip(parts, values)]
+        for i in range(3):
+            for j in range(i + 1, 3):
+                assert np.linalg.norm(rgb[i] - rgb[j]) >= 80, (side, parts[i], parts[j], rgb[i], rgb[j])
+    # still distinct from the cartilage next to them
+    cart = np.array(colour("medial_tibial_cartilage", 4), float)
+    assert all(np.linalg.norm(np.array(colour(f"medial_meniscus_{p}", 7), float) - cart) >= 80 for p in parts)

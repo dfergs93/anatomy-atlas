@@ -60,7 +60,15 @@ PALETTE = [  # (keyword in id, rgb)
 MUSCLE = (205, 70, 80)
 
 
+# Meniscus thirds sit side by side, so each part gets its own hue (unshaded): the cuts show in Fill.
+MENISCUS_PARTS = [("meniscus_anterior_horn", (165, 95, 230)), ("meniscus_body", (235, 95, 160)),
+                  ("meniscus_posterior_horn", (100, 60, 180))]
+
+
 def colour(sid: str, i: int) -> list[int]:
+    part = next((c for k, c in MENISCUS_PARTS if sid.endswith(k)), None)
+    if part:
+        return list(part)
     rgb = next((c for k, c in PALETTE if k in sid), MUSCLE)
     f = 0.82 + 0.36 * ((i * 0.618) % 1)  # vary shade so neighbours differ
     return [int(min(255, c * f)) for c in rgb]

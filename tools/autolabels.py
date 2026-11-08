@@ -17,6 +17,7 @@ mirrored copy is rebuilt afterwards. Mirrored copies themselves are refused.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -101,26 +102,37 @@ def meniscus_thirds(mask: np.ndarray, affine: np.ndarray, centre_xy, mid_x: floa
             _mask_of(mask.shape, idx[ang < c1]))
 
 
+def voxel_print(arr: np.ndarray, value: int) -> str:
+    """Fingerprint of the voxels holding `value`, to tell later hand edits from the tool's own output."""
+    return hashlib.sha256(np.flatnonzero(arr == value).astype(np.int64).tobytes()).hexdigest()[:16]
+
+
 def merge_auto(arr: np.ndarray, lut: dict[str, dict], additions: dict[str, np.ndarray], source: str,
                names: dict[str, str], date: str) -> tuple[np.ndarray, dict[str, dict], dict]:
     """Merge automatic masks (id → mask on arr's grid) into a label map and its lut.json dict.
 
     Existing labels win: only voxels that are 0 are written, and an id already in the lut
-    without an "auto" key (ground truth, or painted) is refused. An id this tool added before
-    keeps its value; all such ids are cleared first, so a re-run replaces only its own voxels.
-    New ids take the next values in the order given. Returns copies plus a report:
-    {"written": {id: n}, "blocked": {id: n}, "refused": [id]}. Entries get id, name, rgb and
-    "auto": {source, date}; run build_lut afterwards for voxels, centroids and extents.
+    without an "auto" key (ground truth, painted, or checked) is refused. An id this tool added
+    before keeps its value; all such ids are cleared first, so a re-run replaces only its own
+    voxels — unless they were edited since (they no longer match the fingerprint stored in
+    "auto"), in which case the structure is kept as it is. New ids take the next values in the
+    order given. Returns copies plus a report: {"written": {id: n}, "blocked": {id: n},
+    "refused": [id], "kept": [id]}. Entries get id, name, rgb and "auto": {source, date,
+    voxels_sha256}; run build_lut afterwards for voxels, centroids and extents.
     """
     arr = np.array(arr, copy=True)
     lut = {k: dict(v) for k, v in lut.items()}
     by_id = {e["id"]: int(k) for k, e in lut.items()}
     top = max([int(k) for k in lut] + [int(arr.max()) if arr.size else 0])
-    report: dict = {"written": {}, "blocked": {}, "refused": []}
+    report: dict = {"written": {}, "blocked": {}, "refused": [], "kept": []}
     todo = []
     for sid, mask in additions.items():
         if sid in by_id and "auto" not in lut[str(by_id[sid])]:
             report["refused"].append(sid)
+            continue
+        stored = lut[str(by_id[sid])]["auto"].get("voxels_sha256") if sid in by_id else None
+        if stored and stored != voxel_print(arr, by_id[sid]):
+            report["kept"].append(sid)  # edited by hand since the last run
             continue
         if sid in by_id:
             value = by_id[sid]
@@ -137,7 +149,8 @@ def merge_auto(arr: np.ndarray, lut: dict[str, dict], additions: dict[str, np.nd
         report["blocked"][sid] = int((mask & ~free).sum())
         lut[str(value)] = {**lut.get(str(value), {}), "id": sid,
                            "name": names.get(sid, sid.replace("_", " ").capitalize()),
-                           "rgb": colour(sid, value), "auto": {"source": source, "date": date}}
+                           "rgb": colour(sid, value),
+                           "auto": {"source": source, "date": date, "voxels_sha256": voxel_print(arr, value)}}
     return arr, lut, report
 
 
@@ -235,13 +248,14 @@ def run(root: Path, case_id: str, *, autoseg_python: Path, totalseg: bool | None
     names = checklist_names(root, meta.get("region", ""))
     backup = backup_case(case)
     arr = np.asanyarray(labels.dataobj).astype(np.uint16)
-    report: dict = {"backup": str(backup), "written": {}, "blocked": {}, "refused": [],
+    report: dict = {"backup": str(backup), "written": {}, "blocked": {}, "refused": [], "kept": [],
                     "skipped": [] if bones is not None else ["patella", "fibula"], "mirror": None}
     for source, adds in merges:
         arr, lut, r = merge_auto(arr, lut, adds, source, names, date.today().isoformat())
         report["written"].update(r["written"])
         report["blocked"].update(r["blocked"])
         report["refused"] += r["refused"]
+        report["kept"] += r["kept"]
         report["skipped"] += [k for k, m in adds.items() if not m.any()]
     lut = build_lut(arr, affine, {int(k): v for k, v in lut.items()})
     out = nib.Nifti1Image(arr, affine)
@@ -263,6 +277,8 @@ def print_report(report: dict) -> None:
         print(f"  {sid:<34} {n:>8} vox   blocked {report['blocked'][sid]}")
     if report["refused"]:
         print("refused, already labelled by hand or ground truth: " + ", ".join(report["refused"]))
+    if report["kept"]:
+        print("kept as they are, edited by hand since the last run: " + ", ".join(report["kept"]))
     if report["skipped"]:
         print("skipped: " + ", ".join(report["skipped"]))
     print(f"backup: {report['backup']}")

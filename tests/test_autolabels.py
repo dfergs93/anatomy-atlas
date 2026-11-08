@@ -164,7 +164,8 @@ def test_new_ids_get_next_values_and_auto_key():
     out, lut2, _ = merge(arr, lut, {"patellar_cartilage": a, "lateral_meniscus_body": b})
     assert (out[3] == 6).all() and (out[4] == 7).all()
     assert lut2["6"] == {"id": "patellar_cartilage", "name": "Patellar cartilage", "rgb": colour("patellar_cartilage", 6),
-                         "auto": {"source": "DOSMA test", "date": "2026-11-07"}}
+                         "auto": {"source": "DOSMA test", "date": "2026-11-07",
+                                  "voxels_sha256": autolabels.voxel_print(out, 6)}}
     assert lut2["7"]["name"] == "Lateral meniscus body" and lut2["7"]["auto"]["source"] == "DOSMA test"
     assert lut2["1"] == lut["1"] and lut2["5"] == lut["5"]
 
@@ -302,8 +303,8 @@ def test_run_end_to_end_on_fake_prediction(tmp_path):
     by_id = {e["id"]: (int(k), e) for k, e in lut.items()}
     parts = [f"{s}_meniscus_{p}" for s in ("medial", "lateral") for p in ("anterior_horn", "body", "posterior_horn")]
     for sid in parts + ["patellar_cartilage"]:
-        assert by_id[sid][1]["auto"] == {"source": "DOSMA iwoai-2019-t6-normalized",
-                                         "date": by_id[sid][1]["auto"]["date"]}
+        assert by_id[sid][1]["auto"]["source"] == "DOSMA iwoai-2019-t6-normalized"
+        assert len(by_id[sid][1]["auto"]["voxels_sha256"]) == 16
     arr = np.asanyarray(nib.load(case / "labels.nii.gz").dataobj)
     assert {v: int((arr == v).sum()) for v in (1, 4, 5)} == gt_before
     assert report["blocked"]["medial_meniscus_body"] + report["blocked"]["medial_meniscus_anterior_horn"] \
@@ -351,3 +352,19 @@ def test_rerun_gives_the_same_labels(tmp_path):
     assert np.array_equal(np.asanyarray(nib.load(case / "labels.nii.gz").dataobj), first[0])
     assert json.loads((case / "lut.json").read_text()) == first[1]
     assert len(list((case / "backups").iterdir())) == 2
+
+
+def test_rerun_keeps_hand_edited_auto_structure():
+    arr = np.zeros((10, 10, 10), np.uint16)
+    add = np.zeros(arr.shape, bool)
+    add[2:4, 2:4, 2:4] = True
+    out, lut, _ = merge(arr, {}, {"patellar_cartilage": add, "medial_meniscus_body": np.roll(add, 5, axis=1)})
+    edited = out.copy()
+    edited[2, 2, 2] = 0       # the owner erased one voxel …
+    edited[2:4, 4, 2] = 1     # … and painted two more with the same structure
+    out2, lut2, report = merge(edited, lut, {"patellar_cartilage": np.roll(add, 4, axis=0),
+                                             "medial_meniscus_body": np.roll(add, 4, axis=1)})
+    assert report["kept"] == ["patellar_cartilage"]
+    assert np.array_equal(out2 == 1, edited == 1)  # hand edits untouched
+    assert ((out2 == 2) == np.roll(add, 4, axis=1)).all()  # the unedited one is still replaced
+    assert lut2["1"] == lut["1"]

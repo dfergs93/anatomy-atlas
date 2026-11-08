@@ -263,13 +263,14 @@
   "id": "medial_meniscus_anterior_horn",
   "name": "Medial meniscus — anterior horn",
   "rgb": [
-   161,
-   96,
-   225
+   165,
+   95,
+   230
   ],
   "auto": {
    "source": "DOSMA iwoai-2019-t6-normalized",
-   "date": "2026-11-07"
+   "date": "2026-11-07",
+   "voxels_sha256": "4dcd066a93bfe3f2"
   },
   "voxels": 6923,
   "centroid_vox": [
@@ -319,13 +320,14 @@
   "id": "medial_meniscus_body",
   "name": "Medial meniscus — body",
   "rgb": [
-   140,
-   84,
-   196
+   235,
+   95,
+   160
   ],
   "auto": {
    "source": "DOSMA iwoai-2019-t6-normalized",
-   "date": "2026-11-07"
+   "date": "2026-11-07",
+   "voxels_sha256": "edfd38a547b8cbbd"
   },
   "voxels": 4874,
   "centroid_vox": [
@@ -375,13 +377,14 @@
   "id": "medial_meniscus_posterior_horn",
   "name": "Medial meniscus — posterior horn",
   "rgb": [
-   173,
-   104,
-   243
+   100,
+   60,
+   180
   ],
   "auto": {
    "source": "DOSMA iwoai-2019-t6-normalized",
-   "date": "2026-11-07"
+   "date": "2026-11-07",
+   "voxels_sha256": "ee5f1c429c51ecd2"
   },
   "voxels": 14452,
   "centroid_vox": [
@@ -431,13 +434,14 @@
   "id": "lateral_meniscus_anterior_horn",
   "name": "Lateral meniscus — anterior horn",
   "rgb": [
-   153,
-   92,
-   214
+   165,
+   95,
+   230
   ],
   "auto": {
    "source": "DOSMA iwoai-2019-t6-normalized",
-   "date": "2026-11-07"
+   "date": "2026-11-07",
+   "voxels_sha256": "f2a0721e160e05dc"
   },
   "voxels": 7233,
   "centroid_vox": [
@@ -487,13 +491,14 @@
   "id": "lateral_meniscus_body",
   "name": "Lateral meniscus — body",
   "rgb": [
-   132,
-   79,
-   185
+   235,
+   95,
+   160
   ],
   "auto": {
    "source": "DOSMA iwoai-2019-t6-normalized",
-   "date": "2026-11-07"
+   "date": "2026-11-07",
+   "voxels_sha256": "5e43aa632741e27f"
   },
   "voxels": 7783,
   "centroid_vox": [
@@ -543,13 +548,14 @@
   "id": "lateral_meniscus_posterior_horn",
   "name": "Lateral meniscus — posterior horn",
   "rgb": [
-   166,
-   99,
-   232
+   100,
+   60,
+   180
   ],
   "auto": {
    "source": "DOSMA iwoai-2019-t6-normalized",
-   "date": "2026-11-07"
+   "date": "2026-11-07",
+   "voxels_sha256": "7d2c4c76e495f9f2"
   },
   "voxels": 8534,
   "centroid_vox": [
@@ -605,7 +611,8 @@
   ],
   "auto": {
    "source": "DOSMA iwoai-2019-t6-normalized",
-   "date": "2026-11-07"
+   "date": "2026-11-07",
+   "voxels_sha256": "794096cfdc13d93d"
   },
   "voxels": 33209,
   "centroid_vox": [

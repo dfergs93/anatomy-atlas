@@ -159,7 +159,9 @@ Checked on the owner's M4 Pro with subject 036 (2026-11-06):
 
 - **Setup, once:** `python3.13 -m venv venv-autoseg && venv-autoseg/bin/pip install -r requirements-autoseg.txt` (~3.5 GB). The main `venv` stays light for a helper who only paints (spec §5.6).
 - **Run:** `venv/bin/python tools/autolabels.py knee-mri` (`--no-totalseg` to skip the bones).
-  - It backs up the case, fills only empty voxels, never replaces a structure without an `"auto"` key in `lut.json`, re-runs replace only its own earlier voxels, and rebuilds `knee-mri-left`. Mirrored copies are refused.
+  - It backs up the case, fills only empty voxels, never replaces a structure without an `"auto"` key in `lut.json`, and rebuilds `knee-mri-left`. Mirrored copies are refused.
+  - A re-run replaces a structure's earlier auto voxels only if they are unchanged: `"auto"` stores a fingerprint (`voxels_sha256`), and a structure edited since is kept and reported.
+  - **Checked = no `"auto"` key.** Removing it marks the outline as checked: the panel note goes and re-runs leave it alone. Painting mode (step 4) must drop `"auto"` from any structure it changes.
   - DOSMA's package breaks on NumPy 2, so `tools/autoseg/dosma_unet.py` rebuilds its U-Net with tf_keras. Weights download once to `~/.cache/anatomy-atlas/dosma/`, checked against a pinned sha256.
   - Meniscus thirds are cut by angle round each meniscus's own ring centre, with the opening facing the notch. On knee-mri: medial 26 / 19 / 55 % (the posterior horn is the widest part), lateral 31 / 33 / 36 %.
   - The viewer's panel says "Outline drawn automatically (…) — not yet checked" for any structure with `"auto"`.
