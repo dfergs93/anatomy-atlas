@@ -1,6 +1,6 @@
 // Author mode (painting, spec §5): the checklist chooses the structure, brush and eraser paint it,
-// undo, save. index.html calls attachAuthor(ctx) after each loadSequence when ?mode=author; nothing
-// here runs otherwise.
+// the wand, fill between slices and grow spread it (§5.3), undo, save. index.html calls
+// attachAuthor(ctx) after each loadSequence when ?mode=author; nothing here runs otherwise.
 //
 // The label map is copied into NiiVue's drawing layer (uint8, x fastest, RAS order = NIfTI order
 // because both volumes must have permRAS [1,2,3]). `before` mirrors the accepted drawing: after
@@ -8,11 +8,20 @@
 // accepted voxels become an undo entry. A save posts the whole bitmap to tools/serve.py's /api/save.
 // Unsaved paint is never lost silently: "● Unsaved" shows, leaving the page asks first, and a failed
 // save offers the paint as a download.
+//
+// The wand, fill between and grow write their result straight into nv.drawBitmap and then run the
+// same afterEdit() as a stroke, so the guard decides what is kept (NiiVue fires no "draw" for them).
 "use strict";
 
 const AUTHOR_OPTS = {
   undoDepth: 100,
   sizeMin: 1, sizeMax: 25, sizeStep: 2, sizeDefault: 3, // NiiVue's pen is a square of side 2*floor(n/2)+1
+  // wand: seed window = 3x3 median ± tolerance × (cal_max − cal_min); 2D = the current plane.
+  // 0.10, not the plan's 0.12: on knee-mri's DESS, clicks along the ACL spilled out of it 14 times in 35 at 0.12,
+  // 5 at 0.10 and never at 0.08 (which fills only ~50 voxels a click). ±0.02 with [ ].
+  wandTolerance: 0.10, wandTolMin: 0.02, wandTolMax: 0.4, wandTolStep: 0.01, wandTolKeyStep: 0.02, wandMaxDistMM: 40,
+  growTolerance: 0.05, growSteps: 12,
+  fillSliceType: { sagittal: 2, coronal: 1, axial: 0 }, // interpolateMaskSlices' sliceType (NiiVue SLICE_TYPE)
   drawOpacity: 0.5,
   narrowQuery: "(max-width: 760px)", // same breakpoint as the viewer's single-view layout
   hosts: ["127.0.0.1", "localhost"],
@@ -102,6 +111,8 @@ function makeAuthor(ctx) {
     assigned: new Map(),     // id -> value for structures painted but not yet in lut.json
     current: null, curValue: 0,
     tool: "brush", size: AUTHOR_OPTS.sizeDefault, overwrite: false, paintShown: true,
+    wandTol: AUTHOR_OPTS.wandTolerance, wand3D: false,
+    lastTool: null,          // {what, ms, added, restored} of the last wand / fill between / grow (for checks)
     undo: [], edits: 0, savedEdits: 0,
     checked: new Set(),      // ids marked checked since the last save (K, a later task)
     token: null, saving: null, refused: false, filter: "", noteKind: null, lastSaveMs: null, enterAfterStroke: false,
@@ -173,16 +184,22 @@ function makeAuthor(ctx) {
     return !!S.current && !S.refused && !!nv.drawBitmap;
   }
 
+  // NiiVue's pen is on for the brush and eraser only: with the wand a click must not also lay down a dot.
+  function penOn() {
+    return canPaint() && (S.tool === "brush" || S.tool === "eraser");
+  }
+
   function applyPen() {
     nv.opts.penSize = S.size;
-    if (nv.opts.drawingEnabled !== canPaint()) nv.setDrawingEnabled(canPaint());
+    if (nv.opts.drawingEnabled !== penOn()) nv.setDrawingEnabled(penOn());
     nv.setPenValue(S.tool === "eraser" || !S.current ? 0 : S.curValue, false);
   }
 
-  // NiiVue fires "draw" after each brush or eraser stroke.
-  function afterEdit() {
+  // NiiVue fires "draw" after each brush or eraser stroke; the wand, fill between and grow call this
+  // themselves, naming the tool for the message. Returns the guard's result (or null).
+  function afterEdit(what) {
     const bm = nv.drawBitmap;
-    if (!bm || !before || bm.length !== before.length) return;
+    if (!bm || !before || bm.length !== before.length) return null;
     const cur = S.current ? S.curValue : AUTHOR_OPTS.noCurrent;
     const ch = paint.guardChanges(before, bm, cur, S.overwrite && !!S.current);
     if (ch.restored) nv.refreshDrawing(true);
@@ -194,11 +211,133 @@ function makeAuthor(ctx) {
     }
     const name = S.current ? esc(S.current.name) : "the current structure";
     if (ch.restored) {
-      note("info", (S.tool === "eraser" ? `The eraser clears only ${name}` : `The brush paints only empty voxels and ${name}`) +
+      note("info", (!what && S.tool === "eraser" ? `The eraser clears only ${name}` : `${what || "The brush"} paints only empty voxels and ${name}`) +
         "; other structures were left as they were. Tick “Paint over other structures” to change them.");
     } else if (ch.idx.length && S.noteKind === "info") {
       clearNote(); // a clean stroke clears an old hint; a repeat call with no changes leaves it
     }
+    return ch;
+  }
+
+  // ---------- wand, fill between, grow (spec §5.3) ----------
+  function volDims() {
+    return Array.from(nv.volumes[0].dimsRAS).slice(1, 4);
+  }
+
+  function voxMM() {
+    const v = nv.volumes[0];
+    return Array.from(v.pixDimsRAS || v.hdr.pixDims).slice(1, 4);
+  }
+
+  // The sequence's display window from meta.json (not the live one, which Shift-drag changes).
+  function calRange() {
+    const seq = state.meta.sequences.find((s) => s.id === state.seqId);
+    if (seq && Number.isFinite(seq.cal_min) && Number.isFinite(seq.cal_max) && seq.cal_max > seq.cal_min) {
+      return [seq.cal_min, seq.cal_max];
+    }
+    const v = nv.volumes[0];
+    return [v.global_min, v.global_max];
+  }
+
+  // A tool can run: a structure is chosen and the drawing is open. A stroke still in progress is
+  // guarded first, so its voxels never land in the tool's undo entry unchecked.
+  function toolReady() {
+    if (S.refused || !nv.drawBitmap || !before) return false; // the banner says why
+    if (!S.current) {
+      note("info", "Choose a structure first: <kbd>Enter</kbd> for the next one, or pick one below.");
+      return false;
+    }
+    if (stroking) afterEdit();
+    return true;
+  }
+
+  // Paint the current value into `mask`, then let the guard decide what stays.
+  function applyMask(mask, what) {
+    const bm = nv.drawBitmap;
+    const v = S.curValue;
+    for (let k = 0; k < mask.length; k++) bm[mask[k]] = v;
+    nv.refreshDrawing(true);
+    return afterEdit(what);
+  }
+
+  // Report a tool's result: a count when it added voxels, a hint when it added none. The guard's own
+  // message (other structures left alone) wins.
+  function toolDone(what, ch, t0, okText, emptyText) {
+    const added = ch ? ch.idx.length : 0;
+    S.lastTool = { what, ms: Math.round(performance.now() - t0), added, restored: ch ? ch.restored : 0 };
+    if (ch && ch.restored) return;
+    if (added) note("ok", okText(added.toLocaleString()));
+    else note("info", emptyText);
+  }
+
+  function wandAt(frac) {
+    if (!toolReady()) return;
+    const t0 = performance.now();
+    const img = nv.volumes[0].img;
+    const dims = volDims();
+    const axis = core.PLANE_AXIS[state.plane];
+    const seed = ctx.frac2vox(frac, 0);
+    const [lo, hi] = paint.seedWindow(img, dims, seed, axis, S.wandTol, calRange());
+    const mask = paint.wandMask(img, dims, seed, {
+      lo, hi, is2D: !S.wand3D, axis, maxDistMM: AUTHOR_OPTS.wandMaxDistMM, voxMM: voxMM(),
+    });
+    const ch = mask.length ? applyMask(mask, "The wand") : null;
+    toolDone("wand", ch, t0, (n) => `Wand: ${n} voxels added.`,
+      "The wand added nothing here: the voxel is unlike its neighbours, or the area is already painted. Try another spot or a higher tolerance.");
+  }
+
+  // Interpolate the current structure across the gaps between its painted slices in this plane.
+  // NiiVue's interpolateMaskSlices interpolates every label in the drawing (and overwrites others),
+  // so it runs on a copy holding only the current structure; what it adds is merged back and guarded.
+  function fillBetween() {
+    if (!toolReady()) return;
+    const t0 = performance.now();
+    const cur = S.curValue;
+    const name = esc(S.current.name);
+    const keys = paint.keySlices(nv.drawBitmap, volDims(), cur, core.PLANE_AXIS[state.plane]);
+    if (keys.length < 2) {
+      note("info", `Paint at least two slices first (${name} is on ${keys.length} ${state.plane} slice${keys.length === 1 ? "" : "s"}).`);
+      return;
+    }
+    const gaps = [];
+    for (let k = 1; k < keys.length; k++) if (keys[k] - keys[k - 1] >= 2) gaps.push([keys[k - 1], keys[k]]);
+    if (!gaps.length) {
+      note("info", `No gaps to fill: ${name}'s painted ${state.plane} slices are next to each other.`);
+      return;
+    }
+    const bm = nv.drawBitmap;
+    const full = bm.slice();
+    try {
+      for (let i = 0; i < bm.length; i++) if (bm[i] !== cur) bm[i] = 0;
+      const sliceType = AUTHOR_OPTS.fillSliceType[state.plane];
+      for (const [a, b] of gaps) nv.interpolateMaskSlices(a, b, { sliceType, useIntensityGuided: true });
+      const out = nv.drawBitmap;
+      for (let i = 0; i < out.length; i++) if (out[i] === cur) full[i] = cur;
+    } catch (e) {
+      note("error", `Fill between failed: ${esc(e.message)}. Nothing was changed.`);
+      return;
+    } finally {
+      if (nv.drawBitmap !== bm) nv.drawBitmap = bm;
+      bm.set(full); // every path: the drawing again holds every structure
+      nv.refreshDrawing(true);
+    }
+    const ch = afterEdit("Fill between");
+    const span = `${state.plane} slices ${keys[0] + 1}–${keys[keys.length - 1] + 1}`;
+    toolDone("fill", ch, t0, (n) => `Filled ${gaps.length} gap${gaps.length === 1 ? "" : "s"} between ${span}: ${n} voxels added.`,
+      `Fill between added nothing between ${span}.`);
+  }
+
+  function grow() {
+    if (!toolReady()) return;
+    const t0 = performance.now();
+    const name = esc(S.current.name);
+    const mask = paint.growMask(nv.volumes[0].img, volDims(), nv.drawBitmap, S.curValue, {
+      tolerance: AUTHOR_OPTS.growTolerance, range: calRange(), steps: AUTHOR_OPTS.growSteps,
+    });
+    const ch = mask.length ? applyMask(mask, "Grow") : null;
+    toolDone("grow", ch, t0, (n) => `Grow: ${n} voxels added. Press G again to keep growing.`,
+      before.indexOf(S.curValue) >= 0 ? `${name} can't grow further: no similar signal next to it.`
+        : `Paint a few strokes inside ${name} first, then grow.`);
   }
 
   function pushUndo(entry) {
@@ -374,7 +513,8 @@ function makeAuthor(ctx) {
 
   // ---------- panel ----------
   const keyHelp = `
-    <p><kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>[</kbd> <kbd>]</kbd> size · <kbd>O</kbd> show/hide paint</p>
+    <p><kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>W</kbd> wand (click) · <kbd>[</kbd> <kbd>]</kbd> size or tolerance · <kbd>O</kbd> show/hide paint</p>
+    <p><kbd>F</kbd> fill between painted slices · <kbd>G</kbd> grow</p>
     <p><kbd>Enter</kbd> save, then next · <kbd>${MOD}S</kbd> save · <kbd>${MOD}Z</kbd> undo · <kbd>/</kbd> filter</p>
     <p><b>Mouse:</b> drag = paint (big view) · Shift-drag = window/level · right- or Ctrl-drag = pan ·
       wheel or <kbd>↑</kbd><kbd>↓</kbd> = slices · <kbd>1</kbd>–<kbd>3</kbd> plane · click a small view to jump there</p>`;
@@ -395,9 +535,20 @@ function makeAuthor(ctx) {
         <div class="group" role="group" aria-label="Tool">
           <button type="button" data-tool="brush" title="Brush (B)">Brush</button>
           <button type="button" data-tool="eraser" title="Eraser (E)">Eraser</button>
+          <button type="button" data-tool="wand" title="Wand: click a structure to fill similar signal (W)">Wand</button>
         </div>
-        <label class="ap-size">Size <input id="apSize" type="range" min="${AUTHOR_OPTS.sizeMin}" max="${AUTHOR_OPTS.sizeMax}"
+        <label id="apSizeRow" class="ap-size">Size <input id="apSize" type="range" min="${AUTHOR_OPTS.sizeMin}" max="${AUTHOR_OPTS.sizeMax}"
           step="${AUTHOR_OPTS.sizeStep}" aria-label="Brush size in voxels"> <output id="apSizeOut"></output></label>
+        <div id="apWandRow" class="ap-wand">
+          <label class="ap-size" title="How far from the clicked signal the fill reaches, as a share of the window width">Tolerance
+            <input id="apTol" type="range" min="${AUTHOR_OPTS.wandTolMin}" max="${AUTHOR_OPTS.wandTolMax}" step="${AUTHOR_OPTS.wandTolStep}"
+              aria-label="Wand tolerance"> <output id="apTolOut"></output></label>
+          <label class="ap-check" title="Off: the wand fills this slice only. On: it also spreads to neighbouring slices"><input id="apWand3D" type="checkbox"> 3D</label>
+        </div>
+        <div class="ap-actions">
+          <button id="apFill" type="button" title="Fill the slices between the painted ones in this plane (F)">Fill between</button>
+          <button id="apGrow" type="button" title="Grow the painted strokes into similar signal (G)">Grow</button>
+        </div>
         <label class="ap-check"><input id="apOverwrite" type="checkbox"> Paint over other structures</label>
       </section>
       <section class="ap-save">
@@ -425,6 +576,11 @@ function makeAuthor(ctx) {
     });
     $("apSize").addEventListener("input", (e) => setSize(Number(e.target.value)));
     $("apSize").addEventListener("change", focusImage);
+    $("apTol").addEventListener("input", (e) => setTolerance(Number(e.target.value)));
+    $("apTol").addEventListener("change", focusImage);
+    $("apWand3D").addEventListener("change", (e) => { S.wand3D = e.target.checked; focusImage(); });
+    $("apFill").addEventListener("click", () => { fillBetween(); focusImage(); });
+    $("apGrow").addEventListener("click", () => { grow(); focusImage(); });
     $("apOverwrite").addEventListener("change", (e) => { S.overwrite = e.target.checked; focusImage(); });
     $("apSave").addEventListener("click", () => { save(); focusImage(); });
     $("apUndo").addEventListener("click", () => { undoLast(); focusImage(); });
@@ -454,6 +610,11 @@ function makeAuthor(ctx) {
   }
 
   function setTool(tool) {
+    // Turning the pen off mid-stroke ends NiiVue's stroke without "draw": guard what it painted so far.
+    if (stroking && (tool === "brush" || tool === "eraser") !== (S.tool === "brush" || S.tool === "eraser")) {
+      stroking = false;
+      afterEdit();
+    }
     S.tool = tool;
     applyPen();
     render();
@@ -462,6 +623,12 @@ function makeAuthor(ctx) {
   function setSize(n) {
     S.size = Math.max(AUTHOR_OPTS.sizeMin, Math.min(AUTHOR_OPTS.sizeMax, n));
     applyPen();
+    render();
+  }
+
+  function setTolerance(t) {
+    const r = Math.round(t / AUTHOR_OPTS.wandTolStep) * AUTHOR_OPTS.wandTolStep; // no float drift from [ ]
+    S.wandTol = Math.max(AUTHOR_OPTS.wandTolMin, Math.min(AUTHOR_OPTS.wandTolMax, Number(r.toFixed(2))));
     render();
   }
 
@@ -483,6 +650,12 @@ function makeAuthor(ctx) {
     for (const b of document.querySelectorAll("#authorPanel [data-tool]")) b.setAttribute("aria-pressed", String(b.dataset.tool === S.tool));
     $("apSize").value = S.size;
     $("apSizeOut").textContent = `${S.size} vox`;
+    $("apTol").value = S.wandTol;
+    $("apTolOut").textContent = `${Math.round(S.wandTol * 100)} %`;
+    $("apWand3D").checked = S.wand3D;
+    // inline style: .ap-size sets display, which beats [hidden]
+    $("apSizeRow").style.display = S.tool === "wand" ? "none" : "";
+    $("apWandRow").style.display = S.tool === "wand" ? "" : "none";
     $("apOverwrite").checked = S.overwrite;
     renderStatus();
     renderRows();
@@ -550,8 +723,15 @@ function makeAuthor(ctx) {
     if (k === "Enter") { e.preventDefault(); if (!e.repeat) enterNext(); return true; }
     if (k === "b" || k === "B") { setTool("brush"); return true; }
     if (k === "e" || k === "E") { setTool("eraser"); return true; }
-    if (k === "[") { setSize(S.size - AUTHOR_OPTS.sizeStep); return true; }
-    if (k === "]") { setSize(S.size + AUTHOR_OPTS.sizeStep); return true; }
+    if (k === "w" || k === "W") { setTool("wand"); return true; }
+    if (k === "f" || k === "F") { if (!e.repeat) fillBetween(); return true; }
+    if (k === "g" || k === "G") { if (!e.repeat) grow(); return true; }
+    if (k === "[" || k === "]") {
+      const dir = k === "]" ? 1 : -1;
+      if (S.tool === "wand") setTolerance(S.wandTol + dir * AUTHOR_OPTS.wandTolKeyStep);
+      else setSize(S.size + dir * AUTHOR_OPTS.sizeStep);
+      return true;
+    }
     if (k === "/") { e.preventDefault(); $("apFilter").focus(); return true; }
     if (k === "o" || k === "O") {
       S.paintShown = !S.paintShown;
@@ -561,8 +741,10 @@ function makeAuthor(ctx) {
     return false;
   }
 
-  // A click (no drag) in the main view. Brush and eraser have already painted the dab.
-  function onClick(_frac, _e) {}
+  // A click (no drag) in the main view. Brush and eraser have already painted the dab; the wand fills.
+  function onClick(frac, _e) {
+    if (S.tool === "wand") wandAt(frac);
+  }
 
   function beforeUnload(e) {
     if (!unsaved() && !S.saving) return undefined;
@@ -587,7 +769,7 @@ function makeAuthor(ctx) {
     stroking = false;
     if (suspended) {
       suspended = false;
-      nv.opts.drawingEnabled = canPaint();
+      nv.opts.drawingEnabled = penOn();
     }
     if (S.enterAfterStroke) { // after NiiVue's mouseup has fired "draw" for this stroke
       S.enterAfterStroke = false;
@@ -661,7 +843,7 @@ function makeAuthor(ctx) {
 
   return {
     caseId, onKey, onClick, reattach, save, undo: undoLast, afterEdit, beforeUnload, makeCurrent, enterNext,
-    unsaved, downloadPaint,
+    unsaved, downloadPaint, wandAt, fillBetween, grow, setTool,
     get state() { return S; },
     get before() { return before; },
   };
@@ -684,10 +866,12 @@ function authorStyles() {
   #authorPanel h2 { margin: 0; font-size: 20px; }
   .ap-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   .ap-next { text-align: left; }
-  .ap-next kbd, .ap-help kbd { font: 11px var(--font); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+  .ap-next kbd, .ap-help kbd, .ap-msg kbd { font: 11px var(--font); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
   .ap-tools .group { align-self: flex-start; }
   .ap-size, .ap-check { display: flex; align-items: center; gap: 8px; color: var(--muted); }
   .ap-size input { flex: 1; }
+  .ap-wand { display: flex; flex-direction: column; gap: 6px; }
+  .ap-actions { display: flex; gap: 6px; }
   .ap-size output { min-width: 48px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
   #authorPanel .ap-save { flex-direction: row; align-items: center; }
   #apSave { background: var(--accent); color: var(--accent-ink); font-weight: 600; }

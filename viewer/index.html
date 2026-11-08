@@ -265,6 +265,11 @@ const nv = new niivue.Niivue({
   isOrientationTextVisible: true,
   multiplanarShowRender: niivue.SHOW_RENDER.NEVER,
   logLevel: "warn",
+  // NiiVue's own key-up hotkeys off: V cycles the slice type (breaks the main + small views layout),
+  // C and P change clip planes (P is author mode's point key)
+  viewModeHotKey: "",
+  clipPlaneHotKey: "",
+  cycleClipPlaneHotKey: "",
 });
 nv.setMouseEventConfig({
   leftButton: { primary: niivue.DRAG_MODE.windowing, withShift: niivue.DRAG_MODE.pan, withCtrl: niivue.DRAG_MODE.crosshair },
