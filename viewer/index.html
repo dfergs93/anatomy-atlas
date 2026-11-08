@@ -43,6 +43,12 @@
   button:hover { background: #252c35; }
   button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); }
   input[type=search] { width: 220px; }
+  #paintLink {
+    color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 5px 10px; min-height: 32px; display: inline-flex; align-items: center; text-decoration: none;
+  }
+  #paintLink:hover { background: #252c35; }
+  #paintLink[hidden] { display: none; }
   label.inline { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
   .spacer { flex: 1; }
 
@@ -153,6 +159,7 @@
     <button id="zoomIn" title="Zoom in">+</button>
     <button id="resetView" title="Reset zoom, pan and window/level (R)">Reset</button>
   </div>
+  <a id="paintLink" class="full-only wide-only" hidden title="Paint labels on this case (author mode)">Paint</a>
   <span class="spacer"></span>
   <input id="find" class="full-only" type="search" list="structList" placeholder="Find structure…" aria-label="Find structure">
   <datalist id="structList"></datalist>
@@ -199,6 +206,8 @@
 
 <script src="vendor/niivue.umd.js"></script>
 <script src="core.js"></script>
+<script src="paint-core.js"></script>
+<script src="author.js"></script>
 <script>
 "use strict";
 const params = new URLSearchParams(location.search);
@@ -212,6 +221,8 @@ const core = window.atlasCore;
 const PLANE_AXIS = core.PLANE_AXIS;
 const narrowMQ = matchMedia("(max-width: 760px)");
 const POINT_RADIUS_MM = 4;
+const LOCAL_HOST = ["127.0.0.1", "localhost"].includes(location.hostname);
+let author = null; // author mode's session (author.js), once attachAuthor has accepted the case
 
 const state = {
   cases: [], caseId: null, meta: null, lut: {}, points: [],
@@ -312,6 +323,9 @@ async function loadCase(caseId, { keepPlane = false } = {}) {
   $("banner").textContent = notes.join(" · ");
   $("sideGroup").hidden = !core.counterpart(state.cases, caseId);
   pressed("sideGroup", "side", meta.side);
+  const paintable = MODE === "standalone" && LOCAL_HOST && !meta.mirror_of; // mirrored copies are rebuilt, never painted
+  $("paintLink").hidden = !paintable;
+  $("paintLink").href = `?case=${encodeURIComponent(caseId)}&mode=author`;
 
   $("seqGroup").innerHTML = meta.sequences
     .map((s) => `<button data-seq="${s.id}">${s.label}</button>`).join("");
@@ -360,6 +374,12 @@ async function loadSequence(seqId, fresh = false) {
   applyOverlay();
   setPlane(state.plane);
   pressed("seqGroup", "seq", seq.id);
+  if (MODE === "author") {
+    author = attachAuthor({
+      nv, state, core, paint: window.atlasPaint, $, DATA, getJSON, buildColormap, setSlice, setPlane,
+      cursorWorld, worldToFrac, fracToWorld, frac2vox, drawMarkers, showHover, escapeHTML, tileKind,
+    });
+  }
 }
 
 // ---------- view state ----------
@@ -379,9 +399,9 @@ function planeOfType(type) {
   return core.PLANES.find((p) => sliceTypes()[p] === type);
 }
 
-// Main view + two small reference views: standalone mode on a wide enough window.
+// Main view + two small reference views: standalone and author mode on a wide enough window.
 function isHero() {
-  return MODE === "standalone" && !narrowMQ.matches;
+  return (MODE === "standalone" || MODE === "author") && !narrowMQ.matches;
 }
 
 function applyLayout() {
@@ -409,6 +429,7 @@ function applyOverlay() {
 }
 
 function activeValue() {
+  if (author) return 0; // painting: the drawing is shown; the label volume underneath is out of date
   const t = state.selected || state.hover; // the followed structure stays lit; hover only names others
   return t && t.kind === "region" ? t.value : 0;
 }
@@ -538,10 +559,18 @@ function pickAt(cssX, cssY) {
     if (d <= POINT_RADIUS_MM && (!best || d < best.d)) best = { d, p };
   }
   if (best) return { kind: "point", id: best.p.id, name: best.p.name || best.p.id };
-  const vox = frac2vox(frac, 1);
-  const value = nv.volumes[1].getValue(vox[0], vox[1], vox[2]);
+  const value = labelValueAt(frac2vox(frac, 1));
   const l = state.lut[value];
   return l ? { kind: "region", value, id: l.id, name: l.name } : null;
+}
+
+// Region value at a label-grid voxel: the drawing being painted in author mode, else the label volume.
+function labelValueAt(vox) {
+  if (author && nv.drawBitmap) {
+    const [nx, ny] = volDims(1);
+    return nv.drawBitmap[vox[0] + vox[1] * nx + vox[2] * nx * ny];
+  }
+  return nv.volumes[1].getValue(vox[0], vox[1], vox[2]);
 }
 
 function showHover(t) {
@@ -598,6 +627,13 @@ canvas.addEventListener("pointerup", (e) => {
   const moved = Math.hypot(e.offsetX - down[0], e.offsetY - down[1]);
   down = null;
   if (moved > 4) return;
+  if (author) {  // author mode: a click in the main view is the tool's; a small view still jumps there
+    const kind = tileKind(e.offsetX, e.offsetY);
+    const frac = fracAt(e.offsetX, e.offsetY);
+    if (frac && kind === "small") moveCursor(frac);
+    else if (frac && kind === "main") author.onClick(frac, e);
+    return;
+  }
   if (!isHero()) {  // single view (sidebar, phone): as before — tap empty space to clear
     const t = pickAt(e.offsetX, e.offsetY);
     select(t);
@@ -868,6 +904,7 @@ function resetView() {
 }
 
 document.addEventListener("keydown", (e) => {
+  if (author && author.onKey(e)) return; // author mode's tool keys first
   if (e.target.tagName === "INPUT" && e.target.type === "search") return;
   const k = e.key;
   if (k === "ArrowUp" || k === "PageUp") { setSlice(Number($("slice").value) + 1); e.preventDefault(); }
