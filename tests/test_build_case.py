@@ -65,3 +65,14 @@ def test_meniscus_parts_have_distinct_colours():
     # still distinct from the cartilage next to them
     cart = np.array(colour("medial_tibial_cartilage", 4), float)
     assert all(np.linalg.norm(np.array(colour(f"medial_meniscus_{p}", 7), float) - cart) >= 80 for p in parts)
+
+
+def test_colour_fixture():
+    from pathlib import Path
+
+    from build_case import colour
+
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "colours.json").read_text())
+    assert len(fixture) >= 20
+    for sid, value, rgb in fixture:
+        assert colour(sid, value) == rgb, (sid, value)
