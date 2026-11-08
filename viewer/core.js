@@ -144,9 +144,37 @@
     return { cases: cases.filter((c) => !c.candidate), candidates: cases.filter((c) => c.candidate) };
   }
 
+  // Rows of a checklists/<atlas>.md table, same as tools/checklist.py read_checklist.
+  function parseChecklist(md) {
+    const rows = [];
+    let group = "";
+    for (const line of md.split("\n")) {
+      if (line.startsWith("## ")) {
+        group = line.slice(3).trim();
+      } else if (line.startsWith("|")) {
+        const c = line.trim().replace(/^\||\|$/g, "").split("|").map((x) => x.trim());
+        if (c.length >= 5 && /^[a-z0-9_]+$/.test(c[0]) && c[0] !== "id") {
+          rows.push({ id: c[0], name: c[1], type: c[2], labelled: c[3] === "[x]", group });
+        }
+      }
+    }
+    return rows;
+  }
+
+  // First row not in `done` after afterId, in checklist order, wrapping round; null when all done.
+  function nextStructure(rows, done, afterId = null) {
+    const start = afterId === null ? 0 : rows.findIndex((r) => r.id === afterId) + 1;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[(start + i) % rows.length];
+      if (!done.has(row.id)) return row;
+    }
+    return null;
+  }
+
   return {
     PLANES, PLANE_AXIS, HERO_FRACTION, otherPlanes, layoutFor, refLineOrientation, tileRect, tileAt,
     applyAffine, invertAffine, worldToVox, worldToFrac, fracToWorld, extentSlices,
     pointRange, trackGradient, mirrorMM, counterpart, pickerGroups, autoNote,
+    parseChecklist, nextStructure,
   };
 });

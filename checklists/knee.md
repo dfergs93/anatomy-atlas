@@ -1,7 +1,7 @@
 # Knee MRI — structure checklist
 
 Seed list for `data/knee-mri`. Edit freely — add, remove, rename.
-**Type:** R = region (painted in label map) · P = point label.
+**Type:** R = region (painted in label map) · P = point label · E = expected location (painted where it lies; shown as a dotted outline, visible only when distended).
 **Labelled:** painted/placed in the case. **Content:** `labels/<id>.json` written and reviewed.
 
 ## Bones and landmarks
@@ -125,7 +125,7 @@ Seed list for `data/knee-mri`. Edit freely — add, remove, rename.
 |quadriceps_fat_pad                 |Suprapatellar (quadriceps) fat pad     |R   |[ ]     |[ ]    |
 |prefemoral_fat_pad                 |Prefemoral fat pad                     |R   |[ ]     |[ ]    |
 |suprapatellar_recess               |Suprapatellar recess                   |R   |[ ]     |[ ]    |
-|semimembranosus_gastrocnemius_bursa|Semimembranosus–gastrocnemius bursa    |P   |[ ]     |[ ]    |
-|prepatellar_bursa                  |Prepatellar bursa                      |P   |[ ]     |[ ]    |
-|deep_infrapatellar_bursa           |Deep infrapatellar bursa               |P   |[ ]     |[ ]    |
-|pes_anserine_bursa                 |Pes anserine bursa                     |P   |[ ]     |[ ]    |
+|semimembranosus_gastrocnemius_bursa|Semimembranosus–gastrocnemius bursa    |E   |[ ]     |[ ]    |
+|prepatellar_bursa                  |Prepatellar bursa                      |E   |[ ]     |[ ]    |
+|deep_infrapatellar_bursa           |Deep infrapatellar bursa               |E   |[ ]     |[ ]    |
+|pes_anserine_bursa                 |Pes anserine bursa                     |E   |[ ]     |[ ]    |

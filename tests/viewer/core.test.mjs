@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -161,4 +162,23 @@ test("autoNote names the source", () => {
 test("autoNote is null without auto", () => {
   assert.equal(core.autoNote({ id: "femur" }), null);
   assert.equal(core.autoNote(undefined), null);
+});
+
+test("parseChecklist matches the Python reader", () => {
+  const md = readFileSync(new URL("../../checklists/knee.md", import.meta.url), "utf8");
+  const rows = core.parseChecklist(md);
+  assert.equal(rows.length, 86);
+  assert.equal(rows[0].id, "femur");
+  assert.equal(rows[rows.length - 1].id, "pes_anserine_bursa");
+  assert.deepEqual(rows.find((r) => r.id === "fibula"), {
+    id: "fibula", name: "Fibula", type: "R", labelled: false, group: "Bones and landmarks",
+  });
+});
+
+test("nextStructure skips done and wraps", () => {
+  const rows = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  assert.equal(core.nextStructure(rows, new Set(["a"])), rows[1]);
+  assert.equal(core.nextStructure(rows, new Set(["c"]), "b"), rows[0]);
+  assert.equal(core.nextStructure(rows, new Set(["b"]), "a"), rows[2]);
+  assert.equal(core.nextStructure(rows, new Set(["a", "b", "c"])), null);
 });
