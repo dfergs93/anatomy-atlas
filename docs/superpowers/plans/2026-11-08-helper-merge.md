@@ -592,3 +592,63 @@ Run: both suites. Expected: all pass.
 git add viewer/merge.js viewer/author.js viewer/index.html CLAUDE.md README.md
 git commit -m "Merge screen: bring a helper's paint file in structure by structure"
 ```
+
+## Build record (2026-11-09)
+
+Built subagent-driven: one builder and one reviewer per task, then a whole-branch review (opus) and one fix pass (cc84b12..dcbba15). Fix rounds: Task 2 (regionChanges guard), Task 4 (Accept all order hole). Suites at the end: pytest 106, node 59. Browser checks ran on scratch copies only (owner side 8014, helper root 8015); knee-mri's files were hash-checked unchanged after each.
+
+### Rulings made during the build
+
+- Ruling R1: in mergeItems, "same" voxels exist only when the owner has a value for the id (ownValue > 0); a region whose id the owner lacks has same 0, added = incCount, removed 0, status "new" — the plan's literal rule would count a new structure painted on empty voxels as identical and never offer it (spec §5.6: every incoming structure is offered) — T2 adds a test: a new id painted only on empty voxels is offered "new" with added = incCount — cost if wrong: none.
+- Ruling R2: checkPaintFile also returns its "isn't an atlas paint file" message for a non-object (null, array, number), and "structure list is damaged" when two lut values share an id or two points share an id — mergeItems matches by id and save_case refuses duplicate points — T2 adds those cases to the checkPaintFile test — cost if wrong: none.
+- Ruling R3: paintLut computes presence and changed-ness in one pass over the two bitmaps (not one sameVoxels pass per auto value) — T4 calls it on every refresh; target < 0.5 s per accept on 24 M voxels — cost if wrong: none.
+- Ruling R4: unpack refuses (ShareError, nothing written) a manifest whose index_entry is not a dict with case_id equal to the manifest's case_id — it is registered in data/index.json as-is — T1 adds the case to test_unpack_refuses_a_bad_manifest — cost if wrong: none.
+- Ruling R5: the scratch case keeps side "right" (the helper-side check needs the left copy rebuilt); owner-side cleanup also removes data/merge-test-left and its index entry and restores checklists/knee.md with `git checkout checklists/knee.md` (a save of the non-synthetic scratch case ticks it); `git status` must show nothing from the checks afterwards — cost if wrong: none.
+- Ruling R6: plan 3's Ruling P1 carries — work in the main checkout on helper-merge; the owner's 8004 server serves this checkout's viewer files (its Python stays the merged main's until restarted) and briefly lists merge-test in the case picker — cost if wrong: the owner sees in-progress viewer files on 8004.
+- Ruling R7: Task 3 removes its scratch case at the end (server stopped, data/merge-test + index entry gone) and Task 4 rebuilds it — a server left running between agents can't be stopped by the next one — cost: one cp of knee-mri (~seconds).
+- Task 4: Ruling: accepted items stay off the list until an undo changes them (`taken`, merge-core itemsLeft, node-tested) — an accept that kept the owner's overlap still differs from the file, so the plan's "recompute mergeItems minus skipped" would re-offer it at once and the list would never empty — cost if wrong: an item accepted then changed by hand isn't re-offered until the file is opened again.
+- Task 4: Ruling: the done text is conditional so it never says "Nothing in this file differs from yours" after skips or a save — the plan's two-way text would be false then — cost: none.
+- Task 4: Ruling: api.valueFor treats the current (selected, unpainted) structure's value as taken, and the api gains unsaved() — without it an incoming new structure could get the same value as the current structure and the two would merge into one — cost: none.
+- Task 4: Ruling: keep checkPaintFile's "Open <case> in painting mode" copy even when <case> is a mirrored copy — painting mode never writes a paint file for a mirror (it refuses them), so only a hand-made file can name one — cost if wrong: a confusing line on a hand-edited file.
+- Final: Ruling: Important 2's fix in this pass = (a) "Accept all the rest" on a helper's file (why "paint") takes new, checked and point items only and leaves "changed" ones for one-by-one review, saying so in its title and end note; on a refused save's own file (why "unsaved") it still takes everything (the file is the owner's own latest work); (b) CLAUDE.md + README say plainly what is and isn't protected; the pack-time fingerprint (three-way merge that leaves out structures the helper never changed) goes to the owner as the follow-up — the narrowed Accept all removes the silent bulk revert, one-by-one review shows "Theirs adds … and removes … of yours" before each — cost if wrong: a few extra Enter presses on a helper's file; the stale-copy item still shows up one by one until the follow-up lands.
+- Final: Ruling: README "don't commit checklists/knee.md" becomes "you don't need to commit anything" in the same docs edit (unpack and saves also change tracked data/<case>/*.json) — same paragraph as Important 2's docs fix — cost: none.
+- Final: Ruling: declined-to-judge lines all stand — owner running unpack --replace on their own machine (misuse), zip bombs/decompression caps and Windows reserved names (files pass between trusted people; already deferred), save_case write phase not atomic + serve.py 500 text (pre-existing; the encoding fix removes the trigger found), minimum Python version unaudited, CompressionStream support (Save already needs it), ZIP_DEFLATED on gzipped members (time only), theirs-wins dropping auto from an overlapped owner outline (same as paint-over), preview not marking voxels a changed accept would clear (status line states the removed count), Accept all pushing edits off the 100-deep undo stack (pre-existing limit; Save unaffected) — cost if wrong: owner asks for one of them.
+
+### Deferred minors (not fixed; for a later pass)
+
+- Task 1: a zip with a bare "knee-t/" directory entry (zip -r / Finder) is refused as "unsafe or unexpected file"; pack never writes one.
+- Task 1: CASE_ID regex uses match with $ (trailing newline passes); use fullmatch.
+- Task 1: tests could pin more — "pack knee-t instead", index_entry without mirror inside atlas-share.json, the full --replace refusal text.
+- Task 1: CLI main() untested; malformed meta.json / OSError / zlib.error in pack or unpack still print a traceback; errors go to stdout.
+- Task 1: a failed copy leaves a .part file; a fresh unpack failing after labels.nii.gz is written leaves a folder the next run refuses as "your paint".
+- Task 1: --replace over a helper case with points.json, from an owner case without one, keeps the helper's stale points.json (the backup has it; those points would be offered again as new).
+- Task 1: unpack requires only <case>/meta.json, not labels.nii.gz or the sequence files; Windows alternate-stream names (knee-t/x:s) pass the drive check.
+- Task 2: encode/decode test only 1000 bytes (one chunk); no >24 KB incompressible or truncated-gzip test.
+- Task 2: focusOf tested on axis 2 only; tie rule and half-rounding untested; allocates an array per matching voxel.
+- Task 2: the extra checkPaintFile rules (malformed dims/affine, non-string labels_gz_b64) are untested.
+- Task 2: lut entry name not validated as a string (mergeItems uses e.name || id).
+- Task 2: sort comparators rely on Infinity - Infinity = NaN → 0; compare explicitly.
+- Task 2: incoming bitmap values with no lut entry are dropped silently (not in unknown).
+- Task 2: a point id counts as known if any checklist row has it, including a region row.
+- Task 2: decodeLabels has no cap on decompressed size before the length check.
+- Task 2: regionChanges checks the value's range, not that it's free (it has no owner map); Task 4 must pass api.valueFor(id).
+- Task 3: if reloadAfterSave throws after a successful save, S.savedLut stays stale while savedBitmap = sent, so a structure the save un-auto'd could be written auto: true in a paint file (warning already shown).
+- Task 3: runSave holds raw (Blob copy) + sent (slice) — one full-size copy avoidable.
+- Task 3: #apDownload stays enabled during encode; a double click downloads twice.
+- Task 3: `why` not validated in paintFile/downloadPaintFile (only two literals passed today).
+- Task 4: Accept all has no try/finally; an unexpected exception mid-loop skips refresh.
+- Task 4: #apMergeIn stays enabled on a refused sequence (drawing closed); an accept then throws TypeError on null nv.drawBitmap, nothing applied.
+- Task 4: goToVox repeats index.html's moveCursor; .am-actions kbd style repeats .ap-next kbd.
+- Task 4: done text says "Save to keep what you accepted." after every accept was undone and the rest skipped.
+- Task 4: an accept that changes no voxels adds no undo step, so ⌘Z can't bring that item back (reopening the file offers it again).
+- Final: a refused save's file can't bring back a full erasure or a deleted point (paint file holds only painted values; merge never removes) — spec §5.5; follow-up: carry a removed-ids list and name it when why === "unsaved".
+- Final: an accepted point keeps the file's name instead of the owner's checklist row name.
+- Final: a truncated/corrupt zip gives a traceback after a partial write (BadZipFile/CRC not ShareError); z.testzip() before writing would keep "nothing written".
+- Final: the encoding guard test treats Path.open() with no arguments as ZipFile.open and doesn't flag it (no such call in tools/ today); encoding=None or a positional encoding isn't judged.
+- Final: bulkTakes treats any why other than "paint" as take-all; a hand-edited file with no why gets take-all while the panel calls it paint.
+
+(Fixed during the build, so not listed: CLAUDE.md's two-file download sentence, replaced in Task 4; Task 4's empty undo entry for an accept that changes nothing, removed in its fix round.)
+
+### Follow-up for the owner
+
+- Pack-time base (three-way merge): `pack` records a per-structure fingerprint, the helper's paint file marks structures unchanged since unpack, and the merge leaves those out and names them, as it does unchecked model outlines. Until then a structure the owner changed after packing shows as "changed" and is left for one-at-a-time review (Accept all skips it on a helper's file).
