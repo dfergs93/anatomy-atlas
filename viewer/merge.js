@@ -141,9 +141,11 @@ function makeMerge(api) {
   // Every item left, in list order, the owner's map winning every overlap; items an accept unsettles are
   // taken again, so it ends where accepting them one at a time would (merge-core's acceptAll).
   function acceptAll() {
-    const r = M.acceptAll(items, (it) => take(it, false), compute);
+    const r = M.acceptAll(items, (it) => take(it, false), compute, 8, (it) => M.bulkTakes(it, file.why));
     list(r.items);
+    const k = r.items.filter((it) => !M.bulkTakes(it, file.why)).length;
     if (r.error) api.note("error", `Accepted ${r.done.size}, then stopped: ${r.error}`);
+    else if (k) api.note("ok", `Accepted ${r.done.size}. Save to keep them. ${k} you have both painted ${k === 1 ? "is" : "are"} left for you to look at one at a time.`);
     else api.note("ok", `Accepted ${r.done.size}. Save to keep them.`);
   }
 
@@ -181,7 +183,7 @@ function makeMerge(api) {
           <button type="button" class="am-accept" data-act="accept">Accept · <kbd>Enter</kbd></button>
           ${overlap ? '<button type="button" data-act="wins">Accept — theirs wins the overlap</button>' : ""}
           <button type="button" data-act="skip">Skip · <kbd>N</kbd></button>
-          <button type="button" data-act="all" title="Accepts every item left; where one overlaps your other structures, yours are kept">Accept all the rest</button>
+          <button type="button" data-act="all" title="${file.why === "paint" ? "Accepts every new structure, point and checked mark; structures you both have painted are left for you to look at one at a time. Where one overlaps your other structures, yours are kept" : "Accepts every item left; where one overlaps your other structures, yours are kept"}">Accept all the rest</button>
           <button type="button" data-act="stop">Stop merging · <kbd>Esc</kbd></button>
         </div>`;
     } else {

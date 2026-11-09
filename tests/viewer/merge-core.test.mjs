@@ -239,3 +239,32 @@ test("nextShown keeps the item shown, else takes the next in list order, wrappin
   assert.equal(M.nextShown(k(), k("x"), null), "x");
   assert.equal(M.nextShown(k("a"), k(), "a"), null);
 });
+
+test("bulkTakes: a helper's changed structure is left for one-at-a-time review; unsaved work is taken whole", () => {
+  const it = (kind, status) => ({ kind, status });
+  for (const s of ["new", "checked"]) assert.equal(M.bulkTakes(it("region", s), "paint"), true);
+  for (const s of ["new", "moved"]) assert.equal(M.bulkTakes(it("point", s), "paint"), true);
+  assert.equal(M.bulkTakes(it("region", "changed"), "paint"), false);
+  for (const s of ["new", "checked", "changed"]) assert.equal(M.bulkTakes(it("region", s), "unsaved"), true);
+});
+
+test("acceptAll on a paint file takes new, checked and point items and leaves a changed one listed", () => {
+  const items = [
+    { key: "region:femur", kind: "region", status: "changed" },
+    { key: "region:tibia", kind: "region", status: "new" },
+    { key: "region:acl", kind: "region", status: "checked" },
+    { key: "point:trochlea", kind: "point", status: "moved" },
+  ];
+  const run = (why) => {
+    const gone = new Set(), took = [];
+    const next = () => items.filter((it) => !gone.has(it.key));
+    const r = M.acceptAll(items, (it) => (took.push(it.key), gone.add(it.key), null), next, 8, (it) => M.bulkTakes(it, why));
+    return { took, left: r.items.map((i) => i.key), done: [...r.done] };
+  };
+  const paint = run("paint");
+  assert.deepEqual(paint.took, ["region:tibia", "region:acl", "point:trochlea"]);
+  assert.deepEqual(paint.left, ["region:femur"]);
+  const unsaved = run("unsaved");
+  assert.deepEqual(unsaved.took, ["region:femur", "region:tibia", "region:acl", "point:trochlea"]);
+  assert.deepEqual(unsaved.left, []);
+});

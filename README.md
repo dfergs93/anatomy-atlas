@@ -43,9 +43,9 @@ venv/bin/python tools/serve.py
 
 On Windows: `py -3 -m venv venv`, `venv\Scripts\python -m pip install -r requirements.txt`, then the same commands with `venv\Scripts\python`.
 
-Open the URL `unpack` printed, paint, save, then click "Download paint file" and send that `.atlaspaint` file back. Don't commit `checklists/knee.md`: your saves tick it in your copy.
+Open the URL `unpack` printed, paint, save, then click "Download paint file" and send that `.atlaspaint` file back. You don't need to commit anything: unpacking and your saves also change the case's tracked JSON and the checklist in your copy.
 
-**The owner** opens the case in painting mode, clicks "Merge in a paint file…", goes through it one structure at a time (Enter accept, N skip, Esc stop), then saves.
+**The owner** opens the case in painting mode, clicks "Merge in a paint file…", goes through it one structure at a time (Enter accept, N skip, Esc stop), then saves. Model outlines the helper never checked are left out, but a structure you have changed since packing shows as "changed", and accepting it brings back the helper's (packed) version, so on a helper's file "Accept all the rest" leaves those for you to look at one at a time.
 
 ## Tests
 

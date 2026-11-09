@@ -213,15 +213,23 @@
     });
   }
 
+  // What "Accept all the rest" takes. A helper's file (why "paint") is two-way against the owner's map with no
+  // pack-time base, so a "changed" structure may be the owner's later work: it is left for one-at-a-time
+  // review. A refused save's own file (why "unsaved") is the owner's latest work, taken whole.
+  const bulkTakes = (it, why) => why !== "paint" || it.kind === "point" || it.status !== "changed";
+
   // Accept every item left, the owner winning every overlap, ending where accepting them one at a time does:
   // an accept can free voxels an earlier item was kept out of (a changed structure of the owner's gives them
   // up), so the items that come back are taken again until none does. An owner-wins accept only empties an
   // id's own voxels outside theirs and fills empty voxels, so a second pass is the most that changes anything;
   // `maxPasses` is a cap. take(item) -> an error message or null; next() -> the items left now.
-  function acceptAll(items, take, next, maxPasses = 8) {
+  // `takes(item)` (default: every item) picks what the bulk accept touches; the rest stay on the list.
+  function acceptAll(items, take, next, maxPasses = 8, takes = () => true) {
     const done = new Set();
-    for (let pass = 0; pass < maxPasses && items.length; pass++) {
-      for (const it of items) {
+    for (let pass = 0; pass < maxPasses; pass++) {
+      const todo = items.filter(takes);
+      if (!todo.length) break;
+      for (const it of todo) {
         const error = take(it);
         if (error) return { done, error, items: next() };
         done.add(it.key);
@@ -291,7 +299,7 @@
   }
 
   return {
-    PAINT_FORMAT, paintLut, sameVoxels, encodeLabels, decodeLabels, checkPaintFile, mergeItems, itemsLeft, acceptAll,
+    PAINT_FORMAT, paintLut, sameVoxels, encodeLabels, decodeLabels, checkPaintFile, mergeItems, itemsLeft, acceptAll, bulkTakes,
     nextShown, regionChanges, focusOf,
   };
 });
