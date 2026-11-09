@@ -195,22 +195,40 @@
     return { items, same: sameTotal, autoLeft, unknown };
   }
 
-  // What an accept of an item is judged by: a structure taken with the owner's overlap kept still differs
-  // from theirs, so it is settled while these stay as they were just after the accept.
-  const itemNumbers = (it) => [it.status, it.added, it.removed, it.overlapCount, it.movedMM].join("/");
+  // A structure accepted with the owner's overlap kept still differs from theirs. It is settled while
+  // accepting it again (the owner winning) would change nothing: none of the owner's voxels for it lie outside
+  // theirs, and every voxel of theirs it lacks is under another of the owner's structures. That doesn't depend
+  // on the order things were accepted in: a later accept that frees one of those voxels unsettles it.
+  const settled = (it) => it.kind === "region" && it.status !== "checked" && it.removed === 0 && it.added === it.overlapCount;
 
-  // mergeItems' items still to review: not skipped, and not accepted unless their numbers changed since (an
-  // undo). `taken`: key -> null when just accepted; the first call records its numbers, or "" once it is gone
-  // (it matches the owner's), so it comes back if offered again.
+  // mergeItems' items still to review: not skipped, and not accepted with the owner winning (`taken`, a Set of
+  // keys) while settled. A taken item that is unsettled again (an undo, or an accept that freed voxels it can
+  // take) is offered again and leaves `taken`. Points and checks need no `taken`: accepted, they match.
   function itemsLeft(items, skipped, taken) {
-    const left = items.filter((it) => {
+    return items.filter((it) => {
       if (skipped.has(it.key)) return false;
-      if (!taken.has(it.key)) return true;
-      if (taken.get(it.key) === null) { taken.set(it.key, itemNumbers(it)); return false; }
-      return taken.get(it.key) !== itemNumbers(it);
+      if (taken.has(it.key) && settled(it)) return false;
+      taken.delete(it.key);
+      return true;
     });
-    for (const [k, v] of taken) if (v === null) taken.set(k, "");
-    return left;
+  }
+
+  // Accept every item left, the owner winning every overlap, ending where accepting them one at a time does:
+  // an accept can free voxels an earlier item was kept out of (a changed structure of the owner's gives them
+  // up), so the items that come back are taken again until none does. An owner-wins accept only empties an
+  // id's own voxels outside theirs and fills empty voxels, so a second pass is the most that changes anything;
+  // `maxPasses` is a cap. take(item) -> an error message or null; next() -> the items left now.
+  function acceptAll(items, take, next, maxPasses = 8) {
+    const done = new Set();
+    for (let pass = 0; pass < maxPasses && items.length; pass++) {
+      for (const it of items) {
+        const error = take(it);
+        if (error) return { done, error, items: next() };
+        done.add(it.key);
+      }
+      items = next();
+    }
+    return { done, error: null, items };
   }
 
   // The key to show when the list goes from `prev` to `next`: the one shown if it is still listed, else the
@@ -273,7 +291,7 @@
   }
 
   return {
-    PAINT_FORMAT, paintLut, sameVoxels, encodeLabels, decodeLabels, checkPaintFile, mergeItems, itemsLeft, nextShown,
-    regionChanges, focusOf,
+    PAINT_FORMAT, paintLut, sameVoxels, encodeLabels, decodeLabels, checkPaintFile, mergeItems, itemsLeft, acceptAll,
+    nextShown, regionChanges, focusOf,
   };
 });

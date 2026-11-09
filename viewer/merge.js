@@ -13,7 +13,8 @@ function makeMerge(api) {
   let shown = null;      // key of the item shown
   let wired = false;     // #apMerge's click handler (the section is author.js's)
   const skipped = new Set();
-  const taken = new Map(); // accepted keys (merge-core's itemsLeft): out of the list until an undo brings them back
+  const taken = new Set(); // keys accepted with yours winning: out of the list while settled (merge-core's itemsLeft)
+  let accepted = false;    // anything accepted since the file was opened
 
   mergeStyles();
 
@@ -56,6 +57,7 @@ function makeMerge(api) {
     shown = null;
     skipped.clear();
     taken.clear();
+    accepted = false;
     api.setPreview(null);
     $("apMerge").hidden = true;
     $("apMerge").innerHTML = "";
@@ -65,12 +67,15 @@ function makeMerge(api) {
   const active = () => !!file;
 
   // What the file offers now, against the owner's current drawing, lut and points.
-  function refresh() {
-    if (!file) return;
+  function compute() {
     own = api.own();
     const r = M.mergeItems(own, file.inc, api.rows());
     same = r.same; autoLeft = r.autoLeft; unknown = r.unknown;
-    list(M.itemsLeft(r.items, skipped, taken));
+    return M.itemsLeft(r.items, skipped, taken);
+  }
+
+  function refresh() {
+    if (file) list(compute());
   }
 
   // Replace the list; the item shown stays if it is still there, else the next one in list order.
@@ -97,7 +102,8 @@ function makeMerge(api) {
     render();
   }
 
-  // Take one item into the owner's state (one undo entry). Returns an error message (HTML) or null.
+  // Take one item into the owner's state: one undo entry, none when it changes nothing. Returns an error
+  // message (HTML) or null.
   function take(it, wins) {
     if (it.kind === "point") api.setPoint({ id: it.id, name: it.name, xyz_mm: it.xyz_mm });
     else if (it.status === "checked") api.markChecked(it.id);
@@ -109,9 +115,11 @@ function makeMerge(api) {
         if (e instanceof RangeError) return `${esc(it.name)} wasn't merged: ${esc(e.message)}.`;
         throw e;
       }
-      api.applyChanges(it.id, value, M.regionChanges(own.bitmap, file.inc.bitmap, it.incValue, value, wins));
+      const changes = M.regionChanges(own.bitmap, file.inc.bitmap, it.incValue, value, wins);
+      if (changes.idx.length) api.applyChanges(it.id, value, changes);
+      if (!wins) taken.add(it.key); // yours kept at an overlap: it may still differ, but it is dealt with
     }
-    taken.set(it.key, null);
+    accepted = true;
     return null;
   }
 
@@ -130,17 +138,13 @@ function makeMerge(api) {
     list(items.filter((x) => x !== it));
   }
 
-  // Every item left, in list order, the owner's map winning every overlap.
+  // Every item left, in list order, the owner's map winning every overlap; items an accept unsettles are
+  // taken again, so it ends where accepting them one at a time would (merge-core's acceptAll).
   function acceptAll() {
-    let n = 0, err = null;
-    for (const it of items) {
-      err = take(it, false);
-      if (err) break;
-      n++;
-    }
-    refresh();
-    if (err) api.note("error", `Accepted ${n}, then stopped: ${err}`);
-    else api.note("ok", `Accepted ${n}. Save to keep them.`);
+    const r = M.acceptAll(items, (it) => take(it, false), compute);
+    list(r.items);
+    if (r.error) api.note("error", `Accepted ${r.done.size}, then stopped: ${r.error}`);
+    else api.note("ok", `Accepted ${r.done.size}. Save to keep them.`);
   }
 
   // ---------- panel ----------
@@ -181,8 +185,8 @@ function makeMerge(api) {
           <button type="button" data-act="stop">Stop merging · <kbd>Esc</kbd></button>
         </div>`;
     } else {
-      const done = taken.size > 0 && api.unsaved() ? "Save to keep what you accepted."
-        : !taken.size && !skipped.size ? "Nothing in this file differs from yours." : "";
+      const done = accepted && api.unsaved() ? "Save to keep what you accepted."
+        : !accepted && !skipped.size ? "Nothing in this file differs from yours." : "";
       body = `
         <p class="am-status">Nothing left to merge.${done ? ` ${done}` : ""}</p>
         <div class="am-actions"><button type="button" data-act="stop">Stop merging · <kbd>Esc</kbd></button></div>`;

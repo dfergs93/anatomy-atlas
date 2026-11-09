@@ -126,34 +126,108 @@ test("focusOf picks the fullest slice and its in-plane centre", () => {
   assert.equal(M.focusOf(bm, [2,2,3], 4, 2), null);
 });
 
-test("itemsLeft: skipped items go; an accept with the owner's overlap kept stays settled until undone", () => {
-  const own = { bitmap: Uint8Array.from([1,1,0,0]), lut: L({1:"femur"}), points: [] };
+// A small owner for the list tests: a bitmap and its id -> value map. take() is merge.js's owner-wins
+// accept of a region through regionChanges (a fresh value for an id it lacks).
+function owner(bitmap, ids, inc) {
+  const o = { bitmap: Uint8Array.from(bitmap), ids: new Map(Object.entries(ids)), points: [] };
+  o.own = () => {
+    const lut = {};
+    for (const [id, v] of o.ids) if (o.bitmap.includes(v)) lut[v] = { id, name: id.toUpperCase() };
+    return { bitmap: o.bitmap, lut, points: o.points };
+  };
+  o.take = (it) => {
+    const v = o.ids.get(it.id) ?? Math.max(0, ...o.ids.values()) + 1;
+    o.ids.set(it.id, v);
+    const ch = M.regionChanges(o.bitmap, inc.bitmap, it.incValue, v, false);
+    ch.idx.forEach((i, k) => { o.bitmap[i] = ch.val[k]; });
+    return ch;
+  };
+  return o;
+}
+
+// The owner-wins accept would change nothing: none of its voxels lie outside theirs, and all of theirs it
+// lacks are under another of your structures.
+const settled = (it) => it.kind === "region" && it.status !== "checked" && it.removed === 0 && it.added === it.overlapCount;
+
+test("itemsLeft: skipped items go; an accept with your overlap kept is settled, not offered again until undone", () => {
   const inc = { bitmap: Uint8Array.from([0,3,3,0]), lut: L({3:"acl"}), points: [{ id: "trochlea", name: "Trochlea", xyz_mm: [1,2,3] }] };
-  const taken = new Map();
-  let r = M.mergeItems(own, inc, rows);
-  assert.deepEqual(M.itemsLeft(r.items, new Set(["point:trochlea"]), taken).map((i) => i.key), ["region:acl"]);
+  const o = owner([1,1,0,0], { femur: 1 }, inc);
+  const taken = new Set();
+  const left = (skipped = new Set()) => M.itemsLeft(M.mergeItems(o.own(), inc, rows).items, skipped, taken).map((i) => i.key);
+  assert.deepEqual(left(new Set(["point:trochlea"])), ["region:acl"]);
   // accept the acl, femur kept: voxel 1 stays femur, so theirs still differs from yours by that voxel
-  const ch = M.regionChanges(own.bitmap, inc.bitmap, 3, 2, false);
-  const old = Uint8Array.from(ch.idx, (i) => own.bitmap[i]);
-  ch.idx.forEach((i, k) => { own.bitmap[i] = ch.val[k]; });
-  own.lut = L({1:"femur",2:"acl"});
-  taken.set("region:acl", null);
-  r = M.mergeItems(own, inc, rows);
-  assert.equal(r.items.find((i) => i.key === "region:acl").status, "changed");
-  assert.deepEqual(M.itemsLeft(r.items, new Set(), taken).map((i) => i.key), ["point:trochlea"]);
-  assert.deepEqual(M.itemsLeft(r.items, new Set(), taken).map((i) => i.key), ["point:trochlea"]); // and on every later list
-  // undo: the acl is offered again
-  ch.idx.forEach((i, k) => { own.bitmap[i] = old[k]; });
-  own.lut = L({1:"femur"});
-  r = M.mergeItems(own, inc, rows);
-  assert.deepEqual(M.itemsLeft(r.items, new Set(), taken).map((i) => i.key), ["region:acl", "point:trochlea"]);
-  // an accept that makes it match yours ("" once listed) comes back if it is offered again
-  taken.set("point:trochlea", null);
-  own.points = inc.points;
-  assert.deepEqual(M.itemsLeft(M.mergeItems(own, inc, rows).items, new Set(), taken).map((i) => i.key), ["region:acl"]);
-  assert.equal(taken.get("point:trochlea"), "");
-  own.points = [];
-  assert.deepEqual(M.itemsLeft(M.mergeItems(own, inc, rows).items, new Set(), taken).map((i) => i.key), ["region:acl", "point:trochlea"]);
+  const old = o.bitmap.slice();
+  o.take(M.mergeItems(o.own(), inc, rows).items[0]);
+  taken.add("region:acl");
+  assert.deepEqual(Array.from(o.bitmap), [1,1,2,0]);
+  const acl = M.mergeItems(o.own(), inc, rows).items.find((i) => i.key === "region:acl");
+  assert.deepEqual([acl.status, acl.added, acl.removed, acl.overlapCount], ["changed", 1, 0, 1]);
+  assert.deepEqual(left(), ["point:trochlea"]);
+  assert.deepEqual(left(), ["point:trochlea"]); // and on every later list: not offered again and again
+  // undo: the acl is offered again, and is no longer counted as accepted
+  o.bitmap.set(old);
+  o.ids.delete("acl");
+  assert.deepEqual(left(), ["region:acl", "point:trochlea"]);
+  assert.equal(taken.has("region:acl"), false);
+  // a point accepted goes (it matches yours); undone, it is offered again
+  o.points = inc.points;
+  assert.deepEqual(left(), ["region:acl"]);
+  o.points = [];
+  assert.deepEqual(left(), ["region:acl", "point:trochlea"]);
+});
+
+test("itemsLeft offers a structure that is settled but was never accepted (theirs-wins is still a choice)", () => {
+  const inc = { bitmap: Uint8Array.from([3,3,0,0]), lut: L({3:"acl"}), points: [] };
+  const o = owner([1,1,0,0], { femur: 1 }, inc);
+  const [acl] = M.mergeItems(o.own(), inc, rows).items;
+  assert.equal(settled(acl), true);
+  assert.deepEqual(M.itemsLeft([acl], new Set(), new Set()).map((i) => i.key), ["region:acl"]);
+  assert.deepEqual(M.itemsLeft([acl], new Set(), new Set(["region:acl"])), []);
+});
+
+// Owner: tibia on voxels 2-3. Theirs: femur on 1-2, tibia on 3. Accepting tibia gives voxel 2 up; femur,
+// accepted first with yours kept there, must then take it, or voxel 2 ends up nobody's.
+for (const order of [["femur", "tibia"], ["tibia", "femur"]]) {
+  test(`acceptAll ends where accepting one at a time does (${order.join(" before ")})`, () => {
+    const checklist = order.map((id) => ({ id, name: id.toUpperCase(), type: "R" }));
+    const inc = { bitmap: Uint8Array.from([0,1,1,2]), lut: L({1:"femur", 2:"tibia"}), points: [] };
+    const run = (batch) => {
+      const o = owner([0,0,2,2], { tibia: 2 }, inc);
+      const taken = new Set();
+      const left = () => M.itemsLeft(M.mergeItems(o.own(), inc, checklist).items, new Set(), taken);
+      const take = (it) => { o.take(it); taken.add(it.key); return null; };
+      const reported = [];   // every list the owner would see, with what it hides as settled
+      const watch = (items) => {
+        const shown = new Set(items.map((it) => it.key));
+        reported.push(M.mergeItems(o.own(), inc, checklist).items.filter((it) => !shown.has(it.key) && taken.has(it.key)));
+        return items;
+      };
+      let items = left();
+      let result = null;
+      if (batch) {
+        result = M.acceptAll(items, take, () => watch(left()));
+        items = result.items;
+      } else {
+        while (items.length) { take(items[0]); items = watch(left()); }
+      }
+      return { map: Array.from(o.bitmap), items, result, hidden: reported.flat() };
+    };
+    const one = run(false), all = run(true);
+    assert.deepEqual(one.map, [0, 3, 3, 2]); // femur (3) on voxels 1-2, tibia (2) on voxel 3
+    assert.deepEqual(all.map, one.map);
+    assert.deepEqual(all.items, []);
+    assert.equal(all.result.error, null);
+    assert.deepEqual([...all.result.done].sort(), ["region:femur", "region:tibia"]);
+    for (const it of [...one.hidden, ...all.hidden]) assert.ok(settled(it), `${it.key} hidden while unsettled`);
+  });
+}
+
+test("acceptAll stops at the first error and returns the list as it then is", () => {
+  const items = [{ key: "a" }, { key: "b" }, { key: "c" }];
+  const took = [];
+  const r = M.acceptAll(items, (it) => (took.push(it.key), it.key === "b" ? "no value left" : null), () => [{ key: "b" }, { key: "c" }]);
+  assert.deepEqual(took, ["a", "b"]);
+  assert.deepEqual([r.error, [...r.done], r.items.map((i) => i.key)], ["no value left", ["a"], ["b", "c"]]);
 });
 
 test("nextShown keeps the item shown, else takes the next in list order, wrapping", () => {
