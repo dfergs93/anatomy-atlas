@@ -31,3 +31,7 @@ data/cand-*/
 
 # Brainstorm mockups and plan workspaces
 .superpowers/
+
+# Helper hand-off (tools/share_case.py)
+*.atlaspaint
+*-share-*.zip

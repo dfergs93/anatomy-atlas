@@ -7,6 +7,8 @@
   "synthetic": false,
   "source": "OAIZIB-CM subject 036 (OAI baseline, KL0)",
   "licence": "CC BY-NC 4.0",
+  "licence_url": "https://huggingface.co/datasets/YongchengYAO/OAIZIB-CM",
+  "sharing": "CC BY-NC 4.0 (checked 2026-11-08 on the Hugging Face page, which sets no other sharing terms): non-commercial copies with attribution; citing the CartiMorph paper is compulsory. Give a helper a copy with tools/share_case.py, never via git.",
   "citation": "Yao Y et al. CartiMorph: a framework for automated knee articular cartilage morphometrics. Med Image Anal 2024;91:103035. Data from the Osteoarthritis Initiative.",
   "reference_sequence": "dess_3d",
   "sequences": [
