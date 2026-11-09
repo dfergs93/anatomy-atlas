@@ -33,6 +33,7 @@
     padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--border);
   }
   .group { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .group[hidden] { display: none; }
   .group button { border: 0; border-radius: 0; }
   .group button + button { border-left: 1px solid var(--border); }
   button, select, input[type=search] {
@@ -56,6 +57,7 @@
   #stage { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; }
   #canvasWrap { position: relative; flex: 1; min-height: 0; }
   #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+  #expected { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   #markers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
   .marker {
     position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%;
@@ -169,6 +171,7 @@
   <div id="stage">
     <div id="canvasWrap">
       <canvas id="gl" tabindex="0"></canvas>
+      <canvas id="expected"></canvas>
       <div id="markers"></div>
       <div id="reflines"></div>
       <div id="banner" hidden></div>
@@ -359,17 +362,36 @@ async function loadCase(caseId, { keepPlane = false } = {}) {
   await loadSequence(params.get("seq") || meta.reference_sequence || meta.sequences[0].id, true);
 }
 
-function buildColormap(lut) {
+// Expected-location structures (spec §5.7) get A = 0 in the label overlay: never filled. Author mode's
+// drawing passes expectedFilled, so the paint stays visible while it is being laid down.
+function buildColormap(lut, { expectedFilled = false } = {}) {
   const max = Math.max(0, ...Object.keys(lut).map(Number));
   const cm = { R: [], G: [], B: [], A: [], I: [], labels: [] };
   for (let i = 0; i <= max; i++) {
     const l = lut[i];
     cm.I.push(i);
     cm.R.push(l ? l.rgb[0] : 0); cm.G.push(l ? l.rgb[1] : 0); cm.B.push(l ? l.rgb[2] : 0);
-    cm.A.push(l ? 255 : 0);
+    cm.A.push(l && !(l.expected && !expectedFilled) ? 255 : 0);
     cm.labels.push(l ? l.name : "");
   }
   return cm;
+}
+
+// NiiVue's copy of the label map leaves out expected-location structures. Its shader draws every label's
+// border at full strength in Outline mode, whatever the colormap's A says, and a structure only a few
+// slices thick is all border there, so it would be filled. The true map stays in labelTrue: hover and
+// the dots read it. Author mode keeps the label map whole (author.js copies it into the drawing).
+let labelTrue = null;
+function hideExpected(vol) {
+  labelTrue = vol.img;
+  if (MODE === "author") return;
+  const vals = Object.keys(state.lut).filter((v) => state.lut[v].expected).map(Number);
+  if (!vals.length) return;
+  const hide = new Uint8Array(Math.max(...vals) + 1);
+  for (const v of vals) hide[v] = 1;
+  const shown = vol.img.slice();
+  for (let i = 0; i < shown.length; i++) if (hide[shown[i]]) shown[i] = 0;
+  vol.img = shown; // uploaded by applyOverlay's setOpacity → updateGLVolume
 }
 
 async function loadSequence(seqId, fresh = false) {
@@ -382,7 +404,9 @@ async function loadSequence(seqId, fresh = false) {
     { url: base + "labels.nii.gz", opacity: 0 },
   ]);
   const labelVol = nv.volumes[1];
+  hideExpected(labelVol);
   labelVol.setColormapLabel(buildColormap(state.lut));
+  dotCache = { key: "" };
   state.seqId = seq.id;
   if (keepMM) nv.scene.crosshairPos = worldToFrac(keepMM);
   if (keepPan) nv.scene.pan2Dxyzmm = keepPan;
@@ -423,6 +447,7 @@ function applyLayout() {
   if (isHero()) nv.setCustomLayout(core.layoutFor(state.plane, sliceTypes()));
   else { nv.clearCustomLayout(); nv.setSliceType(mainSliceType()); }
   drawRefLines();
+  drawExpected();
 }
 
 function setPlane(plane) {
@@ -441,12 +466,13 @@ function applyOverlay() {
   nv.opts.atlasActiveIndex = activeValue();
   nv.setOpacity(1, o === "fill" ? state.opacity : o === "outline" ? Math.min(state.opacity, 0.15) : 0);
   pressed("overlayGroup", "overlay", o);
+  drawExpected();
 }
 
 function activeValue() {
   if (author) return 0; // painting: the drawing is shown; the label volume underneath is out of date
   const t = state.selected || state.hover; // the followed structure stays lit; hover only names others
-  return t && t.kind === "region" ? t.value : 0;
+  return t && t.kind === "region" && !isExpected(t) ? t.value : 0; // NiiVue would fill it: its highlight is its dots
 }
 
 // Highlight = re-render the label layer. Debounced so slow GPUs don't lag while the mouse moves.
@@ -585,7 +611,10 @@ function labelValueAt(vox) {
     const [nx, ny] = volDims(1);
     return nv.drawBitmap[vox[0] + vox[1] * nx + vox[2] * nx * ny];
   }
-  return nv.volumes[1].getValue(vox[0], vox[1], vox[2]);
+  const lv = nv.volumes[1];
+  if (!labelTrue || labelTrue === lv.img) return lv.getValue(vox[0], vox[1], vox[2]);
+  const s = lv.img2RASstep, o = lv.img2RASstart; // the true map: NiiVue's copy leaves out expected structures
+  return labelTrue[o[0] + o[1] + o[2] + vox[0] * s[0] + vox[1] * s[1] + vox[2] * s[2]];
 }
 
 function showHover(t) {
@@ -611,6 +640,7 @@ canvas.addEventListener("mouseleave", () => {
   showHover(state.selected);
   refreshHighlight();
   drawRefLines();
+  drawExpected();
 });
 
 // In the main + small views layout the wheel only steps the main view's slice. NiiVue's own wheel
@@ -632,6 +662,7 @@ function updateHover() {
   showHover(t || state.selected);
   refreshHighlight();
   drawMarkers();
+  drawExpected();
 }
 
 // click = small movement between pointerdown and pointerup
@@ -680,6 +711,7 @@ function select(t, { toWidest = false } = {}) {
   lastActive = -1;
   refreshHighlight(true);
   drawMarkers();
+  drawExpected();
   updateFollow();
   if (MODE !== "sidebar") showPanel(t);
 }
@@ -793,10 +825,106 @@ function drawRefLines() {
   }
 }
 
+// ---------- expected locations (spec §5.7) ----------
+// Bursae are collapsed on a normal scan, so they are painted where they usually lie and shown as a
+// dotted outline in their colour on the main view's slice, never filled. Outline and Fill draw every
+// one; Off draws only the one being followed or pointed at (its highlight: NiiVue's would fill it).
+// Author mode draws none: the drawing shows the paint.
+function isExpected(t) {
+  const l = t && t.kind === "region" ? state.lut[t.value] : null;
+  return !!(l && l.expected);
+}
+
+function expectedShown() {
+  if (MODE === "author" || nv.volumes.length < 2) return null;
+  if (state.overlay === "off") {
+    const t = state.selected || state.hover;
+    return isExpected(t) ? new Set([t.value]) : null;
+  }
+  const all = new Set(Object.keys(state.lut).filter((v) => state.lut[v].expected).map(Number));
+  return all.size ? all : null;
+}
+
+// Canvas position (device px) of label voxel (i, j) on the main view's slice: an affine fitted through
+// three voxels NiiVue places itself (frac2canvasPosWithTile), so zoom, pan and flips come with it.
+// NiiVue clamps a point just off the tile to the tile's edge, so the three must be on screen: try the
+// cursor's voxel, then the tile's middle, then a coarse grid over the slice. null when none is.
+function voxelToCanvas(main, rect, ax, u, v, dims) {
+  const [l, t, w, h] = rect;
+  const inside = (p) => p[0] > l + 0.5 && p[0] < l + w - 0.5 && p[1] > t + 0.5 && p[1] < t + h - 0.5;
+  const at = (i, j) => {
+    const f = [...nv.scene.crosshairPos]; // f[ax]: the slice being shown
+    f[u] = (i + 0.5) / dims[u];
+    f[v] = (j + 0.5) / dims[v];
+    const hit = nv.frac2canvasPosWithTile(f, main);
+    return hit && inside(hit.pos) ? hit.pos : null;
+  };
+  const along = (i, j, di, dj) => {
+    for (const k of [16, -16, 1, -1]) {
+      const q = at(i + di * k, j + dj * k);
+      if (q) return [q, k];
+    }
+    return null;
+  };
+  const cur = frac2vox(nv.scene.crosshairPos, 1);
+  const tries = [[cur[u], cur[v]]];
+  const mid = nv.canvasPos2frac([l + w / 2, t + h / 2]);
+  if (mid && mid[0] >= 0) { const m = frac2vox(mid, 1); tries.push([m[u], m[v]]); }
+  for (let a = 1; a < 8; a++) for (let b = 1; b < 8; b++) tries.push([Math.round((dims[u] * a) / 8), Math.round((dims[v] * b) / 8)]);
+  for (const [i, j] of tries) {
+    const p = at(i, j);
+    const a = p && along(i, j, 1, 0), b = p && along(i, j, 0, 1);
+    if (!a || !b) continue;
+    const du = [(a[0][0] - p[0]) / a[1], (a[0][1] - p[1]) / a[1]];
+    const dv = [(b[0][0] - p[0]) / b[1], (b[0][1] - p[1]) / b[1]];
+    return { x0: p[0] - i * du[0] - j * dv[0], y0: p[1] - i * du[1] - j * dv[1], du, dv };
+  }
+  return null;
+}
+
+let dotCache = { key: "" }; // the dots of one slice: recomputed only when the slice or what is shown changes
+function drawExpected() {
+  const cv = $("expected");
+  if (cv.width !== canvas.width || cv.height !== canvas.height) { cv.width = canvas.width; cv.height = canvas.height; }
+  const g = cv.getContext("2d");
+  g.clearRect(0, 0, cv.width, cv.height);
+  const values = expectedShown();
+  const main = mainSliceType();
+  const tile = values && nv.screenSlices.find((s) => s.axCorSag === main);
+  if (!tile) return;
+  const ax = PLANE_AXIS[state.plane];
+  const [u, v] = [0, 1, 2].filter((a) => a !== ax);
+  const dims = volDims(1);
+  const rect = core.tileRect(tile.leftTopWidthHeight);
+  const m = voxelToCanvas(main, rect, ax, u, v, dims);
+  if (!m) return;
+  const dpr = dprOf(); // 2 px dots, centred on each voxel, about 4 px apart: every 2nd voxel at zoom 1
+  const every = Math.max(1, Math.round((4 * dpr) / Math.min(Math.hypot(...m.du), Math.hypot(...m.dv))));
+  const s = frac2vox(nv.scene.crosshairPos, 1)[ax];
+  const key = [state.caseId, state.seqId, ax, s, every, [...values].join(",")].join("|");
+  if (dotCache.key !== key) {
+    const lv = nv.volumes[1];
+    const sl = core.rasSlice(labelTrue || lv.img, dims, lv.img2RASstep, lv.img2RASstart, ax, s);
+    dotCache = { key, data: sl.data, w: sl.w, dots: core.boundaryDots(sl.data, sl.w, sl.h, values, every) };
+  }
+  const { data, w, dots } = dotCache;
+  g.save();
+  g.beginPath();
+  g.rect(...rect);
+  g.clip();
+  let last = -1;
+  for (let k = 0; k < dots.length; k += 2) {
+    const i = dots[k], j = dots[k + 1], val = data[i + j * w];
+    if (val !== last) { const c = state.lut[val].rgb; g.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; last = val; }
+    g.fillRect(m.x0 + i * m.du[0] + j * m.dv[0] - dpr, m.y0 + i * m.du[1] + j * m.dv[1] - dpr, 2 * dpr, 2 * dpr);
+  }
+  g.restore();
+}
+
 const _drawScene = nv.drawScene.bind(nv);
 nv.drawScene = function () {
   const r = _drawScene();
-  requestAnimationFrame(() => { drawMarkers(); drawRefLines(); });
+  requestAnimationFrame(() => { drawMarkers(); drawRefLines(); drawExpected(); });
   return r;
 };
 
@@ -818,8 +946,9 @@ async function showPanel(t) {
   }
   const L = await loadLabel(t.id);
   if (state.selected !== t) return; // a newer click won
-  const note = t.kind === "region" ? core.autoNote(state.lut[t.value]) : null;
-  const noteHTML = note ? `<p class="muted">${escapeHTML(note)}</p>` : "";
+  const entry = t.kind === "region" ? state.lut[t.value] : null;
+  const noteHTML = [core.autoNote(entry), core.expectedNote(entry)].filter(Boolean)
+    .map((n) => `<p class="muted">${escapeHTML(n)}</p>`).join("");
   if (!L) {
     body.innerHTML = `<h2>${escapeHTML(t.name)}</h2>${noteHTML}
       <p class="muted">No label content yet. Add <code>labels/${escapeHTML(t.id)}.json</code>.</p>`;

@@ -182,3 +182,66 @@ test("nextStructure skips done and wraps", () => {
   assert.equal(core.nextStructure(rows, new Set(["b"]), "a"), rows[2]);
   assert.equal(core.nextStructure(rows, new Set(["a", "b", "c"])), null);
 });
+
+// 7×7 slice with a 5×5 square of value 3 at i, j = 1…5 (row-major: slice[i + j * w]).
+function squareSlice(value = 3) {
+  const w = 7, h = 7, s = new Uint16Array(w * h);
+  for (let j = 1; j <= 5; j++) for (let i = 1; i <= 5; i++) s[i + j * w] = value;
+  return { s, w, h };
+}
+const pairs = (flat) => Array.from({ length: flat.length / 2 }, (_, k) => [flat[2 * k], flat[2 * k + 1]]);
+
+test("boundaryDots outlines a square, skips its inside", () => {
+  const { s, w, h } = squareSlice();
+  const dots = core.boundaryDots(s, w, h, new Set([3]), 1);
+  assert.ok(dots instanceof Int32Array);
+  const want = [];
+  for (let j = 1; j <= 5; j++) for (let i = 1; i <= 5; i++) if (i === 1 || i === 5 || j === 1 || j === 5) want.push([i, j]);
+  assert.deepEqual(pairs(dots), want); // the 16 edge voxels, raster order; none inside, none outside
+  assert.equal(core.boundaryDots(s, w, h, new Set([4]), 1).length, 0); // a value not asked for
+  // a structure touching the slice's edge is outlined there too
+  const e = new Uint16Array(9).fill(2);
+  assert.deepEqual(pairs(core.boundaryDots(e, 3, 3, new Set([2]), 1)),
+    [[0, 0], [1, 0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 2]]);
+});
+
+test("boundaryDots every 2", () => {
+  const { s, w, h } = squareSlice();
+  const dots = pairs(core.boundaryDots(s, w, h, new Set([3]))); // every = 2 by default
+  // every other voxel round the ring, on all four sides (not every other in raster count, which
+  // would keep one side of a shape and drop the other)
+  assert.deepEqual(dots, [[1, 1], [3, 1], [5, 1], [1, 3], [5, 3], [1, 5], [3, 5], [5, 5]]);
+  assert.deepEqual(pairs(core.boundaryDots(s, w, h, new Set([3]), 2)), dots);
+  // a disk: both the left and the right side keep dots, never two touching
+  const W = 21, d = new Uint8Array(W * W);
+  for (let j = 0; j < W; j++) for (let i = 0; i < W; i++) if ((i - 10) ** 2 + (j - 10) ** 2 <= 64) d[i + j * W] = 1;
+  const kept = pairs(core.boundaryDots(d, W, W, new Set([1])));
+  assert.ok(kept.some(([i]) => i < 5) && kept.some(([i]) => i > 15));
+  for (const [a, b] of kept) for (const [c, e] of kept) {
+    if (a !== c || b !== e) assert.ok(Math.max(Math.abs(a - c), Math.abs(b - e)) >= 2, `${a},${b} touches ${c},${e}`);
+  }
+});
+
+test("expectedNote", () => {
+  assert.equal(core.expectedNote({ id: "pes_anserine_bursa", expected: true }),
+    "Visible only when distended — outlined where it usually lies");
+  assert.equal(core.expectedNote({ id: "femur" }), null);
+  assert.equal(core.expectedNote(undefined), null);
+});
+
+test("rasSlice reads one plane of a volume through NiiVue's img2RAS steps", () => {
+  // dims 2×3×4 stored x-fastest (identity): value = x + 10y + 100z
+  const dims = [2, 3, 4], img = new Uint16Array(24);
+  for (let z = 0; z < 4; z++) for (let y = 0; y < 3; y++) for (let x = 0; x < 2; x++) img[x + y * 2 + z * 6] = x + 10 * y + 100 * z;
+  const id = core.rasSlice(img, dims, [1, 2, 6], [0, 0, 0], 1, 2); // coronal slice y = 2: (x, z)
+  assert.deepEqual([id.w, id.h], [2, 4]);
+  assert.deepEqual(Array.from(id.data), [20, 21, 120, 121, 220, 221, 320, 321]);
+  assert.ok(id.data instanceof Uint16Array);
+  const sag = core.rasSlice(img, dims, [1, 2, 6], [0, 0, 0], 0, 1); // x = 1: (y, z)
+  assert.deepEqual([sag.w, sag.h], [3, 4]);
+  assert.deepEqual(Array.from(sag.data).slice(0, 4), [1, 11, 21, 101]);
+  // x stored flipped (RAS x = 1 - stored x): step −1, start 1
+  const flip = new Uint16Array(24);
+  for (let i = 0; i < 24; i++) flip[i] = img[(1 - (i % 2)) + Math.floor(i / 2) * 2];
+  assert.deepEqual(Array.from(core.rasSlice(flip, dims, [-1, 2, 6], [1, 0, 0], 2, 0).data), [0, 1, 10, 11, 20, 21]);
+});

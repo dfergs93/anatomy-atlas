@@ -140,6 +140,53 @@
     return entry && entry.auto ? `Outline drawn automatically (${entry.auto.source}) — not yet checked` : null;
   }
 
+  // Panel line for an expected-location structure (spec §5.7): painted where it usually lies.
+  function expectedNote(entry) {
+    return entry && entry.expected ? "Visible only when distended — outlined where it usually lies" : null;
+  }
+
+  // One plane of a volume, read through NiiVue's img2RASstep / img2RASstart (any storage order):
+  // axis `ax` at slice `s`; data[i + j * w] with i, j along the other two axes in x, y, z order.
+  function rasSlice(img, dims, step, start, ax, s) {
+    const [u, v] = [0, 1, 2].filter((a) => a !== ax);
+    const w = dims[u], h = dims[v];
+    const data = new img.constructor(w * h);
+    const base = start[0] + start[1] + start[2] + s * step[ax];
+    for (let j = 0; j < h; j++) {
+      const row = base + j * step[v];
+      for (let i = 0; i < w; i++) data[i + j * w] = img[row + i * step[u]];
+    }
+    return { data, w, h };
+  }
+
+  // Voxels of a slice whose value is in `values` and that have a 4-neighbour with another value
+  // (the slice's edge counts as another value), as flat [i, j, …] in raster order. Dots are spaced
+  // `every` voxels apart round the outline: a voxel is kept when no kept one lies within every − 1
+  // voxels of it. (Keeping every n-th in raster count would keep one side of a shape and drop the other.)
+  function boundaryDots(slice, w, h, values, every = 2) {
+    const at = (i, j) => (i < 0 || j < 0 || i >= w || j >= h ? -1 : slice[i + j * w]);
+    const kept = new Uint8Array(w * h);
+    const out = [];
+    const d = Math.max(0, every - 1);
+    for (let j = 0; j < h; j++) {
+      for (let i = 0; i < w; i++) {
+        const val = slice[i + j * w];
+        if (!values.has(val)) continue;
+        if (at(i - 1, j) === val && at(i + 1, j) === val && at(i, j - 1) === val && at(i, j + 1) === val) continue;
+        let near = false;
+        for (let jj = Math.max(0, j - d); jj <= j && !near; jj++) {
+          for (let ii = Math.max(0, i - d); ii <= Math.min(w - 1, i + d); ii++) {
+            if (kept[ii + jj * w]) { near = true; break; }
+          }
+        }
+        if (near) continue;
+        kept[i + j * w] = 1;
+        out.push(i, j);
+      }
+    }
+    return Int32Array.from(out);
+  }
+
   function pickerGroups(cases) {
     return { cases: cases.filter((c) => !c.candidate), candidates: cases.filter((c) => c.candidate) };
   }
@@ -174,7 +221,7 @@
   return {
     PLANES, PLANE_AXIS, HERO_FRACTION, otherPlanes, layoutFor, refLineOrientation, tileRect, tileAt,
     applyAffine, invertAffine, worldToVox, worldToFrac, fracToWorld, extentSlices,
-    pointRange, trackGradient, mirrorMM, counterpart, pickerGroups, autoNote,
-    parseChecklist, nextStructure,
+    pointRange, trackGradient, mirrorMM, counterpart, pickerGroups, autoNote, expectedNote,
+    rasSlice, boundaryDots, parseChecklist, nextStructure,
   };
 });

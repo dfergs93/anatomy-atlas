@@ -182,7 +182,7 @@ function makeAuthor(ctx) {
 
   function applyColours() {
     state.lut = paintLut();
-    nv.setDrawColormap(ctx.buildColormap(state.lut));
+    nv.setDrawColormap(ctx.buildColormap(state.lut, { expectedFilled: true })); // E structures: filled while painting
   }
 
   function isPoint(row) {
