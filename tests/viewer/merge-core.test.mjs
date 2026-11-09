@@ -114,6 +114,11 @@ test("regionChanges: owner wins overlaps unless incomingWins; undo restores", ()
   assert.deepEqual(before, own);
 });
 
+test("regionChanges refuses an owner value outside 1-255 (a new structure needs a fresh one)", () => {
+  const own = Uint8Array.from([1,2,0]), inc = Uint8Array.from([5,5,5]);
+  for (const bad of [0, 256, -1, 1.5, undefined]) assert.throws(() => M.regionChanges(own, inc, 5, bad, true), RangeError);
+});
+
 test("focusOf picks the fullest slice and its in-plane centre", () => {
   const bm = new Uint8Array(12); // dims [2,2,3]
   bm[0] = 1; bm[8] = 1; bm[9] = 1; bm[11] = 1; // z=0: (0,0); z=2: (0,0) (1,0) (1,1)

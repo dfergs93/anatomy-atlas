@@ -197,7 +197,11 @@
 
   // The voxels to change to take one incoming structure into the owner's map: where theirs is painted, the
   // owner's voxel becomes ownValue (if empty, or if incomingWins); where it isn't, an ownValue voxel is cleared.
+  // The caller passes the value the structure will be painted with (a fresh one for a new structure, never
+  // mergeItems' ownValue 0): anything but an integer 1-255 throws, so a mistake changes nothing.
   function regionChanges(own, inc, incValue, ownValue, incomingWins) {
+    if (!Number.isInteger(ownValue) || ownValue < 1 || ownValue > 255)
+      throw new RangeError(`regionChanges needs an owner value from 1 to 255, got ${ownValue}`);
     let cap = 4096, count = 0;
     let idx = new Uint32Array(cap), val = new Uint8Array(cap);
     for (let i = 0; i < own.length; i++) {
