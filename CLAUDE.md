@@ -56,7 +56,7 @@ points.json       (point labels)   ─┘     click → labels/<id>.json → sid
 
 - **Viewer:** NiiVue 0.69.0 (BSD-2), vendored at `viewer/vendor/niivue.umd.js` — never loaded from a CDN.
 - **Reading is static files only.** Served locally by `tools/serve.py`.
-- **`tools/serve.py`:** stdlib static server, binds `127.0.0.1` only, port **8004** (8000 is protocol_manager's MkDocs). Also `GET /api/token` and `POST /api/save` for painting mode (see Painting mode); static files are unchecked, so the phone can view through the tailnet but not save.
+- **`tools/serve.py`:** static file server (needs only `requirements.txt`: the save endpoint uses numpy and nibabel), binds `127.0.0.1` only, port **8004** (8000 is protocol_manager's MkDocs). Also `GET /api/token` and `POST /api/save` for painting mode (see Painting mode); static files are unchecked, so the phone can view through the tailnet but not save.
 - **No API layer in v1.** ARIA reads `data/index.json` and embeds the viewer. Add a thin FastAPI wrapper over the same JSON only if a real need appears.
 
 **Two label types:**
@@ -236,9 +236,10 @@ Ligament workflow: paint 2–3 key slices, F, then scroll through and touch up.
 - **Expected-location (type E) structures** (the four bursae) are painted where they usually lie. In standalone/sidebar they show as a dotted outline, never filled, with "Visible only when distended — outlined where it usually lies". `lut.json` carries `"expected": true`.
 - NiiVue's own hotkeys that change layout, drag mode or open a dialog are silenced in every mode.
 
-**Save** (`POST /api/save`): checks first (nothing written if one fails) → backup to `data/<case>/backups/<UTC time>/` (newest 20) → labels + lut (with the auto contract) + points → `data/index.json` → rebuild the left mirror (only if the case is in the index) → tick `checklists/<region>.md` (Labelled = exactly the saved ids). Late steps failing become `warnings`, not errors.
+**Save** (`POST /api/save`): checks first (nothing written if one fails) → backup to `data/<case>/backups/<UTC time>/` (newest 20) → labels + lut (with the auto contract) + points → `data/index.json` → rebuild the left mirror (only if the case is in the index) → tick `checklists/<region>.md` (Labelled = exactly the saved ids; skipped for a synthetic case, because the checklist belongs to the region). Late steps failing become `warnings`, not errors.
 - The server requires: Host `127.0.0.1:<port>` / `localhost:<port>`, Origin matching when present, `Content-Type: application/json`, body ≤ 64 MB, one save at a time, and the token from `GET /api/token`.
-- If the case changed on disk since the page opened (another tab, `tools/autolabels.py`) the save is refused (409). "Download my unsaved work" saves `<case>-unsaved-paint.nii.gz` plus, when points or K marks are unsaved, `<case>-unsaved-points.json` (merging these back is the helper-merge plan). Closing the tab with unsaved work warns.
+- Only painted values are checked: a structure a save erased keeps its value in the page, so ⌘/Ctrl+Z back past that save restores it under its own name. A point already in `points.json` stays valid after its checklist row is removed.
+- If the case changed on disk since the page opened (another tab, `tools/autolabels.py`) the save is refused (409): the page reads the token before the case's files. "Download my unsaved work" saves `<case>-unsaved-paint.nii.gz` plus, when points or K marks are unsaved, `<case>-unsaved-points.json` (merging these back is the helper-merge plan). Closing the tab with unsaved work warns.
 
 **Author mode refuses** (banner): a mirrored copy (links to the source), a host other than 127.0.0.1/localhost, a narrow window, a non-RAS-identity volume, a label value over 255, a label grid different from the image grid.
 

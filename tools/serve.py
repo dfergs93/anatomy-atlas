@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Serve the atlas locally (standard library only).
+"""Serve the atlas locally (needs only the packages in requirements.txt).
 
     python tools/serve.py            # http://127.0.0.1:8004/
     python tools/serve.py --port 9000
 
 Serves the repo root; "/" redirects to the viewer. Binds to 127.0.0.1 only.
 .nii.gz files are sent as-is (no Content-Encoding) — NiiVue decompresses them.
-Painting mode saves through POST /api/save (localhost pages only).
+Painting mode saves through POST /api/save (localhost pages only); saving imports
+numpy and nibabel (tools/save_case.py), so start it from a venv with requirements.txt installed.
 """
 from __future__ import annotations
 
