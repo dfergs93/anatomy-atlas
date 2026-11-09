@@ -406,3 +406,79 @@ Every save rebuilds the left copy and ticks the checklist.
   - **README:** a "Paint" section with the one command and the URL.
 - [ ] **Step 2: Run the suites.** Expected: green.
 - [ ] **Step 3: Commit** `viewer/author.js CLAUDE.md README.md` with the message "Docs and help for painting mode".
+
+---
+
+## Build record (2026-11-08)
+
+Built subagent-driven: one builder and one reviewer per task, then a whole-branch review (opus) and one fix pass (05bac41..6b4b78b). Suites at the end: pytest 88, node 39.
+
+### Rulings made during the build
+
+- Ruling P1: work in the main checkout on branch painting-mode, not a worktree — the imaging (gitignored) lives only there and plans 1–2 did the same — cost if wrong: the owner's 8004 server shows in-progress viewer files.
+- Ruling P2: set_labelled sets the Labelled column to exactly `ids` (ticks those, unticks the rest; returns rows changed) — spec §5.2 "Labelled status updates automatically when you save", so an erased structure unticks — cost if wrong: a hand-ticked row for something not in the map is cleared on the next save.
+- Ruling P3: Task 6's grow check uses `gastrocnemius_medial_head` (the checklist id) for "medial_gastrocnemius" — cost: none.
+- Ruling P4: Task 8's A=0 for `expected` entries applies to the standalone label overlay only; author mode's drawing colormap keeps expected structures filled so they can be painted (spec §5.7: dashed outline is how they are *shown*) — cost if wrong: none.
+- Ruling P5: author mode also refuses (banner) when the background volume's dims differ from the label map's — the bitmap↔labels copy assumes one grid; knee-mri is single-sequence so no effect today — cost if wrong: a future multi-grid case can't be painted until handled.
+- Ruling P6: serve.py gunzips labels with a cap (decompressed > 512 MB → 400) — a 64 MB gzip body could otherwise expand without bound — cost if wrong: none for real volumes (knee = 23.6 MB).
+- Ruling P7: Task 5's undo entries carry `kind: "paint"` so Task 7 can add `{kind: "point", before}` — cost: none.
+- Ruling P8: browser checks run on a second server started from the branch on port 8014 (the 8004 server predates the save endpoint and the owner may be using it); stopped afterwards — cost: none.
+- Task 2: Ruling: fix shape — (a) check phase refuses 400 when side is right/left and data/<mirror id> exists without mirror_of == case_id (nothing written); (b) mirror runs only when the case is in data/index.json (same condition as patch_case), else skipped with a warning — a helper's unregistered copy can still save; (c) steps 10–12 failures are caught and returned as `warnings: [msg]` beside the new token, so the browser knows the paint landed — cost if wrong: a warning the page must show (Task 5 shows result.warnings).
+- Ruling P9: Task 3's endpoints reject a case_id not matching [A-Za-z0-9_-]+ (400 on save, 404 on token) — closes the deferred path-join minor at the boundary — cost if wrong: none (all case ids match).
+- Task 3: Ruling: ⚠️ tailnet path — a phone browser's POST carries Origin http://duncans-macbook-pro:8004 → 403 regardless of Host; a non-browser tailnet client is the owner's own device, outside the threat model (other web pages in the same browser) — verify Host pass-through when 8004 is restarted after merge — cost if wrong: a tailnet curl could save to the case.
+- Ruling P10: author mode keeps the main + two reference views layout on a wide window (spec §5.3: the ligament workflow uses the reference lines to follow the course); strokes paint in the main view only — a pointerdown on a small view keeps its standalone behaviour (main view jumps there) and paints nothing — cost if wrong: the owner wanted to paint in the small views too (easy to allow later).
+- Ruling P11: silence NiiVue's own hotkeys (viewModeHotKey, clipPlaneHotKey, cycleClipPlaneHotKey → "") in every mode, carried into Task 6's dispatch — V breaks the main + small views layout and P would also fire NiiVue's clip-plane cycle — cost if wrong: the owner loses NiiVue keys the viewer never documented.
+- Task 6: Ruling: wand tolerance default 0.12 → 0.10 — over 35 clicks along the ACL, 0.12 spilled 14× (up to 16k voxels, through bone), 0.10 5×, 0.08 never but ~50 vox/click (plan: adjust a default only if the check shows it's wrong, and ledger it) — cost if wrong: the owner nudges the tolerance slider.
+- Task 6: Ruling: grow doesn't stop at fascia on DESS (adjacent muscles share signal); kept as-is — each G is 12 layers, so the owner presses G until the muscle is full and erases any spill; tell the owner — cost if wrong: more erasing on big muscles than hoped.
+- Ruling P12: silence every NiiVue keyboard action that can change the drag mode or open a dialog (at least M and ?), in every mode, carried into Task 7's dispatch — a modal alert mid-case and a silently changed drag mode break painting — cost if wrong: none.
+- Task 7: Ruling: P key places the current P structure's point at the pointer's last main-view position (no-op with a short note for a region structure or with no pointer position) — plan key table — cost if wrong: none.
+- Task 7: Ruling: on a failed save the download also writes `<case>-unsaved-points.json` ({points, checked}) when points or K marks are unsaved, and both failure notes say what each file holds — spec §5.5 nothing lost — cost if wrong: one extra file in Downloads.
+- Ruling P13: Task 8 also fixes the pre-existing `.group[hidden]` CSS bug (R|L and sequence buttons show when they should be hidden), found in Task 5 — it touches index.html anyway and the bug is visible in standalone — cost: none.
+- Ruling P14: expected-location dots draw in standalone and sidebar (single view) whenever the overlay is outline or fill, not when it is off — spec §5.7 "drawn with a dashed outline and never a fill" applies to the atlas, not only standalone — cost if wrong: dots in the ARIA sidebar.
+- Task 8: Ruling: P14 amended — in the sidebar (overlay always off there) and in Off mode, a hovered/followed E structure shows its own dots as its highlight, because NiiVue's highlight would fill it and P14's sidebar clause could never apply as written — cost if wrong: one branch to delete (index.html:840).
+- Final: Ruling: final #4 (auto dropped when an auto outline is nicked under "Paint over other structures") — keep the plan's rule (CLAUDE.md contract: drop auto from any structure a save changes; the fingerprint is the record) — cost if wrong: a nicked outline counts as checked and ticked; raise with the owner.
+- Final: Ruling: declined-to-judge lines (tailnet Host pass-through; 20 backups; dotted vs dashed; bone colours; grow at fascia; no reload of a downloaded 409 file; static root exposes backups/; register_case reorders index) — all stand as ruled/deferred; bone colours, dotted wording and a "Save anyway" after 409 go to the owner — cost if wrong: owner asks for a change.
+
+### Deferred minors (not fixed; for a later pass)
+
+- Task 1: set_labelled silently ignores ids with no checklist row (typo'd id never surfaces).
+- Task 1: no tests pin prefix ids / odd padding / missing trailing pipe; nextStructure with unknown afterId untested.
+- Task 1: set_labelled writes knee.md in place (not temp + os.replace); text mode would turn CRLF into LF.
+- Task 1: legend says "dotted outline"; spec §5.7 says "dashed" — wording to settle in Task 8/9.
+- Task 2: huge-int coordinate → OverflowError (500 not 400) in _check_points.
+- Task 2: save_case has no lock of its own (Task 3 handler's lock covers the endpoint).
+- Task 2: case_id not validated before the path join (only meta.json folders reachable; Task 3 to check id form).
+- Task 2: result "structures" = len(lut) vs index structure_count = len(lut)+len(points).
+- Task 2: private autolabels._replace imported across modules; a failed write leaves .tmp-<name>.
+- Task 2: test gaps — NaN/inf/bool/duplicate/unknown point refusals, stale `expected` removal, backup contents, explicit F-order equality, mirror labels rewritten.
+- Task 2: suite run with -W ignore hid 3 SWIG DeprecationWarnings from a dependency import.
+- Task 2: read_index after the writes is outside any try (unreadable index.json → raw exception); corrupt mirror meta.json in the check phase → JSONDecodeError (500, nothing written).
+- Task 3: Content-Length uses isdigit() → '²' gives 500 not 400.
+- Task 3: no socket timeout; a short body holds a handler thread.
+- Task 3: top-level save_case import loads numpy/nibabel at startup; docstring still says "standard library only"; a broken import also stops the static reader.
+- Task 3: a 500 logs no traceback on the server.
+- Task 3: gunzip_capped ignores unused_data; unconsumed_tail branch unreachable.
+- Task 3: refuse /api/ requests carrying X-Forwarded-For / Tailscale-User-Login (so the tailnet guarantee doesn't rest on Host pass-through).
+- Task 3: test gaps — foreign hostname with the right port, loose 400/404, OPTIONS headers, Origin null, charset variant, Host without port; unused imports mid-file; non-API POST/OPTIONS answer HTML.
+- Task 4: growMask fully sorts the structure's intensities for p5/p95 (~100–300 ms on a big muscle); histogram/quickselect would be linear.
+- Task 4: wandMask/growMask allocate a 23.6 MB visited array per call (GC-able).
+- Task 4: wandMask/seedWindow don't bounds-check the seed.
+- Task 4: colours.json one number per line, no trailing newline; no id matching two palette keywords.
+- Task 4: timing test prints every run and asserts no bound; undoChange's LIFO requirement uncommented.
+- Task 5: Enter during an in-flight save is dropped; ⌘S during a save joins it.
+- Task 5: Enter on a focused panel button/select is taken as save-then-next; ⌘S in the filter box opens the browser's Save Page.
+- Task 5: O hides the paint while the brush stays live (strokes invisible, still guarded).
+- Task 5: no way to load a downloaded unsaved-paint file back (helper-merge plan); download with the drawing closed → unhandled rejection.
+- Task 5: alt-tab mid-stroke without mouseleave leaves `stroking` set until the next pointerup (Enter deferred, nothing lost); a no-op afterEdit leaves a stale "info" note.
+- Task 6: applyPen can re-enable drawing mid-gesture (W then B/E while dragging; B/E/[/] during a small-view gesture) → a drag paints with `stroking` false; if it then leaves the canvas the guard is skipped until the next edit and a save in between would omit those visible voxels.
+- Task 6: "ok" tool notes (Wand/Filled … voxels added) persist past later strokes and ⌘Z.
+- Task 6: fill between rescans + uploads the whole drawing per gap (~0.2 s/gap, no progress shown).
+- Task 6: P11 sentinel "" could match an empty KeyboardEvent.code (clip-plane branches only; harmless in 2D).
+- Task 7: undoLast always bumps the edit counter (K/place then ⌘Z → "● Unsaved" with nothing to save; Enter runs a no-op save that rotates a backup).
+- Task 7: "Placed on sagittal slice N" stale after a plane switch; deletePoint/markChecked lack the S.refused guard; no warn if NiiVue's keyDownListener is renamed; keyUpListener "" sentinel vs empty e.code; ok notes persist across structure switch; unsaved points count as done for Next; hover name stale until the mouse moves.
+- Task 7: Chrome may ask once per site to allow the second download; unsaved-points check compares JSON strings (key order).
+- Task 8: a followed E structure looks like every other E structure in Outline/Fill; dot spacing ignores structure (touching bursae share one seam); voxelToCanvas calls canvasPos2frac every frame; sub-pixel dots look soft/faint; stale comment author.js:754; buildColormap expectedFilled / hideExpected / zoom spacing untested (glue).
+- Task 9: CLAUDE.md mouse row doesn't say Shift = window/level, Ctrl/right = pan; Save paragraph doesn't say autolabels backups share the 20; README could point a phone visitor to the refusal list; Backspace not in CLAUDE.md Panel line; README Controls doesn't mark K/P author-only.
+- Final: Windows helper — write_text turns knee.md/lut.json/points.json into CRLF (whole-file git diffs).
+- Final: open-time "Saving won't work" note isn't sticky (a later hint replaces it); "checklist not ticked (synthetic)" note omitted when there are warnings; a restored structure whose id is on neither the checklist nor lut.json still gets 400 (recoverable with overwrite erase); a kept point whose checklist row is gone can't be chosen/deleted in the page; an erased-saved-undone auto outline comes back without auto (per the final ruling).
+- (Fixed in the final pass: token fetched before the case files; refusal banner cleared on a later attach; serve.py / CLAUDE.md "standard library only" wording.)
