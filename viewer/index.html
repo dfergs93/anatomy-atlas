@@ -228,7 +228,7 @@ const LOCAL_HOST = ["127.0.0.1", "localhost"].includes(location.hostname);
 let author = null; // author mode's session (author.js), once attachAuthor has accepted the case
 
 const state = {
-  cases: [], caseId: null, meta: null, lut: {}, points: [],
+  cases: [], caseId: null, meta: null, lut: {}, points: [], authorToken: null, // author mode: {token} or {error}
   seqId: null, plane: "sagittal", overlay: "off", opacity: 0.4,
   hover: null, selected: null, mouse: null, hoverFrac: null, labelCache: {},
 };
@@ -325,12 +325,15 @@ const OTHER_SIDE = { right: "left", left: "right" };
 
 async function loadCase(caseId, { keepPlane = false } = {}) {
   const base = `${DATA}${caseId}/`;
+  // Author mode: the save token first, then the files it fingerprints, so a write that lands after
+  // they were read makes the save a 409 instead of being overwritten (author.js).
+  const authorTok = MODE === "author" ? await authorToken(caseId) : null;
   const [meta, lut, points] = await Promise.all([
     getJSON(base + "meta.json"),
     getJSON(base + "lut.json"),
     getJSON(base + "points.json").catch(() => []),
   ]);
-  Object.assign(state, { caseId, meta, lut, points, selected: null, hover: null });
+  Object.assign(state, { caseId, meta, lut, points, authorToken: authorTok, selected: null, hover: null });
   $("caseSel").value = caseId;
   document.body.classList.remove("has-selection");
   if (MODE !== "sidebar") showPanel(null);

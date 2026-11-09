@@ -43,6 +43,22 @@
     return max + 1;
   }
 
+  // `assigned` after a save, given lut.json's id -> value before (oldIds) and after (newIds) it. A saved id
+  // leaves `assigned` (lut.json holds its value now). An id the save dropped (every voxel erased) goes into
+  // `assigned` with its old value, unless lut.json gave that value to another id: an undo back past the
+  // save then restores its voxels under its own id, and a new structure never takes the value.
+  function carryDropped(oldIds, newIds, assigned) {
+    const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+    for (const id of [...assigned.keys()]) if (has(newIds, id)) assigned.delete(id);
+    const taken = new Set([...Object.values(newIds), ...assigned.values()]);
+    for (const [id, v] of Object.entries(oldIds)) {
+      if (has(newIds, id) || assigned.has(id) || taken.has(v)) continue;
+      assigned.set(id, v);
+      taken.add(v);
+    }
+    return assigned;
+  }
+
   // A voxel may change o -> n only if (n === cur && (o === 0 || overwrite)) or (n === 0 && (o === cur || overwrite)).
   // Everything else is put back into `after`. Allowed changes are copied into `before` (the mirror of the
   // accepted state) and returned with their old values for undo.
@@ -225,5 +241,5 @@
     return res;
   }
 
-  return { colour, valueFor, guardChanges, undoChange, seedWindow, wandMask, growMask, keySlices };
+  return { colour, valueFor, carryDropped, guardChanges, undoChange, seedWindow, wandMask, growMask, keySlices };
 });

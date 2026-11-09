@@ -42,9 +42,28 @@ function attachAuthor(ctx) {
     authorBanner(ctx, why);
     return null;
   }
+  authorBanner(ctx, null); // an earlier case's refusal (case picker, R | L) no longer applies
   authorSession = makeAuthor(ctx);
   window.atlasAuthor = authorSession; // for the console and browser checks
   return authorSession;
+}
+
+// The case's save token (GET /api/token) as {token} or {error}. index.html reads it in author mode
+// *before* the case's files (lut.json, points.json, labels.nii.gz), so anything written to the case
+// after the page read them makes the save a 409 instead of being overwritten.
+async function authorToken(caseId) {
+  try {
+    const r = await fetch(`/api/token?case=${encodeURIComponent(caseId)}`, { cache: "no-store" });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.token) return { token: j.token };
+    return {
+      error: r.status === 404 && !j.error
+        ? "this server has no save endpoint — restart tools/serve.py, then reload this page"
+        : `couldn't read the case's version (${j.error || r.status})`,
+    };
+  } catch (e) {
+    return { error: `couldn't read the case's version (${e.message})` };
+  }
 }
 
 // The reason (HTML) painting is refused, or null.
@@ -112,7 +131,7 @@ function makeAuthor(ctx) {
   const S = {
     rows: [], checklistError: null,
     savedLut: state.lut,     // lut.json as last loaded from disk (value -> entry)
-    assigned: new Map(),     // id -> value for structures painted but not yet in lut.json
+    assigned: new Map(),     // id -> value for structures painted but not yet in lut.json, or erased from it by a save
     current: null, curValue: 0,
     tool: "brush", size: AUTHOR_OPTS.sizeDefault, overwrite: false, paintShown: true,
     wandTol: AUTHOR_OPTS.wandTolerance, wand3D: false,
@@ -120,7 +139,8 @@ function makeAuthor(ctx) {
     undo: [], edits: 0, savedEdits: 0,
     savedPoints: JSON.stringify(state.points), // points.json as last loaded or saved, to tell unsaved points
     checked: new Set(),      // auto outlines marked checked (K) since the last save
-    token: null, saving: null, refused: false, filter: "", noteKind: null, lastSaveMs: null, enterAfterStroke: false,
+    token: null, tokenError: null, // the save token, read before the case's files (index.html loadCase)
+    saving: null, refused: false, filter: "", noteKind: null, lastSaveMs: null, enterAfterStroke: false,
   };
   let before = null;         // the accepted drawing (mirror of nv.drawBitmap)
   let suspended = false;     // drawing switched off for a gesture that started outside the main view
@@ -549,17 +569,6 @@ function makeAuthor(ctx) {
   }
 
   // ---------- save ----------
-  async function fetchToken() {
-    const r = await fetch(`/api/token?case=${encodeURIComponent(caseId)}`, { cache: "no-store" });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok || !j.token) {
-      throw new Error(r.status === 404 && !j.error
-        ? "this server has no save endpoint — restart tools/serve.py"
-        : `couldn't read the case's version (${j.error || r.status})`);
-    }
-    return j.token;
-  }
-
   function blobToBase64(blob) {
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
@@ -594,7 +603,13 @@ function makeAuthor(ctx) {
     const points = JSON.parse(JSON.stringify(state.points));
     let res;
     try {
-      if (!S.token) S.token = await fetchToken();
+      // No token from before the files were read: a token fetched now would let this save overwrite
+      // whatever changed on disk since then. Refused like a 409; the download keeps the work.
+      if (!S.token) {
+        const err = new Error(`the page couldn't read the case's version when it opened (${S.tokenError}), so it can't tell whether the case changed since`);
+        err.status = 409;
+        throw err;
+      }
       const gz = await new Response(raw.stream().pipeThrough(new CompressionStream("gzip"))).blob();
       const body = JSON.stringify({ case_id: caseId, token: S.token, labels_gz_b64: await blobToBase64(gz), values, checked, points });
       const r = await fetch("/api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body });
@@ -630,7 +645,8 @@ function makeAuthor(ctx) {
       warn.push(`the panel couldn't reload lut.json or the checklist (${esc(e.message)})`);
     }
     if (warn.length) note("warn", `Saved — but ${warn.join("; ")}`);
-    else note("ok", `Saved in ${(S.lastSaveMs / 1000).toFixed(1)} s · ${res.structures} structures${res.mirror ? " · left copy rebuilt" : ""}`);
+    else note("ok", `Saved in ${(S.lastSaveMs / 1000).toFixed(1)} s · ${res.structures} structures${res.mirror ? " · left copy rebuilt" : ""}` +
+      (String(res.checklist).startsWith("skipped") ? " · checklist not ticked (synthetic case)" : ""));
     return true;
   }
 
@@ -640,9 +656,10 @@ function makeAuthor(ctx) {
       ctx.getJSON(base + "lut.json"),
       fetchChecklist().catch(() => null),
     ]);
+    const oldIds = lutIdToValue();
     S.savedLut = lut;
-    const ids = new Set(Object.values(lut).map((e) => e.id));
-    for (const id of [...S.assigned.keys()]) if (ids.has(id)) S.assigned.delete(id);
+    // a structure this save erased keeps its value (mapped, named, coloured) for an undo back past the save
+    paint.carryDropped(oldIds, lutIdToValue(), S.assigned);
     if (md !== null) S.rows = core.parseChecklist(md);
     if (S.current) {
       S.current = rowOf(S.current.id) || S.current;
@@ -1053,9 +1070,10 @@ function makeAuthor(ctx) {
     .then((md) => { S.rows = core.parseChecklist(md); })
     .catch((e) => { S.checklistError = `No checklist for this case (${e.message}).`; })
     .finally(render);
-  fetchToken()
-    .then((t) => { S.token = t; })
-    .catch((e) => note("error", `Saving won't work: ${esc(e.message)}.`));
+  const tok = state.authorToken || { error: "the page didn't read it" };
+  S.token = tok.token || null;
+  S.tokenError = tok.error || null;
+  if (!S.token) note("error", `Saving won't work: ${esc(S.tokenError)}.`);
 
   return {
     caseId, onKey, onClick, reattach, save, undo: undoLast, afterEdit, beforeUnload, makeCurrent, enterNext,
