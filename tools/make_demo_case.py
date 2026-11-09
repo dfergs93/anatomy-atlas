@@ -302,9 +302,9 @@ def main() -> None:
         "sequences": seqs,
         "default_plane": "sagittal",
     }
-    (OUT / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
-    (OUT / "lut.json").write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n")
-    (OUT / "points.json").write_text(json.dumps(points, indent=2, ensure_ascii=False) + "\n")
+    (OUT / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    (OUT / "lut.json").write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    (OUT / "points.json").write_text(json.dumps(points, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     register_case(ROOT, {"case_id": CASE_ID, "title": meta["title"], "region": "knee", "modality": "MR",
                          "sequences": [s["id"] for s in seqs], "structure_count": len(lut) + len(points),

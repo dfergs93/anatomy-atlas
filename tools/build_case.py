@@ -79,7 +79,7 @@ def checklist_names(root: Path, region: str) -> dict[str, str]:
     path = Path(root) / "checklists" / f"{region}.md"
     names: dict[str, str] = {}
     if path.exists():
-        for line in path.read_text().splitlines():
+        for line in path.read_text(encoding="utf-8").splitlines():
             cells = [c.strip() for c in line.strip().strip("|").split("|")]
             if len(cells) >= 2 and re.fullmatch(r"[a-z0-9_]+", cells[0]) and cells[0] != "id":
                 names[cells[0]] = cells[1]
@@ -153,11 +153,11 @@ def build_case(root: Path, case_id: str, *, title: str, region: str,
         "citation": citation, "reference_sequence": seq_meta[0]["id"], "sequences": seq_meta,
         "default_plane": plane,
     }
-    (out / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
-    (out / "lut.json").write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n")
+    (out / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    (out / "lut.json").write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     if not (out / "points.json").exists():
-        (out / "points.json").write_text("[]\n")
-    points = json.loads((out / "points.json").read_text())
+        (out / "points.json").write_text("[]\n", encoding="utf-8")
+    points = json.loads((out / "points.json").read_text(encoding="utf-8"))
 
     register_case(root, {"case_id": case_id, "title": title, "region": region, "modality": "MR",
                          "sequences": [s["id"] for s in seq_meta], "structure_count": len(lut) + len(points),
@@ -186,7 +186,7 @@ def main() -> None:
 
     mapping: dict[int, str] = dict(PRESETS.get(args.preset, {}))
     if args.label_names:
-        mapping = {int(k): v for k, v in json.loads(args.label_names.read_text()).items()}
+        mapping = {int(k): v for k, v in json.loads(args.label_names.read_text(encoding="utf-8")).items()}
     build_case(ROOT, args.case_id, title=args.title, region=args.region,
                seqs=[(sid, label, Path(path)) for sid, label, path in args.seq],
                labels=args.labels, mapping=mapping, side=args.side, plane=args.plane,

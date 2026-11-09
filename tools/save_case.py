@@ -58,7 +58,7 @@ def _check_points(points, known_ids) -> list[dict]:
 
 def _saved_point_ids(case: Path) -> set[str]:
     try:
-        old = json.loads((case / "points.json").read_text())
+        old = json.loads((case / "points.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return set()
     return {p["id"] for p in old if isinstance(p, dict) and isinstance(p.get("id"), str)} if isinstance(old, list) else set()
@@ -72,7 +72,7 @@ def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int
     # ---- checks: nothing is written until all have passed ----
     if not (case / "meta.json").exists():
         raise SaveError(f"no case {case_id}")
-    meta = json.loads((case / "meta.json").read_text())
+    meta = json.loads((case / "meta.json").read_text(encoding="utf-8"))
     if meta.get("mirror_of"):
         raise SaveError(f"{case_id} is a mirrored copy of {meta['mirror_of']}; paint {meta['mirror_of']} instead")
     if token != case_token(case):
@@ -98,7 +98,7 @@ def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int
         raise SaveError("two values share one structure id")
     if not isinstance(checked, list) or not all(isinstance(c, str) for c in checked):
         raise SaveError("checked must be a list of ids")
-    old_lut = json.loads((case / "lut.json").read_text()) if (case / "lut.json").exists() else {}
+    old_lut = json.loads((case / "lut.json").read_text(encoding="utf-8")) if (case / "lut.json").exists() else {}
     checklist_path = root / "checklists" / f"{meta['region']}.md"
     rows = {r.id: r for r in read_checklist(checklist_path)} if checklist_path.exists() else {}
     known = set(rows) | {e["id"] for e in old_lut.values()}
@@ -109,7 +109,7 @@ def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int
     points = _check_points(points, set(rows) | _saved_point_ids(case))
     mirror_dir = (root / "data" / mirror_id(meta, case_id)) if mirror_id(meta, case_id) else None
     if mirror_dir and mirror_dir.exists():
-        theirs = json.loads((mirror_dir / "meta.json").read_text()) if (mirror_dir / "meta.json").exists() else {}
+        theirs = json.loads((mirror_dir / "meta.json").read_text(encoding="utf-8")) if (mirror_dir / "meta.json").exists() else {}
         if theirs.get("mirror_of") != case_id:
             raise SaveError(f"data/{mirror_dir.name} exists and is not the mirror of {case_id}; move it aside")
 
@@ -138,8 +138,8 @@ def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int
     clean_header(out)
     out.header.set_intent("label")
     _replace(lambda p: nib.save(out, str(p)), case / "labels.nii.gz")
-    _replace(lambda p: p.write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n"), case / "lut.json")
-    _replace(lambda p: p.write_text(json.dumps(points, indent=2, ensure_ascii=False) + "\n"), case / "points.json")
+    _replace(lambda p: p.write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"), case / "lut.json")
+    _replace(lambda p: p.write_text(json.dumps(points, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"), case / "points.json")
     warnings, mirror = [], None
     indexed = any(c["case_id"] == case_id for c in read_index(root))
     try:

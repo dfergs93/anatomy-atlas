@@ -42,7 +42,7 @@ def pack(root: Path, case_id: str, out: Path | None = None) -> Path:
     meta_path = case / "meta.json"
     if not meta_path.is_file():
         raise ShareError(f"no case {case_id}")
-    meta = json.loads(meta_path.read_text())
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
     if meta.get("mirror_of"):
         raise ShareError(f"{case_id} is a mirrored copy; pack {meta['mirror_of']} instead")
     if not meta.get("synthetic") and not meta.get("licence"):

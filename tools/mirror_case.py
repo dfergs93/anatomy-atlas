@@ -49,7 +49,7 @@ def mirror_case(root: Path, src_id: str, dst_id: str | None = None, *, volumes: 
     """volumes=False: when the copy already exists, keep its volumes and rewrite only the label files."""
     root = Path(root)
     src = root / "data" / src_id
-    meta = json.loads((src / "meta.json").read_text())
+    meta = json.loads((src / "meta.json").read_text(encoding="utf-8"))
     if meta.get("mirror_of"):
         raise ValueError(f"{src_id} is already a mirrored copy of {meta['mirror_of']}")
     side = OTHER_SIDE.get(meta.get("side", ""))
@@ -58,7 +58,7 @@ def mirror_case(root: Path, src_id: str, dst_id: str | None = None, *, volumes: 
     dst_id = dst_id or mirror_id(meta, src_id)
     out = root / "data" / dst_id
     if out.exists():
-        old = json.loads((out / "meta.json").read_text()) if (out / "meta.json").exists() else {}
+        old = json.loads((out / "meta.json").read_text(encoding="utf-8")) if (out / "meta.json").exists() else {}
         if old.get("mirror_of") != src_id:
             raise ValueError(f"data/{dst_id} exists and is not a mirror of {src_id}; not overwriting it")
         if volumes:
@@ -73,16 +73,16 @@ def mirror_case(root: Path, src_id: str, dst_id: str | None = None, *, volumes: 
     labels = mirror_image(nib.load(src / "labels.nii.gz"))
     nib.save(labels, out / "labels.nii.gz")
 
-    src_lut = json.loads((src / "lut.json").read_text())
+    src_lut = json.loads((src / "lut.json").read_text(encoding="utf-8"))
     lut = build_lut(np.asanyarray(labels.dataobj), labels.affine, {int(k): v for k, v in src_lut.items()})
-    points = json.loads((src / "points.json").read_text()) if (src / "points.json").exists() else []
+    points = json.loads((src / "points.json").read_text(encoding="utf-8")) if (src / "points.json").exists() else []
     points = [{**p, "xyz_mm": [-p["xyz_mm"][0], *p["xyz_mm"][1:]]} for p in points]
 
     title = f"{meta['title']} · {side} (mirrored)"
     new_meta = {**meta, "case_id": dst_id, "title": title, "side": side, "mirror_of": src_id}
-    (out / "meta.json").write_text(json.dumps(new_meta, indent=2, ensure_ascii=False) + "\n")
-    (out / "lut.json").write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n")
-    (out / "points.json").write_text(json.dumps(points, indent=2, ensure_ascii=False) + "\n")
+    (out / "meta.json").write_text(json.dumps(new_meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    (out / "lut.json").write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    (out / "points.json").write_text(json.dumps(points, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     entry = next((c for c in read_index(root) if c["case_id"] == src_id), {"case_id": src_id})
     entry = {k: v for k, v in entry.items() if k != "mirror"}

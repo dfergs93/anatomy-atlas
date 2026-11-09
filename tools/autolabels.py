@@ -156,7 +156,7 @@ def merge_auto(arr: np.ndarray, lut: dict[str, dict], additions: dict[str, np.nd
 
 def has_licence(licence_file: Path) -> bool:
     try:
-        return bool(json.loads(Path(licence_file).expanduser().read_text()).get("license_number"))
+        return bool(json.loads(Path(licence_file).expanduser().read_text(encoding="utf-8")).get("license_number"))
     except (OSError, ValueError, AttributeError):
         return False
 
@@ -187,14 +187,14 @@ def run(root: Path, case_id: str, *, autoseg_python: Path, totalseg: bool | None
     # 1. check everything before anything changes
     if not (case / "meta.json").exists():
         raise SystemExit(f"no case at data/{case_id}")
-    meta = json.loads((case / "meta.json").read_text())
+    meta = json.loads((case / "meta.json").read_text(encoding="utf-8"))
     if meta.get("mirror_of"):
         raise SystemExit(f"{case_id} is a mirrored copy of {meta['mirror_of']}: run this on "
                          f"{meta['mirror_of']}, and its copy is rebuilt afterwards.")
     if not autoseg_python.exists():
         raise SystemExit(f"{autoseg_python} not found. Make the model venv first:\n"
                          "  python3.13 -m venv venv-autoseg && venv-autoseg/bin/pip install -r requirements-autoseg.txt")
-    lut = json.loads((case / "lut.json").read_text())
+    lut = json.loads((case / "lut.json").read_text(encoding="utf-8"))
     by_id = {e["id"]: e for e in lut.values()}
     missing = [k for k in ("medial_tibial_cartilage", "lateral_tibial_cartilage") if k not in by_id]
     if missing:
@@ -262,8 +262,8 @@ def run(root: Path, case_id: str, *, autoseg_python: Path, totalseg: bool | None
     clean_header(out)
     out.header.set_intent("label")
     _replace(lambda p: nib.save(out, str(p)), case / "labels.nii.gz")
-    _replace(lambda p: p.write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n"), case / "lut.json")
-    points = json.loads((case / "points.json").read_text()) if (case / "points.json").exists() else []
+    _replace(lambda p: p.write_text(json.dumps(lut, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"), case / "lut.json")
+    points = json.loads((case / "points.json").read_text(encoding="utf-8")) if (case / "points.json").exists() else []
     if any(c["case_id"] == case_id for c in read_index(root)):
         patch_case(root, case_id, {"structure_count": len(lut) + len(points)})
     if meta.get("side") in ("right", "left"):

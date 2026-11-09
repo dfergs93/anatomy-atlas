@@ -112,13 +112,13 @@ def index_path(root: Path) -> Path:
 
 def read_index(root: Path) -> list[dict]:
     p = index_path(root)
-    return json.loads(p.read_text()) if p.exists() else []
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
 
 
 def write_index(root: Path, cases: list[dict]) -> None:
     p = index_path(root)
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(cases, indent=2, ensure_ascii=False) + "\n")
+    p.write_text(json.dumps(cases, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def register_case(root: Path, entry: dict) -> None:
