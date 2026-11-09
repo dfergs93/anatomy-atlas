@@ -271,6 +271,16 @@ const nv = new niivue.Niivue({
   clipPlaneHotKey: "",
   cycleClipPlaneHotKey: "",
 });
+// NiiVue's own key-down actions (its keyDownListener, bound when the canvas is attached in init):
+// M cycles the drag mode, Shift+/ opens a blocking alert(), and H/J/K/L and Ctrl+U/D move the cursor
+// a voxel (K in the coronal plane moves the slice, and K is author mode's "mark checked"). All are
+// dropped in every mode; the viewer has its own keys (↑↓, 1–3, /, Esc). ←/→ still reach NiiVue,
+// where they only step 4D frames (nothing on these 3D volumes).
+const nvKeyDown = nv.keyDownListener;
+nv.keyDownListener = function (e) {
+  const off = /^Key[HJKLM]$/.test(e.code) || (e.code === "Slash" && e.shiftKey) || (e.ctrlKey && /^Key[UD]$/.test(e.code));
+  if (!off) nvKeyDown.call(this, e);
+};
 nv.setMouseEventConfig({
   leftButton: { primary: niivue.DRAG_MODE.windowing, withShift: niivue.DRAG_MODE.pan, withCtrl: niivue.DRAG_MODE.crosshair },
   rightButton: niivue.DRAG_MODE.pan,
@@ -734,7 +744,8 @@ function drawMarkers() {
     if (!hit) continue;
     const pos = hit.pos;
     const m = document.createElement("div");
-    const active = (state.hover && state.hover.id === p.id) || (state.selected && state.selected.id === p.id);
+    const active = (state.hover && state.hover.id === p.id) || (state.selected && state.selected.id === p.id) ||
+      (author && author.currentId === p.id); // author mode: the point being placed
     m.className = "marker" + (active ? " active" : "");
     m.style.left = pos[0] / dpr + "px";
     m.style.top = pos[1] / dpr + "px";

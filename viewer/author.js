@@ -11,6 +11,10 @@
 //
 // The wand, fill between and grow write their result straight into nv.drawBitmap and then run the
 // same afterEdit() as a stroke, so the guard decides what is kept (NiiVue fires no "draw" for them).
+//
+// Point structures (checklist type P) are never painted: a click in the main view places the point
+// (state.points, saved as points.json), Delete removes it. K marks a model's outline (an `auto` entry
+// in lut.json) as checked; the save drops its `auto`. Points and K are on the same undo stack as paint.
 "use strict";
 
 const AUTHOR_OPTS = {
@@ -114,7 +118,7 @@ function makeAuthor(ctx) {
     wandTol: AUTHOR_OPTS.wandTolerance, wand3D: false,
     lastTool: null,          // {what, ms, added, restored} of the last wand / fill between / grow (for checks)
     undo: [], edits: 0, savedEdits: 0,
-    checked: new Set(),      // ids marked checked since the last save (K, a later task)
+    checked: new Set(),      // auto outlines marked checked (K) since the last save
     token: null, saving: null, refused: false, filter: "", noteKind: null, lastSaveMs: null, enterAfterStroke: false,
   };
   let before = null;         // the accepted drawing (mirror of nv.drawBitmap)
@@ -171,7 +175,7 @@ function makeAuthor(ctx) {
       if (!lut[v]) lut[v] = { id, name: (rowOf(id) || { name: id }).name, rgb: paint.colour(id, v) };
     };
     for (const [id, v] of S.assigned) add(id, v);
-    if (S.current) add(S.current.id, S.curValue);
+    if (S.current && !isPoint(S.current)) add(S.current.id, S.curValue);
     return lut;
   }
 
@@ -180,8 +184,23 @@ function makeAuthor(ctx) {
     nv.setDrawColormap(ctx.buildColormap(state.lut));
   }
 
+  function isPoint(row) {
+    return !!row && row.type === "P";
+  }
+
+  function pointOf(id) {
+    return state.points.find((p) => p.id === id) || null;
+  }
+
+  // lut.json's entry for `id` when a model drew it and nobody has checked it yet, else null.
+  function autoEntry(id) {
+    const e = S.savedLut[lutIdToValue()[id]];
+    return e && e.auto ? e : null;
+  }
+
+  // Point structures are placed, never painted: with one current, the drawing is off.
   function canPaint() {
-    return !!S.current && !S.refused && !!nv.drawBitmap;
+    return !!S.current && !isPoint(S.current) && !S.refused && !!nv.drawBitmap;
   }
 
   // NiiVue's pen is on for the brush and eraser only: with the wand a click must not also lay down a dot.
@@ -192,7 +211,7 @@ function makeAuthor(ctx) {
   function applyPen() {
     nv.opts.penSize = S.size;
     if (nv.opts.drawingEnabled !== penOn()) nv.setDrawingEnabled(penOn());
-    nv.setPenValue(S.tool === "eraser" || !S.current ? 0 : S.curValue, false);
+    nv.setPenValue(S.tool === "eraser" || !canPaint() ? 0 : S.curValue, false);
   }
 
   // NiiVue fires "draw" after each brush or eraser stroke; the wand, fill between and grow call this
@@ -200,8 +219,9 @@ function makeAuthor(ctx) {
   function afterEdit(what) {
     const bm = nv.drawBitmap;
     if (!bm || !before || bm.length !== before.length) return null;
-    const cur = S.current ? S.curValue : AUTHOR_OPTS.noCurrent;
-    const ch = paint.guardChanges(before, bm, cur, S.overwrite && !!S.current);
+    const paintable = !!S.current && !isPoint(S.current);
+    const cur = paintable ? S.curValue : AUTHOR_OPTS.noCurrent; // a point structure takes no voxels
+    const ch = paint.guardChanges(before, bm, cur, S.overwrite && paintable);
     if (ch.restored) nv.refreshDrawing(true);
     if (ch.idx.length) {
       const id = S.current.id;
@@ -209,7 +229,7 @@ function makeAuthor(ctx) {
       pushUndo({ kind: "paint", idx: ch.idx, old: ch.old });
       edited();
     }
-    const name = S.current ? esc(S.current.name) : "the current structure";
+    const name = paintable ? esc(S.current.name) : "the current structure";
     if (ch.restored) {
       note("info", (!what && S.tool === "eraser" ? `The eraser clears only ${name}` : `${what || "The brush"} paints only empty voxels and ${name}`) +
         "; other structures were left as they were. Tick “Paint over other structures” to change them.");
@@ -247,8 +267,92 @@ function makeAuthor(ctx) {
       note("info", "Choose a structure first: <kbd>Enter</kbd> for the next one, or pick one below.");
       return false;
     }
+    if (isPoint(S.current)) {
+      note("info", pointHint());
+      return false;
+    }
     if (stroking) afterEdit();
     return true;
+  }
+
+  function pointHint() {
+    return `${esc(S.current.name)} is a point label, so it isn't painted: click in the big view to place it.`;
+  }
+
+  // ---------- points (spec §5.3 "Point", §5.7) ----------
+  function copyPoints() {
+    return JSON.parse(JSON.stringify(state.points));
+  }
+
+  function pointsChanged() {
+    ctx.drawMarkers();
+    render();
+  }
+
+  // The (0-based) slice of the current plane a stored point sits on.
+  function pointSliceHere(p) {
+    return ctx.frac2vox(ctx.worldToFrac(p.xyz_mm))[core.PLANE_AXIS[state.plane]];
+  }
+
+  // A click in the main view sets the current point structure's point, replacing any earlier one.
+  // It goes at the centre of the clicked voxel, so it sits on the slice the slider names.
+  function placePoint(frac) {
+    if (S.refused || !nv.volumes.length) return;
+    const row = S.current;
+    const d = volDims();
+    const vox = ctx.frac2vox(frac, 0);
+    const xyz = ctx.fracToWorld(vox.map((v, a) => (v + 0.5) / d[a])).map((v) => Math.round(v * 100) / 100);
+    const old = pointOf(row.id);
+    if (old && old.xyz_mm.every((v, a) => v === xyz[a])) return; // the same voxel again
+    pushUndo({ kind: "point", before: copyPoints() });
+    const p = { id: row.id, name: row.name, xyz_mm: xyz };
+    if (old) state.points[state.points.indexOf(old)] = p;
+    else state.points.push(p);
+    edited();
+    pointsChanged();
+    note("ok", `${old ? "Moved" : "Placed"} ${esc(row.name)} on ${state.plane} slice ${vox[core.PLANE_AXIS[state.plane]] + 1}.`);
+  }
+
+  function deletePoint() {
+    const row = S.current;
+    const i = state.points.findIndex((p) => p.id === row.id);
+    if (i < 0) {
+      note("info", `${esc(row.name)} has no point yet: click in the big view to place it.`);
+      return;
+    }
+    pushUndo({ kind: "point", before: copyPoints() });
+    state.points.splice(i, 1);
+    edited();
+    pointsChanged();
+    note("ok", `Removed the point for ${esc(row.name)}. <kbd>${MOD}Z</kbd> puts it back.`);
+  }
+
+  // The point's slice in the current plane, in the main view.
+  function goToPoint() {
+    const p = S.current && pointOf(S.current.id);
+    if (p) ctx.setSlice(pointSliceHere(p));
+  }
+
+  // ---------- K: a model's outline looks right ----------
+  // Saved as `checked`: the save drops the structure's `auto`, so the badge and the panel's note go.
+  function markChecked() {
+    const c = S.current;
+    if (!c) {
+      note("info", "Choose a structure first: <kbd>Enter</kbd> for the next one, or pick one below.");
+      return;
+    }
+    if (S.checked.has(c.id)) {
+      note("info", `${esc(c.name)} is already marked checked; it's kept when you save.`);
+      return;
+    }
+    if (!autoEntry(c.id)) {
+      note("info", `${esc(c.name)} wasn't drawn by a model, so there is nothing to check.`);
+      return;
+    }
+    S.checked.add(c.id);
+    pushUndo({ kind: "check", id: c.id });
+    render();
+    note("ok", `${esc(c.name)} marked checked. Save to keep it.`);
   }
 
   // Paint the current value into `mask`, then let the guard decide what stays.
@@ -354,8 +458,17 @@ function makeAuthor(ctx) {
     if (u.kind === "paint") {
       paint.undoChange(u, nv.drawBitmap, before);
       nv.refreshDrawing(true);
+    } else if (u.kind === "point") {
+      state.points.splice(0, state.points.length, ...u.before);
+      ctx.drawMarkers();
+    } else if (u.kind === "check") {
+      S.checked.delete(u.id);
     }
+    // "Placed …", "… marked checked", tool counts and the guard's hints describe what was just undone;
+    // a failed save's message (with its download button) stays
+    if (S.noteKind === "ok" || S.noteKind === "info") clearNote();
     edited();
+    render();
   }
 
   function edited() {
@@ -380,10 +493,15 @@ function makeAuthor(ctx) {
     return core.nextStructure(S.rows, d, S.current ? S.current.id : null);
   }
 
+  // The label value a structure paints with; point structures have none.
+  function valueOf(row) {
+    return isPoint(row) ? 0 : paint.valueFor(row.id, lutIdToValue(), S.assigned);
+  }
+
   function makeCurrent(row) {
     let v;
     try {
-      v = paint.valueFor(row.id, lutIdToValue(), S.assigned);
+      v = valueOf(row);
     } catch (e) {
       note("error", esc(e.message));
       return;
@@ -393,6 +511,8 @@ function makeAuthor(ctx) {
     applyColours();
     applyPen();
     render();
+    ctx.drawMarkers(); // its point, if any, is the lit marker
+    if (S.noteKind === "info") clearNote(); // hints were about the previous structure
   }
 
   async function enterNext() {
@@ -470,6 +590,8 @@ function makeAuthor(ctx) {
     S.token = res.token;
     S.savedEdits = seq;
     for (const c of checked) S.checked.delete(c);
+    // a saved check can't be undone here (lut.json no longer has the `auto`): drop its undo entries
+    S.undo = S.undo.filter((u) => !(u.kind === "check" && checked.includes(u.id)));
     S.lastSaveMs = performance.now() - t0;
     const warn = (res.warnings || []).map(esc);
     try {
@@ -494,7 +616,7 @@ function makeAuthor(ctx) {
     if (md !== null) S.rows = core.parseChecklist(md);
     if (S.current) {
       S.current = rowOf(S.current.id) || S.current;
-      S.curValue = paint.valueFor(S.current.id, lutIdToValue(), S.assigned);
+      S.curValue = valueOf(S.current);
     }
     applyColours();
     applyPen();
@@ -514,7 +636,8 @@ function makeAuthor(ctx) {
   // ---------- panel ----------
   const keyHelp = `
     <p><kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>W</kbd> wand (click) · <kbd>[</kbd> <kbd>]</kbd> size or tolerance · <kbd>O</kbd> show/hide paint</p>
-    <p><kbd>F</kbd> fill between painted slices · <kbd>G</kbd> grow</p>
+    <p><kbd>F</kbd> fill between painted slices · <kbd>G</kbd> grow · <kbd>K</kbd> a model's outline looks right: mark it checked</p>
+    <p><b>Point labels:</b> click in the big view to place the point · <kbd>Delete</kbd> remove it</p>
     <p><kbd>Enter</kbd> save, then next · <kbd>${MOD}S</kbd> save · <kbd>${MOD}Z</kbd> undo · <kbd>/</kbd> filter</p>
     <p><b>Mouse:</b> drag = paint (big view) · Shift-drag = window/level · right- or Ctrl-drag = pan ·
       wheel or <kbd>↑</kbd><kbd>↓</kbd> = slices · <kbd>1</kbd>–<kbd>3</kbd> plane · click a small view to jump there</p>`;
@@ -529,9 +652,18 @@ function makeAuthor(ctx) {
         <div class="ap-kicker">Painting</div>
         <h2 id="apName"></h2>
         <div id="apMeta" class="muted"></div>
+        <div id="apAuto" class="ap-auto" hidden></div>
+        <button id="apCheck" class="ap-checkbtn" type="button" title="The outline looks right: mark it checked (K)" hidden>Looks right: mark checked · <kbd>K</kbd></button>
         <button id="apNext" class="ap-next" type="button"></button>
       </section>
-      <section class="ap-tools">
+      <section id="apPoint" class="ap-point" hidden>
+        <p id="apPointText"></p>
+        <div class="ap-actions">
+          <button id="apPointGo" type="button" title="Show the slice the point is on">Go to it</button>
+          <button id="apPointDel" type="button" title="Remove the point (Delete)">Remove point</button>
+        </div>
+      </section>
+      <section id="apTools" class="ap-tools">
         <div class="group" role="group" aria-label="Tool">
           <button type="button" data-tool="brush" title="Brush (B)">Brush</button>
           <button type="button" data-tool="eraser" title="Eraser (E)">Eraser</button>
@@ -570,6 +702,9 @@ function makeAuthor(ctx) {
 
     const focusImage = () => $("gl").focus({ preventScroll: true });
     $("apNext").addEventListener("click", () => { enterNext(); focusImage(); });
+    $("apCheck").addEventListener("click", () => { markChecked(); focusImage(); });
+    $("apPointGo").addEventListener("click", () => { goToPoint(); focusImage(); });
+    $("apPointDel").addEventListener("click", () => { deletePoint(); focusImage(); });
     el.querySelector(".ap-tools .group").addEventListener("click", (e) => {
       const t = e.target.closest("[data-tool]");
       if (t) { setTool(t.dataset.tool); focusImage(); }
@@ -610,6 +745,7 @@ function makeAuthor(ctx) {
   }
 
   function setTool(tool) {
+    if (isPoint(S.current)) { note("info", pointHint()); return; }
     // Turning the pen off mid-stroke ends NiiVue's stroke without "draw": guard what it painted so far.
     if (stroking && (tool === "brush" || tool === "eraser") !== (S.tool === "brush" || S.tool === "eraser")) {
       stroking = false;
@@ -640,9 +776,26 @@ function makeAuthor(ctx) {
     const c = S.current;
     const entry = c && S.savedLut[lutIdToValue()[c.id]];
     $("apName").textContent = c ? c.name : "No structure chosen";
+    const auto = !!(entry && entry.auto);
+    const marked = auto && S.checked.has(c.id);
     $("apMeta").innerHTML = c
-      ? `${esc(typeText(c))}${entry && entry.auto ? '<span class="badge" title="Drawn by a model, not yet checked">auto</span>' : ""}`
+      ? `${esc(typeText(c))}${auto && !marked ? '<span class="badge" title="Drawn by a model, not yet checked">auto</span>' : ""}`
       : S.checklistError ? esc(S.checklistError) : "Press Enter to start on the next structure, or pick one below.";
+    $("apAuto").hidden = !auto;
+    $("apAuto").textContent = !auto ? "" : marked ? "Marked checked: the auto mark goes when you save."
+      : `${core.autoNote(entry)}. Edit it, or if it looks right mark it checked.`;
+    $("apCheck").hidden = !auto || marked;
+    const pt = isPoint(c);
+    $("apTools").hidden = pt;
+    $("apPoint").hidden = !pt;
+    if (pt) {
+      const p = pointOf(c.id);
+      $("apPointText").innerHTML = p
+        ? `Placed on ${esc(state.plane)} slice ${pointSliceHere(p) + 1}. Click in the big view to move it.`
+        : "Not placed yet. Click in the big view to place it.";
+      $("apPointGo").disabled = !p;
+      $("apPointDel").disabled = !p;
+    }
     const nx = nextRow();
     $("apNext").innerHTML = nx ? `Next: <b>${esc(nx.name)}</b> · <kbd>Enter</kbd>`
       : S.rows.length ? "All structures labelled" : S.checklistError ? "No checklist" : "Loading the checklist…";
@@ -721,6 +874,8 @@ function makeAuthor(ctx) {
     if (mod && !e.altKey && !e.shiftKey && (k === "z" || k === "Z")) { e.preventDefault(); undoLast(); return true; }
     if (mod || e.altKey) return false;
     if (k === "Enter") { e.preventDefault(); if (!e.repeat) enterNext(); return true; }
+    if (k === "k" || k === "K") { if (!e.repeat) markChecked(); return true; }
+    if ((k === "Delete" || k === "Backspace") && isPoint(S.current)) { e.preventDefault(); if (!e.repeat) deletePoint(); return true; }
     if (k === "b" || k === "B") { setTool("brush"); return true; }
     if (k === "e" || k === "E") { setTool("eraser"); return true; }
     if (k === "w" || k === "W") { setTool("wand"); return true; }
@@ -741,9 +896,11 @@ function makeAuthor(ctx) {
     return false;
   }
 
-  // A click (no drag) in the main view. Brush and eraser have already painted the dab; the wand fills.
+  // A click (no drag) in the main view. Brush and eraser have already painted the dab; the wand fills;
+  // with a point structure current (drawing off) it places the point.
   function onClick(frac, _e) {
-    if (S.tool === "wand") wandAt(frac);
+    if (isPoint(S.current)) placePoint(frac);
+    else if (S.tool === "wand") wandAt(frac);
   }
 
   function beforeUnload(e) {
@@ -843,7 +1000,8 @@ function makeAuthor(ctx) {
 
   return {
     caseId, onKey, onClick, reattach, save, undo: undoLast, afterEdit, beforeUnload, makeCurrent, enterNext,
-    unsaved, downloadPaint, wandAt, fillBetween, grow, setTool,
+    unsaved, downloadPaint, wandAt, fillBetween, grow, setTool, placePoint, deletePoint, markChecked,
+    get currentId() { return S.current ? S.current.id : null; },
     get state() { return S; },
     get before() { return before; },
   };
@@ -866,7 +1024,7 @@ function authorStyles() {
   #authorPanel h2 { margin: 0; font-size: 20px; }
   .ap-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   .ap-next { text-align: left; }
-  .ap-next kbd, .ap-help kbd, .ap-msg kbd { font: 11px var(--font); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+  .ap-next kbd, .ap-checkbtn kbd, .ap-help kbd, .ap-msg kbd { font: 11px var(--font); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
   .ap-tools .group { align-self: flex-start; }
   .ap-size, .ap-check { display: flex; align-items: center; gap: 8px; color: var(--muted); }
   .ap-size input { flex: 1; }
@@ -875,7 +1033,11 @@ function authorStyles() {
   .ap-size output { min-width: 48px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
   #authorPanel .ap-save { flex-direction: row; align-items: center; }
   #apSave { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
-  #apSave:disabled, #apUndo:disabled, .ap-next:disabled { opacity: .5; cursor: default; }
+  #apSave:disabled, #apUndo:disabled, .ap-next:disabled, #apPoint button:disabled { opacity: .5; cursor: default; }
+  #authorPanel [hidden] { display: none; }
+  .ap-auto { font-size: 13px; color: var(--muted); }
+  .ap-checkbtn { text-align: left; }
+  .ap-point p { margin: 0; }
   .ap-status { margin-left: auto; font-variant-numeric: tabular-nums; }
   .ap-unsaved { color: var(--warn-text); font-weight: 600; }
   .ap-msg { font-size: 13px; padding: 8px 10px; border-radius: var(--radius); background: var(--surface-2); }
