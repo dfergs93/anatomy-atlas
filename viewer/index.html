@@ -211,6 +211,7 @@
 <script src="core.js"></script>
 <script src="paint-core.js"></script>
 <script src="merge-core.js"></script>
+<script src="merge.js"></script>
 <script src="author.js"></script>
 <script>
 "use strict";
@@ -420,7 +421,7 @@ async function loadSequence(seqId, fresh = false) {
   if (MODE === "author") {
     author = attachAuthor({
       nv, state, core, paint: window.atlasPaint, merge: window.atlasMerge, $, DATA, getJSON, buildColormap, setSlice, setPlane,
-      cursorWorld, worldToFrac, fracToWorld, frac2vox, drawMarkers, showHover, escapeHTML, tileKind, fracAt,
+      cursorWorld, worldToFrac, fracToWorld, frac2vox, drawMarkers, showHover, escapeHTML, tileKind, fracAt, setMergePreview,
     });
   }
 }
@@ -886,6 +887,33 @@ function voxelToCanvas(main, rect, ax, u, v, dims) {
   return null;
 }
 
+// ---------- merge preview (author mode, merge.js) ----------
+// The structure the merge screen shows, on the main view's slice: yellow dots round theirs (spaced as the
+// expected outlines) and a red dot on each of its voxels that is another of yours. p = {inc, value, own,
+// ownValue}: their bitmap and value, your drawing and your value for the same id (0 when you have none).
+const MERGE_COLOURS = { outline: "#ffd60a", overlap: "#ff453a" };
+let mergePreview = null;
+let mergeDots = { key: "" };
+function setMergePreview(p) {
+  mergePreview = p;
+  mergeDots = { key: "" }; // your drawing may have changed under the same slice
+  drawExpected();
+}
+
+// The preview's dots on slice s of axis ax, as flat [i, j, …] (the drawing is RAS, x fastest).
+function mergeSliceDots(p, dims, ax, s, every) {
+  const step = [1, dims[0], dims[0] * dims[1]];
+  const inc = core.rasSlice(p.inc, dims, step, [0, 0, 0], ax, s);
+  const own = core.rasSlice(p.own, dims, step, [0, 0, 0], ax, s);
+  const overlap = [];
+  for (let k = 0; k < inc.data.length; k++) {
+    if (inc.data[k] !== p.value) continue;
+    const o = own.data[k];
+    if (o !== 0 && o !== p.ownValue) overlap.push(k % inc.w, (k / inc.w) | 0);
+  }
+  return { outline: core.boundaryDots(inc.data, inc.w, inc.h, new Set([p.value]), every), overlap };
+}
+
 let dotCache = { key: "" }; // the dots of one slice: recomputed only when the slice or what is shown changes
 function drawExpected() {
   const cv = $("expected");
@@ -893,8 +921,9 @@ function drawExpected() {
   const g = cv.getContext("2d");
   g.clearRect(0, 0, cv.width, cv.height);
   const values = expectedShown();
+  const preview = MODE === "author" ? mergePreview : null;
   const main = mainSliceType();
-  const tile = values && nv.screenSlices.find((s) => s.axCorSag === main);
+  const tile = (values || preview) && nv.screenSlices.find((s) => s.axCorSag === main);
   if (!tile) return;
   const ax = PLANE_AXIS[state.plane];
   const [u, v] = [0, 1, 2].filter((a) => a !== ax);
@@ -905,22 +934,32 @@ function drawExpected() {
   const dpr = dprOf(); // 2 px dots, centred on each voxel, about 4 px apart: every 2nd voxel at zoom 1
   const every = Math.max(1, Math.round((4 * dpr) / Math.min(Math.hypot(...m.du), Math.hypot(...m.dv))));
   const s = frac2vox(nv.scene.crosshairPos, 1)[ax];
-  const key = [state.caseId, state.seqId, ax, s, every, [...values].join(",")].join("|");
-  if (dotCache.key !== key) {
-    const lv = nv.volumes[1];
-    const sl = core.rasSlice(labelTrue || lv.img, dims, lv.img2RASstep, lv.img2RASstart, ax, s);
-    dotCache = { key, data: sl.data, w: sl.w, dots: core.boundaryDots(sl.data, sl.w, sl.h, values, every) };
-  }
-  const { data, w, dots } = dotCache;
+  const dot = (i, j) => g.fillRect(m.x0 + i * m.du[0] + j * m.dv[0] - dpr, m.y0 + i * m.du[1] + j * m.dv[1] - dpr, 2 * dpr, 2 * dpr);
   g.save();
   g.beginPath();
   g.rect(...rect);
   g.clip();
-  let last = -1;
-  for (let k = 0; k < dots.length; k += 2) {
-    const i = dots[k], j = dots[k + 1], val = data[i + j * w];
-    if (val !== last) { const c = state.lut[val].rgb; g.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; last = val; }
-    g.fillRect(m.x0 + i * m.du[0] + j * m.dv[0] - dpr, m.y0 + i * m.du[1] + j * m.dv[1] - dpr, 2 * dpr, 2 * dpr);
+  if (preview) {
+    const key = [ax, s, every].join("|");
+    if (mergeDots.key !== key) mergeDots = { key, ...mergeSliceDots(preview, dims, ax, s, every) };
+    for (const [dots, colour] of [[mergeDots.overlap, MERGE_COLOURS.overlap], [mergeDots.outline, MERGE_COLOURS.outline]]) {
+      g.fillStyle = colour;
+      for (let k = 0; k < dots.length; k += 2) dot(dots[k], dots[k + 1]);
+    }
+  } else {
+    const key = [state.caseId, state.seqId, ax, s, every, [...values].join(",")].join("|");
+    if (dotCache.key !== key) {
+      const lv = nv.volumes[1];
+      const sl = core.rasSlice(labelTrue || lv.img, dims, lv.img2RASstep, lv.img2RASstart, ax, s);
+      dotCache = { key, data: sl.data, w: sl.w, dots: core.boundaryDots(sl.data, sl.w, sl.h, values, every) };
+    }
+    const { data, w, dots } = dotCache;
+    let last = -1;
+    for (let k = 0; k < dots.length; k += 2) {
+      const i = dots[k], j = dots[k + 1], val = data[i + j * w];
+      if (val !== last) { const c = state.lut[val].rgb; g.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; last = val; }
+      dot(i, j);
+    }
   }
   g.restore();
 }

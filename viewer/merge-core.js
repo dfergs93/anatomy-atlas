@@ -195,6 +195,34 @@
     return { items, same: sameTotal, autoLeft, unknown };
   }
 
+  // What an accept of an item is judged by: a structure taken with the owner's overlap kept still differs
+  // from theirs, so it is settled while these stay as they were just after the accept.
+  const itemNumbers = (it) => [it.status, it.added, it.removed, it.overlapCount, it.movedMM].join("/");
+
+  // mergeItems' items still to review: not skipped, and not accepted unless their numbers changed since (an
+  // undo). `taken`: key -> null when just accepted; the first call records its numbers, or "" once it is gone
+  // (it matches the owner's), so it comes back if offered again.
+  function itemsLeft(items, skipped, taken) {
+    const left = items.filter((it) => {
+      if (skipped.has(it.key)) return false;
+      if (!taken.has(it.key)) return true;
+      if (taken.get(it.key) === null) { taken.set(it.key, itemNumbers(it)); return false; }
+      return taken.get(it.key) !== itemNumbers(it);
+    });
+    for (const [k, v] of taken) if (v === null) taken.set(k, "");
+    return left;
+  }
+
+  // The key to show when the list goes from `prev` to `next`: the one shown if it is still listed, else the
+  // first after it in prev's order that is, else next's first; null for an empty list.
+  function nextShown(prev, next, shown) {
+    if (!next.length) return null;
+    const keys = new Set(next.map((it) => it.key));
+    if (keys.has(shown)) return shown;
+    const after = prev.slice(prev.findIndex((it) => it.key === shown) + 1).find((it) => keys.has(it.key));
+    return after ? after.key : next[0].key;
+  }
+
   // The voxels to change to take one incoming structure into the owner's map: where theirs is painted, the
   // owner's voxel becomes ownValue (if empty, or if incomingWins); where it isn't, an ownValue voxel is cleared.
   // The caller passes the value the structure will be painted with (a fresh one for a new structure, never
@@ -244,5 +272,8 @@
     return { slice: best, vox };
   }
 
-  return { PAINT_FORMAT, paintLut, sameVoxels, encodeLabels, decodeLabels, checkPaintFile, mergeItems, regionChanges, focusOf };
+  return {
+    PAINT_FORMAT, paintLut, sameVoxels, encodeLabels, decodeLabels, checkPaintFile, mergeItems, itemsLeft, nextShown,
+    regionChanges, focusOf,
+  };
 });

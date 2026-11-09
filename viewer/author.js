@@ -15,6 +15,9 @@
 // Point structures (checklist type P) are never painted: a click in the main view places the point
 // (state.points, saved as points.json), Delete removes it. K marks a model's outline (an `auto` entry
 // in lut.json) as checked; the save drops its `auto`. Points and K are on the same undo stack as paint.
+//
+// "Merge in a paint file…" opens merge.js's screen over the panel: while it is open nothing is painted
+// or placed, and its accepts come back through the api built here as ordinary undoable edits.
 "use strict";
 
 const AUTHOR_OPTS = {
@@ -222,9 +225,9 @@ function makeAuthor(ctx) {
     return e && e.auto ? e : null;
   }
 
-  // Point structures are placed, never painted: with one current, the drawing is off.
+  // Point structures are placed, never painted: with one current, the drawing is off. So it is while merging.
   function canPaint() {
-    return !!S.current && !isPoint(S.current) && !S.refused && !!nv.drawBitmap;
+    return !!S.current && !isPoint(S.current) && !S.refused && !!nv.drawBitmap && !merge.active();
   }
 
   // NiiVue's pen is on for the brush and eraser only: with the wand a click must not also lay down a dot.
@@ -516,6 +519,7 @@ function makeAuthor(ctx) {
     if (S.noteKind === "ok" || S.noteKind === "info") clearNote();
     edited();
     render();
+    merge.refresh(); // an undone accept is offered again
   }
 
   function edited() {
@@ -671,6 +675,7 @@ function makeAuthor(ctx) {
     applyColours();
     applyPen();
     render();
+    merge.refresh();
   }
 
   async function fetchChecklist() {
@@ -685,12 +690,16 @@ function makeAuthor(ctx) {
     return M.paintLut(S.savedLut, S.assigned, nameOf, S.checked, before, S.savedBitmap);
   }
 
-  async function paintFile(why) {
+  // The label map's grid, as a paint file records it.
+  function grid() {
     const hdr = nv.volumes[1].hdr;
+    return { dims: Array.from(hdr.dims).slice(1, 4), affine: Array.from(hdr.affine, (row) => Array.from(row)) };
+  }
+
+  async function paintFile(why) {
     return {
       format: M.PAINT_FORMAT, version: 1, case_id: caseId, made: new Date().toISOString(), why,
-      dims: Array.from(hdr.dims).slice(1, 4),
-      affine: Array.from(hdr.affine, (row) => Array.from(row)),
+      ...grid(),
       lut: ownLut(),
       checked: [...S.checked],
       points: copyPoints(),
@@ -720,6 +729,7 @@ function makeAuthor(ctx) {
     <p><b>Ligament:</b> paint 2–3 key slices, press <kbd>F</kbd>, then scroll and touch up. <b>Muscle:</b> paint a little, press <kbd>G</kbd> until full, erase spill.</p>
     <p><b>Point labels:</b> click in the big view, or point and press <kbd>P</kbd>, to place the point · <kbd>Delete</kbd> remove it</p>
     <p><kbd>Enter</kbd> save, then next · <kbd>${MOD}S</kbd> save · <kbd>${MOD}Z</kbd> undo · <kbd>/</kbd> filter</p>
+    <p><b>Sharing:</b> “Download paint file” writes one .atlaspaint file · “Merge in a paint file…” goes through it one structure at a time</p>
     <p><b>Mouse:</b> drag = paint (big view) · Shift-drag = window/level · right- or Ctrl-drag = pan ·
       wheel or <kbd>↑</kbd><kbd>↓</kbd> = slices · <kbd>1</kbd>–<kbd>3</kbd> plane · click a small view to jump there</p>`;
 
@@ -729,6 +739,7 @@ function makeAuthor(ctx) {
     const el = document.createElement("div");
     el.id = "authorPanel";
     el.innerHTML = `
+      <section id="apMerge" hidden></section>
       <section class="ap-current">
         <div class="ap-kicker">Painting</div>
         <h2 id="apName"></h2>
@@ -771,6 +782,8 @@ function makeAuthor(ctx) {
       </section>
       <section class="ap-share">
         <button id="apDownload" type="button" title="One file with this case's paint, points and checked marks: send it to whoever merges it, or merge it back in later">Download paint file</button>
+        <button id="apMergeIn" type="button" title="Go through a paint file one structure at a time: accept or skip each">Merge in a paint file…</button>
+        <input id="apMergeFile" type="file" accept=".atlaspaint" hidden>
       </section>
       <div id="apMsg" class="ap-msg" hidden></div>
       <section class="ap-list">
@@ -804,6 +817,13 @@ function makeAuthor(ctx) {
     $("apSave").addEventListener("click", () => { save(); focusImage(); });
     $("apDownload").addEventListener("click", () => {
       downloadPaintFile("paint").catch((err) => note("error", `The download failed: ${esc(err.message)}.`));
+      focusImage();
+    });
+    $("apMergeIn").addEventListener("click", () => $("apMergeFile").click());
+    $("apMergeFile").addEventListener("change", (e) => {
+      const f = e.target.files[0];
+      e.target.value = ""; // the same file can be chosen again
+      if (f) merge.open(f).catch((err) => note("error", `The paint file couldn't be merged: ${esc(err.message)}.`));
       focusImage();
     });
     $("apUndo").addEventListener("click", () => { undoLast(); focusImage(); });
@@ -864,6 +884,7 @@ function makeAuthor(ctx) {
   }
 
   function render() {
+    $("authorPanel").classList.toggle("ap-merging", merge.active());
     const c = S.current;
     const entry = c && S.savedLut[lutIdToValue()[c.id]];
     $("apName").textContent = c ? c.name : "No structure chosen";
@@ -912,6 +933,7 @@ function makeAuthor(ctx) {
     else if (unsaved()) { st.textContent = "● Unsaved"; st.className = "ap-status ap-unsaved"; }
     else { st.textContent = "Saved"; st.className = "ap-status muted"; }
     $("apSave").disabled = !!S.saving;
+    $("apMergeIn").disabled = !!S.saving;
     $("apUndo").disabled = !S.undo.length;
   }
 
@@ -964,6 +986,10 @@ function makeAuthor(ctx) {
     if (mod && !e.altKey && !e.shiftKey && (k === "s" || k === "S")) { e.preventDefault(); save(); return true; }
     if (mod && !e.altKey && !e.shiftKey && (k === "z" || k === "Z")) { e.preventDefault(); undoLast(); return true; }
     if (mod || e.altKey) return false;
+    if (merge.active()) {
+      if (merge.onKey(e)) return true; // Enter, N, Esc
+      if (/^[bewfgpk]$/i.test(k) || k === "Delete" || k === "Backspace") return true; // tools are off while merging
+    }
     if (k === "Enter") { e.preventDefault(); if (!e.repeat) enterNext(); return true; }
     if (k === "k" || k === "K") { if (!e.repeat) markChecked(); return true; }
     if (k === "p" || k === "P") { if (!e.repeat) pointKey(); return true; }
@@ -991,6 +1017,7 @@ function makeAuthor(ctx) {
   // A click (no drag) in the main view. Brush and eraser have already painted the dab; the wand fills;
   // with a point structure current (drawing off) it places the point.
   function onClick(frac, _e) {
+    if (merge.active()) return; // merging: a click only moves the cursor
     if (isPoint(S.current)) placePoint(frac);
     else if (S.tool === "wand") wandAt(frac);
   }
@@ -1047,6 +1074,7 @@ function makeAuthor(ctx) {
   // ---------- after a reload of the volumes (sequence switch) ----------
   function reattach(newCtx) {
     ctx = newCtx;
+    merge.close(); // a sequence change ends an open merge
     if (newCtx.state.caseId !== caseId) { // not reachable from the UI (case changes reload the page)
       S.refused = true;
       authorBanner(newCtx, "The case changed under author mode. Reload the page.");
@@ -1069,6 +1097,64 @@ function makeAuthor(ctx) {
     setupView();
     return true;
   }
+
+  // ---------- merging a paint file (merge.js) ----------
+  // An accepted structure: the voxels merge-core's regionChanges chose, as one undoable paint edit.
+  function mergeChanges(id, value, { idx, val }) {
+    const bm = nv.drawBitmap;
+    const old = new Uint8Array(idx.length);
+    for (let k = 0; k < idx.length; k++) {
+      const i = idx[k];
+      old[k] = before[i];
+      bm[i] = val[k];
+      before[i] = val[k];
+    }
+    pushUndo({ kind: "paint", idx, old });
+    if (!(id in lutIdToValue()) && !S.assigned.has(id)) S.assigned.set(id, value);
+    applyColours();
+    nv.refreshDrawing(true);
+    edited();
+  }
+
+  function mergePoint(p) {
+    pushUndo({ kind: "point", before: copyPoints() });
+    const i = state.points.findIndex((q) => q.id === p.id);
+    if (i >= 0) state.points[i] = p;
+    else state.points.push(p);
+    ctx.drawMarkers();
+    edited();
+  }
+
+  // The cursor on a voxel's centre, as a click there would put it.
+  function goToVox(vox) {
+    const d = volDims();
+    nv.scene.crosshairPos = vox.map((v, a) => (v + 0.5) / d[a]);
+    nv.drawScene();
+    nv.createOnLocationChange();
+  }
+
+  const merge = makeMerge({
+    nv, $, esc, M, caseId, region: state.meta.region,
+    here: () => ({ caseId, ...grid() }),
+    rows: () => S.rows,
+    own: () => ({ bitmap: before, lut: ownLut(), points: state.points }),
+    // a structure made current but not painted yet keeps the value it was given
+    valueFor: (id) => {
+      const held = new Map(S.assigned);
+      if (S.current && !isPoint(S.current)) held.set(S.current.id, S.curValue);
+      return paint.valueFor(id, lutIdToValue(), held);
+    },
+    applyChanges: mergeChanges,
+    markChecked: (id) => { S.checked.add(id); pushUndo({ kind: "check", id }); renderStatus(); },
+    setPoint: mergePoint,
+    unsaved,
+    note, clearNote,
+    renderAuthor: () => { applyPen(); render(); },
+    setPreview: (p) => ctx.setMergePreview(p),
+    goToVox,
+    goToMM: (xyz) => goToVox(ctx.frac2vox(ctx.worldToFrac(xyz))),
+    mainAxis: () => core.PLANE_AXIS[state.plane],
+  });
 
   // ---------- start ----------
   loadDrawing();
@@ -1126,8 +1212,10 @@ function authorStyles() {
   .ap-size output { min-width: 48px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
   #authorPanel .ap-save { flex-direction: row; align-items: center; }
   #apSave { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
-  #apSave:disabled, #apUndo:disabled, .ap-next:disabled, #apPoint button:disabled { opacity: .5; cursor: default; }
+  #apSave:disabled, #apUndo:disabled, #apMergeIn:disabled, .ap-next:disabled, #apPoint button:disabled { opacity: .5; cursor: default; }
   #authorPanel [hidden] { display: none; }
+  #authorPanel.ap-merging > .ap-current, #authorPanel.ap-merging > #apPoint, #authorPanel.ap-merging > #apTools,
+  #authorPanel.ap-merging > .ap-list { display: none; }
   .ap-auto { font-size: 13px; color: var(--muted); }
   .ap-checkbtn { text-align: left; }
   .ap-point p { margin: 0; }

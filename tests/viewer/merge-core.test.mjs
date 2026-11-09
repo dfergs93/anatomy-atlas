@@ -125,3 +125,43 @@ test("focusOf picks the fullest slice and its in-plane centre", () => {
   assert.deepEqual(M.focusOf(bm, [2,2,3], 1, 2), { slice: 2, vox: [1,0,2] });
   assert.equal(M.focusOf(bm, [2,2,3], 4, 2), null);
 });
+
+test("itemsLeft: skipped items go; an accept with the owner's overlap kept stays settled until undone", () => {
+  const own = { bitmap: Uint8Array.from([1,1,0,0]), lut: L({1:"femur"}), points: [] };
+  const inc = { bitmap: Uint8Array.from([0,3,3,0]), lut: L({3:"acl"}), points: [{ id: "trochlea", name: "Trochlea", xyz_mm: [1,2,3] }] };
+  const taken = new Map();
+  let r = M.mergeItems(own, inc, rows);
+  assert.deepEqual(M.itemsLeft(r.items, new Set(["point:trochlea"]), taken).map((i) => i.key), ["region:acl"]);
+  // accept the acl, femur kept: voxel 1 stays femur, so theirs still differs from yours by that voxel
+  const ch = M.regionChanges(own.bitmap, inc.bitmap, 3, 2, false);
+  const old = Uint8Array.from(ch.idx, (i) => own.bitmap[i]);
+  ch.idx.forEach((i, k) => { own.bitmap[i] = ch.val[k]; });
+  own.lut = L({1:"femur",2:"acl"});
+  taken.set("region:acl", null);
+  r = M.mergeItems(own, inc, rows);
+  assert.equal(r.items.find((i) => i.key === "region:acl").status, "changed");
+  assert.deepEqual(M.itemsLeft(r.items, new Set(), taken).map((i) => i.key), ["point:trochlea"]);
+  assert.deepEqual(M.itemsLeft(r.items, new Set(), taken).map((i) => i.key), ["point:trochlea"]); // and on every later list
+  // undo: the acl is offered again
+  ch.idx.forEach((i, k) => { own.bitmap[i] = old[k]; });
+  own.lut = L({1:"femur"});
+  r = M.mergeItems(own, inc, rows);
+  assert.deepEqual(M.itemsLeft(r.items, new Set(), taken).map((i) => i.key), ["region:acl", "point:trochlea"]);
+  // an accept that makes it match yours ("" once listed) comes back if it is offered again
+  taken.set("point:trochlea", null);
+  own.points = inc.points;
+  assert.deepEqual(M.itemsLeft(M.mergeItems(own, inc, rows).items, new Set(), taken).map((i) => i.key), ["region:acl"]);
+  assert.equal(taken.get("point:trochlea"), "");
+  own.points = [];
+  assert.deepEqual(M.itemsLeft(M.mergeItems(own, inc, rows).items, new Set(), taken).map((i) => i.key), ["region:acl", "point:trochlea"]);
+});
+
+test("nextShown keeps the item shown, else takes the next in list order, wrapping", () => {
+  const k = (...keys) => keys.map((key) => ({ key }));
+  assert.equal(M.nextShown(k("a","b","c"), k("a","b","c"), "b"), "b");
+  assert.equal(M.nextShown(k("a","b","c"), k("a","c"), "b"), "c");
+  assert.equal(M.nextShown(k("a","b","c"), k("a","b"), "c"), "a");
+  assert.equal(M.nextShown(k("a","b","c"), k("c","x"), "a"), "c");
+  assert.equal(M.nextShown(k(), k("x"), null), "x");
+  assert.equal(M.nextShown(k("a"), k(), "a"), null);
+});
