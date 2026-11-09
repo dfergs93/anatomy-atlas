@@ -124,6 +124,7 @@ function authorBanner(ctx, html) {
 
 function makeAuthor(ctx) {
   const { nv, state, core, paint, $, escapeHTML: esc } = ctx;
+  const M = ctx.merge; // merge-core.js: the paint file's lut and label encoding
   const DRAG = window.niivue.DRAG_MODE;
   const caseId = state.caseId;
   const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -138,6 +139,7 @@ function makeAuthor(ctx) {
     lastTool: null,          // {what, ms, added, restored} of the last wand / fill between / grow (for checks)
     undo: [], edits: 0, savedEdits: 0,
     savedPoints: JSON.stringify(state.points), // points.json as last loaded or saved, to tell unsaved points
+    savedBitmap: null,       // the drawing as last loaded or saved: what a paint file's lut is judged against
     checked: new Set(),      // auto outlines marked checked (K) since the last save
     token: null, tokenError: null, // the save token, read before the case's files (index.html loadCase)
     saving: null, refused: false, filter: "", noteKind: null, lastSaveMs: null, enterAfterStroke: false,
@@ -154,6 +156,7 @@ function makeAuthor(ctx) {
     nv.drawAddUndoBitmap();
     nv.refreshDrawing(true);
     before = nv.drawBitmap.slice();
+    S.savedBitmap = before.slice();
   }
 
   function setupView() {
@@ -596,6 +599,7 @@ function makeAuthor(ctx) {
     const seq = S.edits;
     // `before` is the accepted drawing: a stroke still in progress (or never guarded) can't be saved.
     const raw = new Blob([before]); // copies the bytes
+    const sent = before.slice();
     const values = {};
     for (const [v, e] of Object.entries(S.savedLut)) values[v] = e.id;
     for (const [id, v] of S.assigned) values[v] = id;
@@ -620,19 +624,18 @@ function makeAuthor(ctx) {
         throw err;
       }
     } catch (e) {
-      const extra = pointsOrChecksUnsaved();
-      const files = `<code>${esc(caseId)}-unsaved-paint.nii.gz</code> holds the drawing` + (extra
-        ? `, and <code>${esc(caseId)}-unsaved-points.json</code> your points and checked marks (the browser may ask to allow two downloads)`
-        : "");
+      const file = `<code>${esc(caseId)}-unsaved-….atlaspaint</code>`;
       note("error", (e.status === 409
         ? `Not saved: ${esc(e.message)}. Your work is still here — download it before you reload, because reloading discards it.`
-        : `Not saved: ${esc(e.message)}. Your work is still here; try again, or download it to keep a copy.`) + ` The download: ${files}.`,
-      { download: extra ? "Download my unsaved work" : "Download my unsaved paint" });
+        : `Not saved: ${esc(e.message)}. Your work is still here; try again, or download it to keep a copy.`) +
+        ` The download is one file, ${file}; after reloading, “Merge in a paint file…” brings it back.`,
+      { download: "Download my unsaved work" });
       return false;
     }
     // saved: from here on a failure is only about refreshing the panel
     S.token = res.token;
     S.savedEdits = seq;
+    S.savedBitmap = sent;
     S.savedPoints = JSON.stringify(points);
     for (const c of checked) S.checked.delete(c);
     // a saved check can't be undone here (lut.json no longer has the `auto`): drop its undo entries
@@ -676,27 +679,33 @@ function makeAuthor(ctx) {
     return r.text();
   }
 
-  function downloadPaint() {
-    return nv.saveImage({ filename: `${caseId}-unsaved-paint.nii.gz`, isSaveDrawing: true });
+  // The paint file (version 1): the drawing, the lut it needs, the K marks and the points, all unsaved or not.
+  function ownLut() {
+    const nameOf = (id) => (rowOf(id) || { name: id }).name;
+    return M.paintLut(S.savedLut, S.assigned, nameOf, S.checked, before, S.savedBitmap);
   }
 
-  function pointsOrChecksUnsaved() {
-    return S.checked.size > 0 || JSON.stringify(state.points) !== S.savedPoints;
+  async function paintFile(why) {
+    const hdr = nv.volumes[1].hdr;
+    return {
+      format: M.PAINT_FORMAT, version: 1, case_id: caseId, made: new Date().toISOString(), why,
+      dims: Array.from(hdr.dims).slice(1, 4),
+      affine: Array.from(hdr.affine, (row) => Array.from(row)),
+      lut: ownLut(),
+      checked: [...S.checked],
+      points: copyPoints(),
+      labels_gz_b64: await M.encodeLabels(before),
+    };
   }
 
-  // The failed save's download: the drawing, and — when points or checked marks are unsaved — a JSON
-  // with the same `points` and `checked` a save would send. The drawing goes first: it is the hours of work.
-  async function downloadUnsaved() {
-    const extra = pointsOrChecksUnsaved() ? { points: copyPoints(), checked: [...S.checked] } : null;
-    await downloadPaint();
-    if (extra) downloadJSON(`${caseId}-unsaved-points.json`, extra);
-  }
-
-  function downloadJSON(filename, obj) {
-    const url = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2) + "\n"], { type: "application/json" }));
+  async function downloadPaintFile(why) {
+    const file = await paintFile(why);
+    const d = new Date(), p2 = (n) => String(n).padStart(2, "0");
+    const stamp = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}`;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(file)], { type: "application/octet-stream" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = filename;
+    a.download = `${caseId}-${why}-${stamp}.atlaspaint`;
     a.style.display = "none";
     document.body.appendChild(a);
     a.click();
@@ -760,6 +769,9 @@ function makeAuthor(ctx) {
         <button id="apUndo" type="button" title="Undo (${MOD}Z)">Undo</button>
         <span id="apStatus" class="ap-status" aria-live="polite"></span>
       </section>
+      <section class="ap-share">
+        <button id="apDownload" type="button" title="One file with this case's paint, points and checked marks: send it to whoever merges it, or merge it back in later">Download paint file</button>
+      </section>
       <div id="apMsg" class="ap-msg" hidden></div>
       <section class="ap-list">
         <input id="apFilter" type="search" placeholder="Filter structures ( / )" aria-label="Filter structures" autocomplete="off">
@@ -790,6 +802,10 @@ function makeAuthor(ctx) {
     $("apGrow").addEventListener("click", () => { grow(); focusImage(); });
     $("apOverwrite").addEventListener("change", (e) => { S.overwrite = e.target.checked; focusImage(); });
     $("apSave").addEventListener("click", () => { save(); focusImage(); });
+    $("apDownload").addEventListener("click", () => {
+      downloadPaintFile("paint").catch((err) => note("error", `The download failed: ${esc(err.message)}.`));
+      focusImage();
+    });
     $("apUndo").addEventListener("click", () => { undoLast(); focusImage(); });
     $("apFilter").addEventListener("input", (e) => { S.filter = e.target.value; renderRows(); });
     $("apRows").addEventListener("click", (e) => {
@@ -799,7 +815,7 @@ function makeAuthor(ctx) {
     });
     $("apMsg").addEventListener("click", (e) => {
       if (e.target.closest("[data-download]")) {
-        downloadUnsaved().catch((err) => note("error", `The download failed: ${esc(err.message)}.`));
+        downloadPaintFile("unsaved").catch((err) => note("error", `The download failed: ${esc(err.message)}.`));
       }
     });
   }
@@ -1077,7 +1093,7 @@ function makeAuthor(ctx) {
 
   return {
     caseId, onKey, onClick, reattach, save, undo: undoLast, afterEdit, beforeUnload, makeCurrent, enterNext,
-    unsaved, downloadPaint, downloadUnsaved, wandAt, fillBetween, grow, setTool, placePoint, deletePoint, markChecked,
+    unsaved, paintFile, downloadPaintFile, wandAt, fillBetween, grow, setTool, placePoint, deletePoint, markChecked,
     get currentId() { return S.current ? S.current.id : null; },
     get state() { return S; },
     get before() { return before; },
