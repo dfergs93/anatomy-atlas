@@ -27,7 +27,7 @@ A locally owned alternative to e-Anatomy for the reading room. Pick the joint, s
 |-------------|----------------------------------------------|--------------------------------------------------------------------------------------------------------|
 |ARIA sidebar |`viewer/index.html?case=knee-mri&mode=sidebar`|Structure name on hover only — nothing else                                                             |
 |Standalone   |`viewer/index.html?case=knee-mri`             |Hover name + click → panel (name · TA2 · description · normal values · variants/pitfalls · Radiopaedia)|
-|Author       |`viewer/index.html?case=knee-mri&mode=author` |Painting mode: checklist panel, brush/eraser/wand, fill between, grow, point placement, K to mark checked, save with backups. Localhost only (127.0.0.1/localhost), via `python tools/serve.py`; refuses mirrored copies. See Painting mode|
+|Author       |`viewer/index.html?case=knee-mri&mode=author` |Painting mode: checklist panel, brush/eraser/wand, fill between, grow, point placement, K to mark checked, save with backups, a helper's paint file merged in structure by structure. Localhost only (127.0.0.1/localhost), via `python tools/serve.py`; refuses mirrored copies. See Painting mode|
 
 The label JSON always holds full content. What each mode displays is a UI decision, not a data decision.
 
@@ -80,9 +80,11 @@ points.json       (point labels)   ─┘     click → labels/<id>.json → sid
 ```
 anatomy-atlas/
   viewer/
-    index.html            # single-file viewer: sidebar / standalone (+ author mode via author.js, paint-core.js)
-    author.js             # painting mode: panel, checklist, tools, save/download
+    index.html            # single-file viewer: sidebar / standalone (+ author mode via author.js, paint-core.js, merge*.js)
+    author.js             # painting mode: panel, checklist, tools, save, paint-file download
     paint-core.js         # pure paint logic (tested): guard, undo, wand, grow, colours
+    merge.js              # painting mode's merge screen: a helper's paint file, one structure at a time
+    merge-core.js         # pure merge logic (tested): paint-file checks, what differs, the voxels an accept changes
     vendor/niivue.umd.js  # vendored, pinned 0.69.0
   data/                   # volumes + label maps gitignored — see Data storage
     index.json            # [{case_id, title, region, modality, sequences[], structure_count, synthetic}]
@@ -106,6 +108,7 @@ anatomy-atlas/
     checklist.py          # read/tick checklists/<region>.md (Labelled = exactly the saved ids)
     mirror_case.py        # right knee → mirrored left copy (rebuilt, never painted)
     autolabels.py         # model labels merged into a case (main venv): menisci in thirds, patellar cartilage, bones if licensed
+    share_case.py         # pack a case for a helper (zip, no backups/auto); unpack it on theirs
     autoseg/dosma_unet.py # DOSMA knee U-Net runner (venv-autoseg; GPL-3.0, this file only)
   subagents/              # not written yet
     case-builder.md
@@ -210,9 +213,9 @@ To do: keyboard focus polish.
 
 ## Painting mode
 
-Open: `python tools/serve.py`, then `http://127.0.0.1:8004/viewer/?case=knee-mri&mode=author` (or the "Paint" link in the standalone header, shown on 127.0.0.1/localhost for a case that isn't a mirrored copy). Code: `viewer/author.js` + `viewer/paint-core.js`; saving: `tools/save_case.py`, `tools/checklist.py`, `tools/serve.py`.
+Open: `python tools/serve.py`, then `http://127.0.0.1:8004/viewer/?case=knee-mri&mode=author` (or the "Paint" link in the standalone header, shown on 127.0.0.1/localhost for a case that isn't a mirrored copy). Code: `viewer/author.js` + `viewer/paint-core.js` (merging: `viewer/merge.js` + `viewer/merge-core.js`); saving: `tools/save_case.py`, `tools/checklist.py`, `tools/serve.py`.
 
-**Panel:** current structure (with an "auto" badge), "Next: … · Enter", filter box over the checklist (groups, ✓ = labelled; click a row to make it current), tools, "Paint over other structures" (off), Save, status ("Saved" / "● Unsaved"), key help.
+**Panel:** current structure (with an "auto" badge), "Next: … · Enter", filter box over the checklist (groups, ✓ = labelled; click a row to make it current), tools, "Paint over other structures" (off), Save, status ("Saved" / "● Unsaved"), "Download paint file", "Merge in a paint file…", key help.
 
 |Key                 |Does                                                                                      |
 |--------------------|------------------------------------------------------------------------------------------|
@@ -239,11 +242,22 @@ Ligament workflow: paint 2–3 key slices, F, then scroll through and touch up.
 **Save** (`POST /api/save`): checks first (nothing written if one fails) → backup to `data/<case>/backups/<UTC time>/` (newest 20) → labels + lut (with the auto contract) + points → `data/index.json` → rebuild the left mirror (only if the case is in the index) → tick `checklists/<region>.md` (Labelled = exactly the saved ids; skipped for a synthetic case, because the checklist belongs to the region). Late steps failing become `warnings`, not errors.
 - The server requires: Host `127.0.0.1:<port>` / `localhost:<port>`, Origin matching when present, `Content-Type: application/json`, body ≤ 64 MB, one save at a time, and the token from `GET /api/token`.
 - Only painted values are checked: a structure a save erased keeps its value in the page, so ⌘/Ctrl+Z back past that save restores it under its own name. A point already in `points.json` stays valid after its checklist row is removed.
-- If the case changed on disk since the page opened (another tab, `tools/autolabels.py`) the save is refused (409): the page reads the token before the case's files. "Download my unsaved work" saves `<case>-unsaved-paint.nii.gz` plus, when points or K marks are unsaved, `<case>-unsaved-points.json` (merging these back is the helper-merge plan). Closing the tab with unsaved work warns.
+- If the case changed on disk since the page opened (another tab, `tools/autolabels.py`) the save is refused (409): the page reads the token before the case's files. "Download my unsaved work" saves one file, `<case>-unsaved-<time>.atlaspaint` (paint, points and K marks); reload, then "Merge in a paint file…" brings it back. Closing the tab with unsaved work warns.
 
 **Author mode refuses** (banner): a mirrored copy (links to the source), a host other than 127.0.0.1/localhost, a narrow window, a non-RAS-identity volume, a label value over 255, a label grid different from the image grid.
 
-**Not built:** helper merge (spec §5.6, next plan); AI click-to-outline (§5.4, deferred).
+**Sharing and merging** (spec §5.6): a helper paints a copy on their own computer and sends back one file; the owner merges it in.
+- **Owner → helper:** `python tools/share_case.py pack knee-mri` writes `knee-mri-share-<date>.zip` to `~/Downloads` (`-o FILE` for elsewhere): meta, lut, points, the label map and the sequences, never `backups/` or `auto/`. It refuses a mirrored copy, and a real case whose `meta.json` has no licence. Hand it over directly, never via git. The helper runs `python tools/share_case.py unpack <zip>`, which registers the case in their `data/index.json` (no mirror link) and refuses to overwrite their own paint unless `--replace` (which backs it up first); then `tools/serve.py`. Their saves tick their copy of `checklists/knee.md`, so they don't commit it.
+- **Helper → owner:** "Download paint file" writes one `<case>-paint-<time>.atlaspaint`: JSON with the grid (dims, affine), the structure list (`auto` kept only for model outlines that are unchanged and unchecked), the K marks, the points and the gzipped label map. `*.atlaspaint` and `*-share-*.zip` are git-ignored.
+- **Merging:** "Merge in a paint file…" (painting mode). A file for another case, another grid or a moved grid (rebuilt, mirrored) is refused before anything changes. The merge screen takes the panel's place and goes through what differs one item at a time in checklist order, with their structure outlined in yellow dots on the main view and red dots where it covers another of your structures.
+  - Matched by id, never by label value. An item is new, changed ("Theirs adds … removes … of yours"), checked (their K on the same voxels), a new point or a moved point.
+  - Accepting a structure makes its voxels theirs; your other structures win any overlap unless you pick "Accept — theirs wins the overlap". "Accept all the rest" takes every item left, yours winning every overlap.
+  - A structure or point you have and the file lacks is never removed. Their untouched model outlines (`auto`) are left out and named, so a stale copy can't undo your fixes. Ids not on your checklist are left out and named.
+  - Each accept is one ordinary undo step (⌘/Ctrl+Z offers the item again), and nothing is written until Save. A structure taken with yours winning an overlap still differs from theirs, so opening the file again offers it again.
+  - Keys while merging: Enter accept, N skip, Esc stop merging (accepted edits stay, unsaved); ⌘/Ctrl+S, ⌘/Ctrl+Z, O, the arrows and the wheel work as usual. The tools and their keys are off and a click only moves the cursor. A sequence change ends the merge.
+- **A refused save (409):** download the unsaved work, reload, then "Merge in a paint file…" and accept what you want back.
+
+**Not built:** AI click-to-outline (§5.4, deferred).
 
 -----
 
@@ -301,7 +315,7 @@ From the design (spec §9). Phase 0 (viewer spike) is done; its workstation test
 1. Real knee       → download OAIZIB-CM · owner reviews the 17 candidates and picks one · build + verify mapping/orientation · mirrored left copy   ✓ done 2026-11-06 (subject 036)
 2. Getting oriented→ reference lines + shared cursor · follow a structure (spec §4)   ✓ done 2026-11-06
 3. Auto-labels     → big structures: DOSMA menisci (thirds) + patellar cartilage   ✓ done 2026-11-07 · patella/fibula: painted (owner declined the TotalSegmentator licence) · muscles: none available for the knee — painted
-4. Painting mode   → checklist-driven, smart fill, fill between slices, grow, points, expected locations, save + backups, helper merge (spec §5)   ✓ done 2026-11-08 except the helper merge (next plan); AI click-to-outline (§5.4) stays deferred
+4. Painting mode   → checklist-driven, smart fill, fill between slices, grow, points, expected locations, save + backups, helper merge (spec §5)   ✓ done 2026-11-08, helper merge included; AI click-to-outline (§5.4) stays deferred
 5. Core knee set   → owner paints; Claude drafts labels/*.json, owner reviews
 6. Hip             → find data or volunteer scan · checklists/hip.md · two linked cases (spec §7.2)
 Then:              ARIA sidebar embed (unchanged contract) · shoulder · rectal pelvis · others

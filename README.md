@@ -22,6 +22,31 @@ python tools/serve.py
 
 Then open `http://127.0.0.1:8004/viewer/?case=knee-mri&mode=author` (or the "Paint" link in the viewer header). Pick a structure from the checklist, paint, press `Enter` to save and move to the next. Saves are backed up first and work on this computer only. See `CLAUDE.md` → Painting mode.
 
+## Helping paint
+
+Someone else can paint a copy of a case on their own computer (Mac, Windows or Linux) and send the paint back.
+
+**The owner** packs the case and hands the zip over directly (never via git):
+
+```
+python tools/share_case.py pack knee-mri      # writes knee-mri-share-<date>.zip to ~/Downloads
+```
+
+**The helper** gets this repo's code, then:
+
+```
+python3 -m venv venv
+venv/bin/python -m pip install -r requirements.txt
+venv/bin/python tools/share_case.py unpack knee-mri-share-<date>.zip
+venv/bin/python tools/serve.py
+```
+
+On Windows: `py -3 -m venv venv`, `venv\Scripts\python -m pip install -r requirements.txt`, then the same commands with `venv\Scripts\python`.
+
+Open the URL `unpack` printed, paint, save, then click "Download paint file" and send that `.atlaspaint` file back. Don't commit `checklists/knee.md`: your saves tick it in your copy.
+
+**The owner** opens the case in painting mode, clicks "Merge in a paint file…", goes through it one structure at a time (Enter accept, N skip, Esc stop), then saves.
+
 ## Tests
 
 ```
