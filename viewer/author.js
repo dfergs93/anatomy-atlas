@@ -118,6 +118,7 @@ function makeAuthor(ctx) {
     wandTol: AUTHOR_OPTS.wandTolerance, wand3D: false,
     lastTool: null,          // {what, ms, added, restored} of the last wand / fill between / grow (for checks)
     undo: [], edits: 0, savedEdits: 0,
+    savedPoints: JSON.stringify(state.points), // points.json as last loaded or saved, to tell unsaved points
     checked: new Set(),      // auto outlines marked checked (K) since the last save
     token: null, saving: null, refused: false, filter: "", noteKind: null, lastSaveMs: null, enterAfterStroke: false,
   };
@@ -311,6 +312,29 @@ function makeAuthor(ctx) {
     edited();
     pointsChanged();
     note("ok", `${old ? "Moved" : "Placed"} ${esc(row.name)} on ${state.plane} slice ${vox[core.PLANE_AXIS[state.plane]] + 1}.`);
+  }
+
+  // P: the current point structure's point goes where the pointer is in the main view (as a click would).
+  function pointKey() {
+    const c = S.current;
+    if (!isPoint(c)) {
+      note("info", c ? `<kbd>P</kbd> places point labels; ${esc(c.name)} is painted.`
+        : "Choose a point label first: pick one below, then point at the spot and press <kbd>P</kbd>.");
+      return;
+    }
+    const frac = pointerFrac();
+    if (!frac) {
+      note("info", `Point at the spot in the big view, then press <kbd>P</kbd> (or click there).`);
+      return;
+    }
+    placePoint(frac);
+  }
+
+  // Where the pointer is over the main view's image (volume fraction), or null.
+  function pointerFrac() {
+    const m = state.mouse;
+    if (!m || ctx.tileKind(m[0], m[1]) !== "main") return null;
+    return ctx.fracAt(m[0], m[1]);
   }
 
   function deletePoint() {
@@ -581,14 +605,20 @@ function makeAuthor(ctx) {
         throw err;
       }
     } catch (e) {
+      const extra = pointsOrChecksUnsaved();
+      const files = `<code>${esc(caseId)}-unsaved-paint.nii.gz</code> holds the drawing` + (extra
+        ? `, and <code>${esc(caseId)}-unsaved-points.json</code> your points and checked marks (the browser may ask to allow two downloads)`
+        : "");
       note("error", (e.status === 409
-        ? `Not saved: ${esc(e.message)}. Your paint is still here — download it before you reload, because reloading discards it.`
-        : `Not saved: ${esc(e.message)}. Your paint is still here; try again, or download it to keep a copy.`), { download: true });
+        ? `Not saved: ${esc(e.message)}. Your work is still here — download it before you reload, because reloading discards it.`
+        : `Not saved: ${esc(e.message)}. Your work is still here; try again, or download it to keep a copy.`) + ` The download: ${files}.`,
+      { download: extra ? "Download my unsaved work" : "Download my unsaved paint" });
       return false;
     }
     // saved: from here on a failure is only about refreshing the panel
     S.token = res.token;
     S.savedEdits = seq;
+    S.savedPoints = JSON.stringify(points);
     for (const c of checked) S.checked.delete(c);
     // a saved check can't be undone here (lut.json no longer has the `auto`): drop its undo entries
     S.undo = S.undo.filter((u) => !(u.kind === "check" && checked.includes(u.id)));
@@ -633,11 +663,35 @@ function makeAuthor(ctx) {
     return nv.saveImage({ filename: `${caseId}-unsaved-paint.nii.gz`, isSaveDrawing: true });
   }
 
+  function pointsOrChecksUnsaved() {
+    return S.checked.size > 0 || JSON.stringify(state.points) !== S.savedPoints;
+  }
+
+  // The failed save's download: the drawing, and — when points or checked marks are unsaved — a JSON
+  // with the same `points` and `checked` a save would send. The drawing goes first: it is the hours of work.
+  async function downloadUnsaved() {
+    const extra = pointsOrChecksUnsaved() ? { points: copyPoints(), checked: [...S.checked] } : null;
+    await downloadPaint();
+    if (extra) downloadJSON(`${caseId}-unsaved-points.json`, extra);
+  }
+
+  function downloadJSON(filename, obj) {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2) + "\n"], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   // ---------- panel ----------
   const keyHelp = `
     <p><kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>W</kbd> wand (click) · <kbd>[</kbd> <kbd>]</kbd> size or tolerance · <kbd>O</kbd> show/hide paint</p>
     <p><kbd>F</kbd> fill between painted slices · <kbd>G</kbd> grow · <kbd>K</kbd> a model's outline looks right: mark it checked</p>
-    <p><b>Point labels:</b> click in the big view to place the point · <kbd>Delete</kbd> remove it</p>
+    <p><b>Point labels:</b> click in the big view, or point and press <kbd>P</kbd>, to place the point · <kbd>Delete</kbd> remove it</p>
     <p><kbd>Enter</kbd> save, then next · <kbd>${MOD}S</kbd> save · <kbd>${MOD}Z</kbd> undo · <kbd>/</kbd> filter</p>
     <p><b>Mouse:</b> drag = paint (big view) · Shift-drag = window/level · right- or Ctrl-drag = pan ·
       wheel or <kbd>↑</kbd><kbd>↓</kbd> = slices · <kbd>1</kbd>–<kbd>3</kbd> plane · click a small view to jump there</p>`;
@@ -726,16 +780,19 @@ function makeAuthor(ctx) {
       if (row) { makeCurrent(row); focusImage(); }
     });
     $("apMsg").addEventListener("click", (e) => {
-      if (e.target.closest("[data-download]")) downloadPaint();
+      if (e.target.closest("[data-download]")) {
+        downloadUnsaved().catch((err) => note("error", `The download failed: ${esc(err.message)}.`));
+      }
     });
   }
 
-  function note(kind, html, { download = false } = {}) {
+  // `download`: a button label, shown after the message (a failed save's download).
+  function note(kind, html, { download = null } = {}) {
     const m = $("apMsg");
     S.noteKind = kind;
     m.hidden = false;
     m.className = `ap-msg ap-${kind}`;
-    m.innerHTML = html + (download ? ' <button type="button" data-download>Download my unsaved paint</button>' : "");
+    m.innerHTML = html + (download ? ` <button type="button" data-download>${esc(download)}</button>` : "");
   }
 
   function clearNote() {
@@ -875,6 +932,7 @@ function makeAuthor(ctx) {
     if (mod || e.altKey) return false;
     if (k === "Enter") { e.preventDefault(); if (!e.repeat) enterNext(); return true; }
     if (k === "k" || k === "K") { if (!e.repeat) markChecked(); return true; }
+    if (k === "p" || k === "P") { if (!e.repeat) pointKey(); return true; }
     if ((k === "Delete" || k === "Backspace") && isPoint(S.current)) { e.preventDefault(); if (!e.repeat) deletePoint(); return true; }
     if (k === "b" || k === "B") { setTool("brush"); return true; }
     if (k === "e" || k === "E") { setTool("eraser"); return true; }
@@ -1000,7 +1058,7 @@ function makeAuthor(ctx) {
 
   return {
     caseId, onKey, onClick, reattach, save, undo: undoLast, afterEdit, beforeUnload, makeCurrent, enterNext,
-    unsaved, downloadPaint, wandAt, fillBetween, grow, setTool, placePoint, deletePoint, markChecked,
+    unsaved, downloadPaint, downloadUnsaved, wandAt, fillBetween, grow, setTool, placePoint, deletePoint, markChecked,
     get currentId() { return S.current ? S.current.id : null; },
     get state() { return S; },
     get before() { return before; },
