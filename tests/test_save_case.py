@@ -223,3 +223,54 @@ def test_late_failure_becomes_warning_after_files_written(tmp_path, monkeypatch)
 def test_clean_save_has_empty_warnings(tmp_path):
     case = make_case(tmp_path, side="")
     assert save(tmp_path, case, paint_new(case), GOOD)["warnings"] == []
+
+
+def test_absent_value_with_unknown_id_does_not_block_save(tmp_path):
+    # The page keeps an erased structure's id mapped (so an undo back past a save restores it under its
+    # own name); while its voxels are gone the id may be on neither the checklist nor lut.json.
+    case = make_case(tmp_path, side="")
+    res = save(tmp_path, case, paint_new(case), {**GOOD, 7: "not_a_structure"})
+    lut = json.loads((case / "lut.json").read_text())
+    assert sorted(lut) == ["1", "2", "3"] and lut["3"]["id"] == "patella"
+    assert res["structures"] == 3 and res["warnings"] == []
+
+
+def test_duplicate_id_among_painted_values_still_refused(tmp_path):
+    case = make_case(tmp_path, side="")
+    bm = paint_new(case)
+    bm.reshape(SHAPE, order="F")[0:2, 9:11, 0:2] = 4
+    with pytest.raises(SaveError, match="share one structure id"):
+        save(tmp_path, case, bm, {**GOOD, 4: "patella"})
+
+
+def test_synthetic_case_leaves_checklist_untouched(tmp_path):
+    # The checklist belongs to the region: a synthetic case of that region must not rewrite it.
+    case = make_case(tmp_path, side="")
+    meta = json.loads((case / "meta.json").read_text())
+    (case / "meta.json").write_text(json.dumps({**meta, "synthetic": True}))
+    checklist = (tmp_path / "checklists" / "knee.md").read_bytes()
+    res = save(tmp_path, case, paint_new(case), GOOD,
+               points=[{"id": "trochlea", "name": "Trochlea", "xyz_mm": [0, 0, 0]}])
+    assert (tmp_path / "checklists" / "knee.md").read_bytes() == checklist
+    assert res["checklist"] == "skipped (synthetic case)" and res["warnings"] == []
+    assert json.loads((case / "lut.json").read_text())["3"]["id"] == "patella"
+
+
+def test_real_case_reports_checklist_updated(tmp_path):
+    case = make_case(tmp_path, side="")
+    assert save(tmp_path, case, paint_new(case), GOOD)["checklist"] == "updated"
+
+
+def test_point_kept_after_its_checklist_row_is_removed(tmp_path):
+    # Rows can come off the checklist while painting (spec §5.7); a point saved earlier must not then
+    # block every save. A point id on neither the checklist nor points.json is still refused.
+    case = make_case(tmp_path, side="")
+    pts = [{"id": "trochlea", "name": "Trochlea", "xyz_mm": [1.5, -2, 3]}]
+    save(tmp_path, case, painted(case), {1: "femur", 2: "tibia"}, points=pts)
+    path = tmp_path / "checklists" / "knee.md"
+    path.write_text("".join(l for l in path.read_text().splitlines(keepends=True) if not l.startswith("|trochlea|")))
+    save(tmp_path, case, paint_new(case), GOOD, points=pts)
+    assert json.loads((case / "points.json").read_text()) == pts
+    with pytest.raises(SaveError, match="not in the checklist"):
+        save(tmp_path, case, painted(case), GOOD,
+             points=pts + [{"id": "gerdy_tubercle", "name": "Gerdy", "xyz_mm": [0, 0, 0]}])

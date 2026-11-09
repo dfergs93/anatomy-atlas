@@ -1,7 +1,8 @@
 """Write a painted label map back to its case, safely (the browser's painting mode posts here).
 
 Every check runs before anything is written; a refused save leaves the case byte-identical
-and makes no backup. Then: backup, label map, lut.json, points.json, index, mirror, checklist.
+and makes no backup. Then: backup, label map, lut.json, points.json, index, mirror, checklist
+(skipped for a synthetic case: the checklist belongs to the region, not to one case).
 """
 from __future__ import annotations
 
@@ -35,7 +36,7 @@ def case_token(case_dir) -> str:
     return h.hexdigest()[:16]
 
 
-def _check_points(points, checklist_ids) -> list[dict]:
+def _check_points(points, known_ids) -> list[dict]:
     if not isinstance(points, list):
         raise SaveError("points must be a list")
     out, seen = [], set()
@@ -48,11 +49,19 @@ def _check_points(points, checklist_ids) -> list[dict]:
             raise SaveError(f"point {p['id']}: xyz_mm must be 3 finite numbers")
         if p["id"] in seen:
             raise SaveError(f"point {p['id']} appears twice")
-        if p["id"] not in checklist_ids:
+        if p["id"] not in known_ids:
             raise SaveError(f"point {p['id']} is not in the checklist")
         seen.add(p["id"])
         out.append({"id": p["id"], "name": p["name"], "xyz_mm": list(xyz)})
     return out
+
+
+def _saved_point_ids(case: Path) -> set[str]:
+    try:
+        old = json.loads((case / "points.json").read_text())
+    except (OSError, ValueError):
+        return set()
+    return {p["id"] for p in old if isinstance(p, dict) and isinstance(p.get("id"), str)} if isinstance(old, list) else set()
 
 
 def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int, str],
@@ -77,10 +86,15 @@ def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int
         values = {int(k): str(v) for k, v in values.items()}
     except (TypeError, ValueError, AttributeError):
         raise SaveError("values must map integers to ids") from None
-    unmapped = sorted(set(np.unique(bitmap).tolist()) - {0} - set(values))
+    present = set(np.unique(bitmap).tolist()) - {0}
+    unmapped = sorted(present - set(values))
     if unmapped:
         raise SaveError(f"painted values with no structure id: {unmapped}")
-    if len(set(values.values())) != len(values):
+    # Only painted values are checked (and saved): the page keeps an erased structure's id mapped to its
+    # old value so an undo back past this save restores it under its own name, and that id may by now be
+    # on neither the checklist nor lut.json.
+    used = {v: values[v] for v in present}
+    if len(set(used.values())) != len(used):
         raise SaveError("two values share one structure id")
     if not isinstance(checked, list) or not all(isinstance(c, str) for c in checked):
         raise SaveError("checked must be a list of ids")
@@ -88,10 +102,11 @@ def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int
     checklist_path = root / "checklists" / f"{meta['region']}.md"
     rows = {r.id: r for r in read_checklist(checklist_path)} if checklist_path.exists() else {}
     known = set(rows) | {e["id"] for e in old_lut.values()}
-    for sid in values.values():
+    for sid in used.values():
         if sid not in known:
             raise SaveError(f"{sid} is not in the {meta['region']} checklist or the case")
-    points = _check_points(points, set(rows))
+    # a point already saved stays valid after its checklist row is removed or renamed (spec §5.7)
+    points = _check_points(points, set(rows) | _saved_point_ids(case))
     mirror_dir = (root / "data" / mirror_id(meta, case_id)) if mirror_id(meta, case_id) else None
     if mirror_dir and mirror_dir.exists():
         theirs = json.loads((mirror_dir / "meta.json").read_text()) if (mirror_dir / "meta.json").exists() else {}
@@ -140,10 +155,17 @@ def save_case(root, case_id: str, *, token: str, labels: bytes, values: dict[int
     except Exception as e:
         warnings.append(f"mirror not rebuilt: {e}")
     labelled = sorted({e["id"] for e in lut.values() if not e.get("auto")} | {p["id"] for p in points})
-    try:
-        if checklist_path.exists():
+    # The checklist is the region's: a synthetic (test) case of that region never ticks or unticks it.
+    if meta.get("synthetic"):
+        checklist = "skipped (synthetic case)"
+    elif not checklist_path.exists():
+        checklist = "none"
+    else:
+        try:
             set_labelled(checklist_path, set(labelled))
-    except Exception as e:
-        warnings.append(f"checklist not updated: {e}")
+            checklist = "updated"
+        except Exception as e:
+            checklist = "not updated"
+            warnings.append(f"checklist not updated: {e}")
     return {"token": case_token(case), "structures": len(lut), "labelled": labelled, "mirror": mirror,
-            "warnings": warnings}
+            "checklist": checklist, "warnings": warnings}
