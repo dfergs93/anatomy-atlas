@@ -691,6 +691,7 @@ function makeAuthor(ctx) {
   const keyHelp = `
     <p><kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>W</kbd> wand (click) · <kbd>[</kbd> <kbd>]</kbd> size or tolerance · <kbd>O</kbd> show/hide paint</p>
     <p><kbd>F</kbd> fill between painted slices · <kbd>G</kbd> grow · <kbd>K</kbd> a model's outline looks right: mark it checked</p>
+    <p><b>Ligament:</b> paint 2–3 key slices, press <kbd>F</kbd>, then scroll and touch up. <b>Muscle:</b> paint a little, press <kbd>G</kbd> until full, erase spill.</p>
     <p><b>Point labels:</b> click in the big view, or point and press <kbd>P</kbd>, to place the point · <kbd>Delete</kbd> remove it</p>
     <p><kbd>Enter</kbd> save, then next · <kbd>${MOD}S</kbd> save · <kbd>${MOD}Z</kbd> undo · <kbd>/</kbd> filter</p>
     <p><b>Mouse:</b> drag = paint (big view) · Shift-drag = window/level · right- or Ctrl-drag = pan ·

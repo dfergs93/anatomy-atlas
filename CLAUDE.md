@@ -27,7 +27,7 @@ A locally owned alternative to e-Anatomy for the reading room. Pick the joint, s
 |-------------|----------------------------------------------|--------------------------------------------------------------------------------------------------------|
 |ARIA sidebar |`viewer/index.html?case=knee-mri&mode=sidebar`|Structure name on hover only — nothing else                                                             |
 |Standalone   |`viewer/index.html?case=knee-mri`             |Hover name + click → panel (name · TA2 · description · normal values · variants/pitfalls · Radiopaedia)|
-|Author       |`viewer/index.html?case=knee-mri&mode=author` |Painting mode (spec §5): checklist-driven, smart fill, fill between slices, save. Localhost only, via `tools/serve.py`|
+|Author       |`viewer/index.html?case=knee-mri&mode=author` |Painting mode: checklist panel, brush/eraser/wand, fill between, grow, point placement, K to mark checked, save with backups. Localhost only (127.0.0.1/localhost), via `python tools/serve.py`; refuses mirrored copies. See Painting mode|
 
 The label JSON always holds full content. What each mode displays is a UI decision, not a data decision.
 
@@ -56,7 +56,7 @@ points.json       (point labels)   ─┘     click → labels/<id>.json → sid
 
 - **Viewer:** NiiVue 0.69.0 (BSD-2), vendored at `viewer/vendor/niivue.umd.js` — never loaded from a CDN.
 - **Reading is static files only.** Served locally by `tools/serve.py`.
-- **`tools/serve.py`:** stdlib static server, binds `127.0.0.1` only, port **8004** (8000 is protocol_manager's MkDocs). The painting-mode save endpoint comes with the painting plan.
+- **`tools/serve.py`:** stdlib static server, binds `127.0.0.1` only, port **8004** (8000 is protocol_manager's MkDocs). Also `GET /api/token` and `POST /api/save` for painting mode (see Painting mode); static files are unchecked, so the phone can view through the tailnet but not save.
 - **No API layer in v1.** ARIA reads `data/index.json` and embeds the viewer. Add a thin FastAPI wrapper over the same JSON only if a real need appears.
 
 **Two label types:**
@@ -80,7 +80,9 @@ points.json       (point labels)   ─┘     click → labels/<id>.json → sid
 ```
 anatomy-atlas/
   viewer/
-    index.html            # single-file viewer: sidebar / standalone (author: Phase D)
+    index.html            # single-file viewer: sidebar / standalone (+ author mode via author.js, paint-core.js)
+    author.js             # painting mode: panel, checklist, tools, save/download
+    paint-core.js         # pure paint logic (tested): guard, undo, wand, grow, colours
     vendor/niivue.umd.js  # vendored, pinned 0.69.0
   data/                   # volumes + label maps gitignored — see Data storage
     index.json            # [{case_id, title, region, modality, sequences[], structure_count, synthetic}]
@@ -88,7 +90,7 @@ anatomy-atlas/
       meta.json           # title, source, licence, citation, side, sequences[] (file, cal_min/max), default_plane, synthetic
       volumes/<seq>.nii.gz
       labels.nii.gz       # uint16, intent "label", on the reference sequence grid
-      lut.json            # {"1": {"id", "name", "rgb", "voxels", "centroid_vox", "centroid_mm", "extent"}, ...}; model outlines add "auto": {source, date}
+      lut.json            # {"1": {"id", "name", "rgb", "voxels", "centroid_vox", "centroid_mm", "extent"}, ...}; model outlines add "auto": {source, date}; expected-location structures (bursae) add "expected": true
       points.json         # [{"id", "name", "xyz_mm": [x,y,z]}]
       backups/<UTC time>/ # labels + lut + points before every write; newest 20 kept (gitignored)
       auto/               # raw model predictions from tools/autolabels.py (gitignored)
@@ -99,7 +101,9 @@ anatomy-atlas/
   tools/
     make_demo_case.py     # synthetic test case (geometric shapes) for viewer testing
     build_case.py         # NIfTI volume(s) + label map → case: RAS, int16/uint16, W/L, LUT, index.json
-    serve.py              # local static server (+ author-mode save, Phase D)
+    serve.py              # local static server (+ /api/token, /api/save)
+    save_case.py          # painting-mode save: checks → backup → labels/lut/points → index → mirror → checklist
+    checklist.py          # read/tick checklists/<region>.md (Labelled = exactly the saved ids)
     mirror_case.py        # right knee → mirrored left copy (rebuilt, never painted)
     autolabels.py         # model labels merged into a case (main venv): menisci in thirds, patellar cartilage, bones if licensed
     autoseg/dosma_unet.py # DOSMA knee U-Net runner (venv-autoseg; GPL-3.0, this file only)
@@ -161,7 +165,7 @@ Checked on the owner's M4 Pro with subject 036 (2026-11-06):
 - **Run:** `venv/bin/python tools/autolabels.py knee-mri` (`--no-totalseg` to skip the bones).
   - It backs up the case, fills only empty voxels, never replaces a structure without an `"auto"` key in `lut.json`, and rebuilds `knee-mri-left`. Mirrored copies are refused.
   - A re-run replaces a structure's earlier auto voxels only if they are unchanged: `"auto"` stores a fingerprint (`voxels_sha256`), and a structure edited since is kept and reported.
-  - **Checked = no `"auto"` key.** Removing it marks the outline as checked: the panel note goes and re-runs leave it alone. Painting mode (step 4) must drop `"auto"` from any structure it changes.
+  - **Checked = no `"auto"` key.** Removing it marks the outline as checked: the panel note goes and re-runs leave it alone. Painting mode drops `"auto"` from any structure it paints, or marks with K, on save.
   - DOSMA's package breaks on NumPy 2, so `tools/autoseg/dosma_unet.py` rebuilds its U-Net with tf_keras. Weights download once to `~/.cache/anatomy-atlas/dosma/`, checked against a pinned sha256.
   - Meniscus thirds are cut by angle round each meniscus's own ring centre, with the opening facing the notch. On knee-mri: medial 26 / 19 / 55 % (the posterior horn is the widest part), lateral 31 / 33 / 36 %.
   - The viewer's panel says "Outline drawn automatically (…) — not yet checked" for any structure with `"auto"`.
@@ -198,9 +202,47 @@ Built:
 - `?mode=sidebar`: image, slider, case/sequence/plane, hover name — no panel, find, overlay or follow controls
 - Pure helpers live in `viewer/core.js` (tested: `node --test "tests/viewer/*.test.mjs"`); NiiVue glue stays in `index.html`
 
-To do: painting mode (spec §5), keyboard focus polish.
+To do: keyboard focus polish.
 
 **Checked:** NiiVue (WebGL2) runs on the owner's M4 Pro Mac (ANGLE Metal). OAI DESS volumes are ~4° oblique; NiiVue warns and shows them in voxel space.
+
+-----
+
+## Painting mode
+
+Open: `python tools/serve.py`, then `http://127.0.0.1:8004/viewer/?case=knee-mri&mode=author` (or the "Paint" link in the standalone header, shown on 127.0.0.1/localhost for a case that isn't a mirrored copy). Code: `viewer/author.js` + `viewer/paint-core.js`; saving: `tools/save_case.py`, `tools/checklist.py`, `tools/serve.py`.
+
+**Panel:** current structure (with an "auto" badge), "Next: … · Enter", filter box over the checklist (groups, ✓ = labelled; click a row to make it current), tools, "Paint over other structures" (off), Save, status ("Saved" / "● Unsaved"), key help.
+
+|Key                 |Does                                                                                      |
+|--------------------|------------------------------------------------------------------------------------------|
+|B / E               |brush / eraser                                                                            |
+|W                   |wand: click; Tolerance 10 % default, 3D off, 40 mm cap                                    |
+|F                   |fill between: paint two or more slices in the current plane, F fills the gaps pair by pair|
+|G                   |grow: each press spreads 12 layers into similar signal. On DESS it doesn't stop at fascia by itself: press until the muscle is full, erase any spill|
+|P / click           |place the point for a point-type structure at the pointer; Delete removes it              |
+|K                   |"Looks right: mark checked" for an automatic outline                                      |
+|[ ]                 |brush size (odd, 1–25); wand tolerance when the wand is active                            |
+|Enter               |save, then next structure                                                                 |
+|⌘/Ctrl+S, ⌘/Ctrl+Z  |save, undo                                                                                |
+|O                   |show/hide the paint                                                                       |
+|Shift-drag, Ctrl- or right-drag|windowing, pan                                                         |
+
+Ligament workflow: paint 2–3 key slices, F, then scroll through and touch up.
+
+**Rules**
+- Painting is restricted to the current structure: other structures never change unless "Paint over other structures" is on. Strokes paint in the main view only. Point-type structures are never brushed.
+- **Auto hand-off:** painting a structure, or K, drops its `"auto"` key on save (= checked: the panel note goes, `autolabels.py` re-runs leave it alone).
+- **Expected-location (type E) structures** (the four bursae) are painted where they usually lie. In standalone/sidebar they show as a dotted outline, never filled, with "Visible only when distended — outlined where it usually lies". `lut.json` carries `"expected": true`.
+- NiiVue's own hotkeys that change layout, drag mode or open a dialog are silenced in every mode.
+
+**Save** (`POST /api/save`): checks first (nothing written if one fails) → backup to `data/<case>/backups/<UTC time>/` (newest 20) → labels + lut (with the auto contract) + points → `data/index.json` → rebuild the left mirror (only if the case is in the index) → tick `checklists/<region>.md` (Labelled = exactly the saved ids). Late steps failing become `warnings`, not errors.
+- The server requires: Host `127.0.0.1:<port>` / `localhost:<port>`, Origin matching when present, `Content-Type: application/json`, body ≤ 64 MB, one save at a time, and the token from `GET /api/token`.
+- If the case changed on disk since the page opened (another tab, `tools/autolabels.py`) the save is refused (409). "Download my unsaved work" saves `<case>-unsaved-paint.nii.gz` plus, when points or K marks are unsaved, `<case>-unsaved-points.json` (merging these back is the helper-merge plan). Closing the tab with unsaved work warns.
+
+**Author mode refuses** (banner): a mirrored copy (links to the source), a host other than 127.0.0.1/localhost, a narrow window, a non-RAS-identity volume, a label value over 255, a label grid different from the image grid.
+
+**Not built:** helper merge (spec §5.6, next plan); AI click-to-outline (§5.4, deferred).
 
 -----
 
@@ -258,7 +300,7 @@ From the design (spec §9). Phase 0 (viewer spike) is done; its workstation test
 1. Real knee       → download OAIZIB-CM · owner reviews the 17 candidates and picks one · build + verify mapping/orientation · mirrored left copy   ✓ done 2026-11-06 (subject 036)
 2. Getting oriented→ reference lines + shared cursor · follow a structure (spec §4)   ✓ done 2026-11-06
 3. Auto-labels     → big structures: DOSMA menisci (thirds) + patellar cartilage   ✓ done 2026-11-07 · patella/fibula: painted (owner declined the TotalSegmentator licence) · muscles: none available for the knee — painted
-4. Painting mode   → checklist-driven, smart fill, fill between slices, grow, points, expected locations, save + backups, helper merge (spec §5)
+4. Painting mode   → checklist-driven, smart fill, fill between slices, grow, points, expected locations, save + backups, helper merge (spec §5)   ✓ done 2026-11-08 except the helper merge (next plan); AI click-to-outline (§5.4) stays deferred
 5. Core knee set   → owner paints; Claude drafts labels/*.json, owner reviews
 6. Hip             → find data or volunteer scan · checklists/hip.md · two linked cases (spec §7.2)
 Then:              ARIA sidebar embed (unchanged contract) · shoulder · rectal pelvis · others
