@@ -316,7 +316,7 @@ From the design (spec §9). Phase 0 (viewer spike) is done; its workstation test
 2. Getting oriented→ reference lines + shared cursor · follow a structure (spec §4)   ✓ done 2026-11-06
 3. Auto-labels     → big structures: DOSMA menisci (thirds) + patellar cartilage   ✓ done 2026-11-07 · patella/fibula: painted (owner declined the TotalSegmentator licence) · muscles: none available for the knee — painted
 4. Painting mode   → checklist-driven, smart fill, fill between slices, grow, points, expected locations, save + backups, helper merge (spec §5)   ✓ done 2026-11-08, helper merge included; AI click-to-outline (§5.4) stays deferred
-5. Core knee set   → owner paints; Claude drafts labels/*.json, owner reviews
+5. Core knee set   → owner paints; Claude drafts labels/*.json, owner reviews   · text drafted + fact-checked 2026-11-10 (24 files, reviewed: false; sources in docs/labels/knee-core-sources.md)
 6. Hip             → find data or volunteer scan · checklists/hip.md · two linked cases (spec §7.2)
 Then:              ARIA sidebar embed (unchanged contract) · shoulder · rectal pelvis · others
 ```

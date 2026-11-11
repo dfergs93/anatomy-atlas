@@ -4,7 +4,7 @@
   "ta2_name": "Ligamentum meniscofemorale posterius",
   "region": "knee",
   "reviewed": false,
-  "description": "Posterior meniscofemoral ligament: an inconstant band from the posterior horn of the lateral meniscus that runs upward and medially behind (posterosuperior to) the PCL to a fan-shaped attachment on the lateral surface of the medial femoral condyle. On posterior coronal images it is an oblique low-signal band crossing behind the PCL from the lateral meniscus to the medial femoral condyle; on sagittal images, a small oval low-signal dot just behind the PCL. It is low in signal on all sequences, about 2–2.5 mm thick and on average thicker than Humphry. Coronal images show it best; trace it on sagittal images.",
+  "description": "Posterior meniscofemoral ligament: an inconstant band from the posterior horn of the lateral meniscus that runs upward and medially behind (posterosuperior to) the PCL to a fan-shaped attachment on the lateral surface of the medial femoral condyle. On posterior coronal images it is an oblique low-signal band crossing behind the PCL from the lateral meniscus to the medial femoral condyle; on sagittal images, a small oval low-signal dot just behind the PCL. It is low in signal on all sequences, about 2–2.5 mm thick, on average slightly thicker than Humphry in cadavers (2.0 vs 1.5 mm pooled), though one MRI series found them equal (mean 1.8 vs 1.9 mm). Coronal images show it best; trace it on sagittal images.",
   "normal_values": {
     "thickness": "about 2–2.5 mm (pooled: cadaver 2.0 mm, MRI 2.5 mm); MRI range 1–3.8 mm",
     "midportion_width": "about 4 mm (cadaver pooled 4.1 mm), widening to about 6 mm at the femoral attachment",
@@ -17,7 +17,7 @@
     "On a single sagittal image it is a small ovoid low-signal focus behind the PCL that can be mistaken for a loose body or displaced fragment; follow it on coronal images from the posterior horn to the medial femoral condyle. On MRI it often seems to end on the PCL rather than the condyle (about half in Cho 1999), and oblique PCL fibers (the false posterior MFL, 19% of cadaver knees; Gupte 2002) can mimic it or a meniscal tear.",
     "Wrisberg-variant discoid: when the lateral meniscus lacks posterior meniscotibial and capsular attachments, this ligament is its only posterior stabilizer and the posterior horn is hypermobile (snapping, locking). MRI can look normal unless the knee is locked; clues are absent popliteomeniscal fascicles, fluid between posterior horn and capsule, or a posterior horn flipped forward without a peripheral rim (Singh 2006; Moser 2007; Yue 2011)."
   ],
-  "radiopaedia_url": "https://radiopaedia.org/articles/meniscofemoral-ligament",
+  "radiopaedia_url": "https://radiopaedia.org/articles/posterior-meniscofemoral-ligament-of-wrisberg",
   "related_structures": [
     "pcl",
     "ligament_of_humphry",
