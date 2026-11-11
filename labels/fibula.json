@@ -4,12 +4,12 @@
   "ta2_name": "Fibula",
   "region": "knee",
   "reviewed": false,
-  "description": "Proximal fibula: head with an upward-pointing apex (styloid process), neck and shaft. The head articulates with the posterolateral tibial condyle at the proximal (superior) tibiofibular joint, a synovial plane joint. The LCL and biceps femoris insert on the lateral head, the popliteofibular, arcuate and fabellofibular ligaments on the styloid, and the common fibular (peroneal) nerve winds around the neck. Marrow is fatty; coronal and axial images show it best.",
+  "description": "Proximal fibula: head, styloid apex, neck and shaft, meeting the posterolateral tibial condyle at the proximal tibiofibular joint. The LCL and biceps insert on the lateral head, the popliteofibular, arcuate and fabellofibular ligaments on the styloid, and the common fibular (peroneal) nerve winds around the neck.",
   "normal_values": {},
   "variants_pitfalls": [
-    "Proximal tibiofibular joint shape varies (Ogden 1974): horizontal (joint inclination under 20°) or oblique (over 20°). The oblique type has less rotatory mobility and accounted for about 70% of subluxations and dislocations in Ogden's series; the shape alone is not instability.",
-    "The proximal tibiofibular joint communicates with the knee through the subpopliteal recess in about 10% of adults (Resnick 1978); reported rates range from 10% to 64% (25% of 12 cadaver knees on MR arthrography, Dirim 2007). Fluid from it can track along the articular branch into the common fibular (peroneal) nerve as an intraneural ganglion: look for a tubular cyst along the nerve at the fibular neck and denervation edema in the anterior and lateral compartment muscles.",
-    "Arcuate sign: a small (about 8–10 mm), horizontally oriented avulsed flake, or isolated marrow edema, at the fibular styloid marks posterolateral corner injury and, in adults, a strongly associated PCL injury (all 13 patients in Huang 2003). A rounded, corticated ossicle behind the lateral femoral condyle is the fabella, not an avulsion."
+    "Arcuate sign: a small horizontal flake or isolated marrow edema at the styloid marks a posterolateral corner injury; in one series all 13 patients also had a PCL injury. A rounded corticated ossicle behind the lateral femoral condyle is the fabella.",
+    "The proximal tibiofibular joint communicates with the knee in a reported 10–64%. Its fluid can track along the articular branch into the common fibular nerve as an intraneural ganglion: look for a tubular cyst along the nerve at the fibular neck and denervation edema in the anterior and lateral compartments.",
+    "Joint shape (horizontal under 20°, oblique over 20°) is a variant; most subluxations in the original series were oblique, but shape alone is not instability."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/fibula",
   "related_structures": ["fibular_head", "lcl", "biceps_femoris_tendon", "popliteofibular_ligament", "common_peroneal_nerve", "arcuate_ligament"]

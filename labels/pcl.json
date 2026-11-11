@@ -4,17 +4,16 @@
   "ta2_name": "Ligamentum cruciatum posterius",
   "region": "knee",
   "reviewed": false,
-  "description": "Intra-articular, extrasynovial ligament from the lateral surface of the medial femoral condyle in the anterior notch to the posterior intercondylar area (PCL facet) of the tibia below the joint line, with a larger anterolateral and a smaller posteromedial bundle. It is about 32–38 mm long with roughly 1.2–2 times the cross-sectional area of the ACL. It is uniformly low in signal on all sequences and unstriated, forming a smooth, gentle arc on sagittal images in near extension, and is usually seen whole on one sagittal slice.",
+  "description": "From the medial femoral condyle in the notch to the posterior intercondylar tibia below the joint line, thicker than the ACL. Uniformly low signal and unstriated, a smooth arc usually seen whole on one sagittal slice.",
   "normal_values": {
-    "ap_diameter_vertical_portion": "under 7 mm on sagittal T2, across the mid vertical segment; 7 mm or more strongly suggests a tear (Rodriguez 2008)",
-    "pcl_angle": "sagittal angle between the proximal and distal limbs; below 107° (Gentili 1994) to below 115° (Mellado 2004) supports an ACL tear (specificity 82–94%, sensitivity 52–70%)"
+    "ap_diameter_vertical_portion": "under 7 mm on sagittal; 7 mm or more strongly suggests a tear",
+    "pcl_angle": "below about 107–115° (buckled) supports an ACL tear; hyperextension can also buckle it"
   },
   "variants_pitfalls": [
-    "Magic angle: the proximal curve, where fibers lie near 55° to B0, can show intermediate signal on short-TE images (PD, T1, GRE) that fades on long-TE T2. Tears can also be brighter on PD than T2 (Rodriguez 2008), so let thickness (7 mm or more), fiber continuity and periligamentous edema decide, not signal alone.",
-    "Buckled PCL: an exaggerated, question-mark curve (PCL angle below about 107–115°) reflects anterior tibial translation and is an indirect sign of ACL tear; it can also appear with hyperextension in a knee with an intact ACL (Nissman 2008), so confirm on the ACL itself.",
-    "Meniscofemoral ligaments: at least one in about 93% of knees (cadaver, Gupte 2002: Humphry 74%, Wrisberg 69%; 93 of 100 MRIs, Cho 1999), with Wrisberg (posterior to the PCL) seen far more often than Humphry (anterior) on MRI. Either can mimic a loose body, focal PCL thickening or a partial tear; trace it from the lateral meniscus posterior horn to the medial femoral condyle.",
-    "Double PCL sign: a second low-signal band parallel to the PCL, just anteroinferior to it and running along much of its length, is a displaced bucket-handle fragment, almost always of the medial meniscus. A ligament of Humphry lies in the same place but is thin (about 1.5–2 mm, about 8% of the PCL cross-section) and can be traced to the lateral meniscus posterior horn; confirm a fragment with an absent bow tie and a truncated meniscal body on coronal and sagittal images.",
-    "PCL tears usually stay in continuity: a thickened PCL with intermediate intrasubstance signal is the common look of an interstitial tear, and chronic tears can heal lax and elongated, looking near normal. A fibular styloid avulsion (arcuate sign) should prompt a close look; all 13 patients in Huang 2003 had a PCL injury."
+    "Magic angle can make the proximal curve intermediate on short-TE images, and tears can be brighter on PD than T2, so let thickness, continuity and edema decide, not signal.",
+    "Double PCL sign: a second low-signal band just anteroinferior to the PCL is a displaced bucket-handle fragment, usually medial. A ligament of Humphry sits there too but is thin (about 1.5–2 mm) and traces to the lateral meniscus; confirm a fragment with an absent bow tie and a truncated meniscus.",
+    "Meniscofemoral ligaments (at least one in about 91–93% of cadaver knees) can mimic a loose body; trace them to the lateral meniscus.",
+    "Tears usually stay in continuity, as a thickened PCL with intermediate signal; chronic tears can heal lax and near normal. A fibular styloid avulsion (arcuate sign) should prompt a close look."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/posterior-cruciate-ligament",
   "related_structures": ["acl", "ligament_of_humphry", "ligament_of_wrisberg", "medial_meniscus_body", "intercondylar_notch", "fibular_head"]

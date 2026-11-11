@@ -4,15 +4,15 @@
   "ta2_name": "Tibia",
   "region": "knee",
   "reviewed": false,
-  "description": "Proximal tibia: a larger, concave medial plateau and a smaller, flat-to-convex lateral plateau, separated by the intercondylar eminence (medial and lateral tubercles), with the ACL footprint in the anterior and the PCL footprint in the posterior intercondylar area. The tuberosity lies anteriorly and Gerdy's tubercle anterolaterally. Adult epiphyseal marrow is fatty on T1 and a physeal scar often persists; coronal and sagittal images show the plateaus, axial images the tuberosity.",
+  "description": "Proximal tibia: concave medial and flatter lateral plateaus separated by the intercondylar eminence, with the ACL footprint in front of it, the PCL footprint behind, the tuberosity anteriorly and Gerdy's tubercle anterolaterally. Adult epiphyseal marrow is fatty and a physeal scar often persists.",
   "normal_values": {
-    "tt_tg_distance": "under 20 mm on CT, 20 mm or more pathologic (Dejour 1994); MRI reads about 2–4 mm lower than CT in the same knee (Camp 2013)"
+    "tt_tg_distance": "under 20 mm on CT (20 mm or more is pathologic); MRI reads about 2–4 mm lower"
   },
   "variants_pitfalls": [
-    "Red marrow follows the same rules as in the femur (patchy, isointense to or brighter than muscle on T1, epiphysis spared) but is less common here; in one series every case of red marrow hyperplasia involved the distal femur only (Shellock 1992). Marrow darker than muscle on T1 needs workup.",
-    "Physeal scar: a thin, smooth low-signal line along the former physis, which slopes down anteriorly into the tuberosity; it is not a fracture. Focal periphyseal edema around a closing physis in adolescents is physiologic (6 of 15 FOPE zones were tibial; Zbojniewicz 2011).",
-    "Cysts at the cruciate footprints (about 1% of knee MRIs; McLaren 1992): well-defined fluid-signal cysts with a thin dark rim beneath the ACL or PCL attachment, often with ACL mucoid degeneration or ganglion (tibial footprint cysts in 27% of such ACLs; Bergin 2004). Usually incidental; surrounding marrow edema is uncommon and can be symptomatic.",
-    "Where injury hides: edema at the posterior lip of the medial tibial plateau (12% of knee trauma MRIs) came with an ACL tear in every case and a meniscocapsular or peripheral posterior horn tear of the medial meniscus in 96% (Kaplan 1999). Posterolateral plateau plus lateral femoral condyle edema is the pivot-shift pattern of ACL tear."
+    "Red marrow follows the femoral rules (patchy, isointense to or brighter than muscle on T1, epiphysis spared) but is less common here; darker than muscle needs workup.",
+    "The physeal scar slopes down anteriorly into the tuberosity and is not a fracture; focal edema around a closing physis in adolescents is physiologic.",
+    "Cruciate footprint cysts (about 1% of knee MRIs): well-defined fluid cysts beneath the ACL or PCL attachment, often with ACL mucoid degeneration; usually incidental.",
+    "Where injury hides: edema at the posterior lip of the medial plateau came with an ACL tear in every case and a peripheral medial posterior horn or meniscocapsular tear in 96% of one series. Posterolateral plateau plus lateral condyle edema is the pivot-shift pattern."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/tibia",
   "related_structures": ["medial_tibial_plateau", "lateral_tibial_plateau", "intercondylar_eminence", "tibial_tuberosity", "acl", "medial_meniscus_posterior_horn"]

@@ -4,21 +4,14 @@
   "ta2_name": "Ligamentum popliteofibulare",
   "region": "knee",
   "reviewed": false,
-  "description": "Short, strong band from the popliteus musculotendinous junction to the medial, downsloping surface of the fibular styloid (anterior and posterior divisions inserting within about 3 mm of the styloid tip), one of the three primary static stabilizers of the posterolateral corner with the LCL and popliteus tendon. It lies deep to the arcuate and fabellofibular ligaments and the inferior lateral genicular vessels. On MRI it is a thin low-signal band about 1 cm long and 1–2 mm thick, best seen on coronal oblique images parallel to the popliteus tendon, on 3D isotropic sequences, or on posterior coronal and far lateral sagittal images through the fibular styloid.",
+  "description": "Short, strong band from the popliteus musculotendinous junction to the fibular styloid, a primary posterolateral corner stabilizer with the LCL and popliteus tendon. A thin low-signal band about 1 cm long and 1–2 mm thick, best on coronal oblique or 3D images.",
   "normal_values": {},
   "variants_pitfalls": [
-    "Present in nearly all knees at dissection (88–100%), but how often MRI shows it depends on technique: 8% on standard coronal vs 53% on coronal oblique images, 38% on routine studies, 71% on coronal oblique fat-sat T2 vs 91% on 3D water-excitation DESS, and 93% in a series of 105 normal knees. Not seeing it on routine 2D images is normal, not a tear.",
-    "MRI is unreliable for the ligament itself (68% accuracy against surgery in grade III posterolateral corner injuries), so lean on indirect signs: edema at the popliteus musculotendinous junction, marrow edema or a small avulsion at the posteromedial fibular styloid, and LCL or popliteus tendon injury. In surgically treated PLC injuries it looked abnormal on MRI in 19 of 22 knees.",
-    "A small, horizontally oriented avulsion of the fibular styloid tip (arcuate sign) or marrow edema in the medial fibular head points to popliteofibular and arcuate ligament injury, whereas a larger lateral fibular head fragment carries the LCL and biceps femoris.",
-    "Morphology varies: in 137 cadaver limbs a single band to the styloid apex was most common (72%), with bifurcated (9%) and double (7%) forms, so two thin bands near the styloid can be normal."
+    "Present in nearly all knees at dissection, but routine 2D MRI often misses it (8–38% on standard coronal or routine studies, 53–71% on coronal oblique, 91% on 3D). Not seeing it on routine 2D images is normal.",
+    "MRI is unreliable for the ligament itself (68% accuracy against surgery), so lean on indirect signs: popliteus junction edema, styloid edema or avulsion, and LCL or popliteus tendon injury.",
+    "A small horizontal styloid tip avulsion (arcuate sign) points to popliteofibular and arcuate injury; a larger lateral fibular head fragment carries the LCL and biceps.",
+    "Bifurcated or double forms occur (about 16% of cadaver limbs), so two thin bands near the styloid can be normal."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/popliteofibular-ligament",
-  "related_structures": [
-    "popliteus_tendon",
-    "popliteus",
-    "fibular_head",
-    "arcuate_ligament",
-    "lcl",
-    "inferior_lateral_genicular_artery"
-  ]
+  "related_structures": ["popliteus_tendon", "popliteus", "fibular_head", "arcuate_ligament", "lcl", "inferior_lateral_genicular_artery"]
 }

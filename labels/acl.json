@@ -4,19 +4,17 @@
   "ta2_name": "Ligamentum cruciatum anterius",
   "region": "knee",
   "reviewed": false,
-  "description": "Intra-articular, extrasynovial ligament from the posteromedial surface of the lateral femoral condyle (lateral notch wall) to the anterior intercondylar area of the tibia, anterolateral to the medial tibial spine, where its fibers blend with the anterior horn of the lateral meniscus. It has anteromedial and posterolateral bundles, named for their tibial footprints, and is about 32 mm long and 7–12 mm wide in extension. On PD and T2 fat-sat it is low to intermediate in signal and striated, most so distally, running taut and roughly parallel to the Blumensaat line in extension. Sagittal images show it best, usually across two or more contiguous slices; coronal and axial images confirm the femoral attachment.",
+  "description": "From the lateral wall of the intercondylar notch to the anterior intercondylar tibia, in anteromedial and posterolateral bundles. Low to intermediate and striated, roughly parallel to the Blumensaat line in extension; best on sagittal images.",
   "normal_values": {
-    "acl_tibial_plateau_angle": "45° or more on sagittal (distal ACL against the lateral tibial plateau); below 45° supports a tear (Gentili 1994: sensitivity 90%, specificity 97%)",
-    "acl_blumensaat_angle": "about 0° or negative on sagittal (ACL parallel to or steeper than the notch roof; positive when the two lines meet distally); tear cutoffs run from above 0° (Mellado 2004) to above 15° (Gentili 1994)",
-    "anterior_tibial_translation": "5 mm or less on the sagittal image through the mid lateral femoral condyle, between vertical lines tangent to the posterior femoral condyle and posterior tibial plateau; above 5 mm (Chan 1994) to above 7 mm (Gentili 1994) supports a complete tear"
+    "acl_tibial_plateau_angle": "45° or more; below 45° supports a tear",
+    "acl_blumensaat_angle": "about 0° or negative (ACL steeper than the roof); tear cutoffs range from above 0° to above 15°",
+    "anterior_tibial_translation": "5 mm or less at the mid lateral condyle; above 5–7 mm supports a tear"
   },
   "variants_pitfalls": [
-    "Striated, intermediate signal is normal: fat and synovium lie between the fascicles and the two bundles fan out toward the tibia, so the ACL is never as uniformly dark as the PCL. Judge fiber continuity and course, not brightness alone.",
-    "Mucoid degeneration (about 1–14% of knee MRIs, more in older and osteoarthritic knees): a thickened, ill-defined ACL, intermediate on PD and T1 but with intact fibers on T2 (celery-stalk appearance). Unlike a tear, its course stays normal, secondary signs are usually absent and cysts at the femoral or tibial footprint are common (Bergin 2004; Celikyay 2020).",
-    "ACL ganglion cyst (about 0.6–1.3% of knee MRIs): a discrete, often lobulated fluid-signal mass splaying intact fibers. It coexists with mucoid degeneration in about a third of cases and is not associated with instability (Bergin 2004).",
-    "Partial volume on sagittal images can make a femoral-side tear look continuous (lateral notch wall or posterior femoral cortex averaged in) or an intact ACL look disrupted or masslike. Check coronal (fibers should hug the lateral notch wall, with no fluid there) and axial (an ovoid low-signal ACL against the lateral wall high in the notch).",
-    "Intact-looking but torn: about 30% of chronic complete tears show a low-signal scar band bridging the notch (Vahey 1991), and the infrapatellar plica (ligamentum mucosum) runs just anterior to the ACL with similar signal (Kosarek 1999). A band that is flatter than the Blumensaat line, focally angulated or not anchored on the lateral notch wall is not a normal ACL.",
-    "Secondary signs (lateral femoral condyle and posterolateral tibial plateau contusions, anterior tibial translation, PCL buckling, a lateral femoral notch deeper than 1.5 mm) are highly specific but insensitive, so their absence does not clear the ACL (Gentili 1994)."
+    "Striated, intermediate signal is normal: judge fiber continuity and course, not brightness.",
+    "Mucoid degeneration (about 1–14%): thickened, with intact fibers on T2, a normal course and often footprint cysts. A ganglion (about 1%) is a discrete fluid mass splaying intact fibers.",
+    "Torn but intact-looking: about 30% of chronic complete tears leave a scar band, and the infrapatellar plica lies just in front. A band flatter than the Blumensaat line or not anchored on the lateral notch wall is not a normal ACL; check coronal and axial images.",
+    "Secondary signs (pivot-shift contusions, anterior translation, PCL buckling, a lateral notch deeper than 1.5 mm) are specific but insensitive; their absence does not clear the ACL."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/anterior-cruciate-ligament",
   "related_structures": ["pcl", "intercondylar_notch", "lateral_femoral_condyle", "lateral_tibial_plateau", "anterolateral_ligament", "lateral_meniscus_anterior_horn"]

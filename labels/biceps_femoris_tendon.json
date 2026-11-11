@@ -4,22 +4,15 @@
   "ta2_name": "Musculus biceps femoris",
   "region": "knee",
   "reviewed": false,
-  "description": "Distal tendon of biceps femoris, formed by the long and short heads, running down the posterolateral knee behind the iliotibial band to the fibular head. The long head splits into a direct arm to the posterolateral fibular head and an anterior arm passing lateral to the LCL, and the LCL inserts in the bursa between the two arms. The short head's direct arm inserts between the styloid and the LCL insertion, and its anterior arm reaches the lateral tibia about 1 cm behind Gerdy's tubercle. Normal: low signal on all sequences; on axial images a round to oval tendon at the posterolateral corner with the common fibular (peroneal) nerve just posteromedial to it, and on posterior coronal images the posterior limb of the V it forms with the LCL at the fibular head.",
+  "description": "Distal tendon of the long and short heads, running down the posterolateral knee to the fibular head, with arms around the LCL and a short-head arm to the lateral tibia behind Gerdy's tubercle. Round and low signal on axial images, with the common fibular nerve just posteromedial.",
   "normal_values": {},
   "variants_pitfalls": [
-    "Near the fibular head the tendon divides into several arms around the LCL and the fibular collateral ligament–biceps bursa, so separate slips with fat or a little fluid between them are expected; a true single conjoined insertion with the LCL is rare (0.4% of 494 knees on 3T MRI, conference abstract). Call a tear only with fiber discontinuity, retraction or a fibular avulsion.",
-    "Insertion variants on MRI: predominantly tibial in about 10% and entirely on the anterolateral tibia in about 1% of 403 knees. An anomalous or anterior slip is a recognized cause of a snapping biceps tendon, not an avulsion.",
-    "Fibular head avulsion: a larger fragment from the lateral fibular head with diffuse proximal fibular edema carries the biceps and LCL, whereas a small horizontal fragment from the styloid tip is the arcuate sign of the popliteofibular and arcuate ligaments. Either marks a posterolateral corner injury; cruciate ligaments were injured in 89% of knees with a radiographic fibular head avulsion.",
-    "The common fibular (peroneal) nerve runs just posteromedial to the tendon, between it and the lateral gastrocnemius, then winds around the fibular neck. With a biceps or fibular head avulsion it is pulled anteriorly with the tendon (16 of 18 surgical cases) and palsy accompanied 9 of 16 distal biceps avulsions, so trace the nerve for displacement, edema or discontinuity.",
-    "Short-head injuries are easy to overlook: in 82 acutely unstable knees with anterolateral–anteromedial rotatory instability, biceps complex injuries were identified in 72%, almost all in the short head's arms (89 of 92 injuries), so edema around the distal short head in an ACL-injured knee is meaningful rather than incidental."
+    "Several arms with fat or a little fluid between them at the fibular head are normal; call a tear only with discontinuity, retraction or avulsion.",
+    "Insertion variants (mostly tibial in about 10%, entirely tibial in about 1%) and anomalous slips can cause a snapping tendon; they are not avulsions.",
+    "A larger lateral fibular head fragment carries the biceps and LCL (cruciate injury in 89% of radiographic avulsions in one series); a small horizontal styloid flake is the arcuate sign.",
+    "With a biceps or fibular head avulsion the common fibular nerve is often pulled with it (16 of 18 surgical cases); trace it for displacement, edema or discontinuity.",
+    "Short-head edema in an ACL-injured knee is meaningful: biceps complex injuries, nearly all short head, were found in 72% of acutely unstable knees in one series."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/distal-biceps-femoris-tendon",
-  "related_structures": [
-    "biceps_femoris",
-    "lcl",
-    "common_peroneal_nerve",
-    "fibular_head",
-    "iliotibial_band",
-    "popliteofibular_ligament"
-  ]
+  "related_structures": ["biceps_femoris", "lcl", "common_peroneal_nerve", "fibular_head", "iliotibial_band", "popliteofibular_ligament"]
 }

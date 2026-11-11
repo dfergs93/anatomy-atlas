@@ -4,24 +4,17 @@
   "ta2_name": "Ligamentum meniscofemorale anterius",
   "region": "knee",
   "reviewed": false,
-  "description": "Anterior meniscofemoral ligament: an inconstant band from the posterior horn of the lateral meniscus that runs upward and medially in front of (anteroinferior to) the PCL to the lateral surface of the medial femoral condyle in the notch. On sagittal images it is a small round or oval low-signal focus directly in front of the PCL, or a bulge on the PCL's anterior surface; on coronal images, a thin oblique band. It is low in signal on all sequences and thin, about 1.5–2 mm. Sagittal images show it best.",
+  "description": "Anterior meniscofemoral ligament: an inconstant band from the lateral meniscus posterior horn, in front of the PCL, to the medial femoral condyle. On sagittal images a small low-signal focus or bulge directly in front of the PCL; thin, about 1.5–2 mm.",
   "normal_values": {
-    "thickness": "about 1.5 mm (cadaver pooled); 1–3 mm, mean 1.9 mm on MRI",
-    "cross_sectional_area_vs_pcl": "about 8% of the PCL at midportion (cadaver pooled)"
+    "thickness": "about 1.5 mm in cadavers; 1–3 mm on MRI",
+    "cross_sectional_area_vs_pcl": "about 8% of the PCL"
   },
   "variants_pitfalls": [
-    "Present in about half to three-quarters of cadaver knees (48% pooled in Gupte 2003, 60% in Pekala 2021, 74% in Gupte 2002) but seen on only about a third of MRIs (pooled 36%: 30% at 1.5 T or less, 51% at 3 T; Pekala 2021), so not seeing it is normal. It coexists with Wrisberg in about 32–50% of cadaver knees, and both become less frequent with age (Gupte 2002).",
-    "Lying directly in front of the PCL, it can mimic the double PCL sign of a displaced medial bucket-handle fragment. It is far smaller than the PCL (cross-section about 8%), hugs it and can be traced to the lateral meniscus posterior horn, whereas a fragment is a thicker band parallel to the PCL with a missing bow tie and a truncated medial meniscus.",
-    "Its insertion on the lateral meniscus posterior horn creates a pseudotear close to the PCL: in intact menisci the Humphry interface extended on average 0.9 consecutive 3-mm sagittal images lateral to the PCL, versus 4.7 when the horn was torn (Park 2007), so an apparent Humphry attachment 4 or more images lateral to the PCL suggests a tear.",
-    "The rare oblique meniscomeniscal ligament (about 1–4% of knees) also crosses the notch near the PCL and can mimic a displaced fragment or a double PCL; it runs from the anterior horn of one meniscus to the posterior horn of the other rather than from the lateral posterior horn up to the medial femoral condyle (Sanders 1999)."
+    "Present in about half to three-quarters of cadaver knees but seen on only about a third of MRIs (about half at 3 T), so not seeing it is normal.",
+    "It can mimic the double PCL sign. It is far smaller than the PCL, hugs it and traces to the lateral meniscus; a bucket-handle fragment is thicker, with a missing bow tie and a truncated medial meniscus.",
+    "Its insertion makes a pseudotear close to the PCL (on average about 1 image lateral to it in intact menisci); an apparent attachment 4 or more 3 mm images lateral raises the possibility of a tear.",
+    "The rare oblique meniscomeniscal ligament (about 1–4%) also crosses near the PCL but runs from the anterior horn of one meniscus to the posterior horn of the other."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/meniscofemoral-ligament",
-  "related_structures": [
-    "pcl",
-    "ligament_of_wrisberg",
-    "lateral_meniscus_posterior_horn",
-    "lateral_meniscus_posterior_root",
-    "medial_femoral_condyle",
-    "intercondylar_notch"
-  ]
+  "related_structures": ["pcl", "ligament_of_wrisberg", "lateral_meniscus_posterior_horn", "lateral_meniscus_posterior_root", "medial_femoral_condyle", "intercondylar_notch"]
 }

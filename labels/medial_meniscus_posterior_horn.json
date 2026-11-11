@@ -4,22 +4,15 @@
   "ta2_name": "Meniscus medialis",
   "region": "knee",
   "reviewed": false,
-  "description": "Posterior third of the medial meniscus and its largest, thickest part: on sagittal images a low-signal triangle that is always larger than the anterior horn on the same slice. Peripherally it is attached to the posteromedial capsule (posterior oblique ligament and semimembranosus expansions) by meniscocapsular (superior) and meniscotibial (inferior) attachments, the 'ramp' region; centrally it narrows into the posterior root in front of the PCL. It is uniformly low signal on PD/T2 fat-sat and T1, though the vascular peripheral rim can be faintly intermediate on T2. Sagittal images show it best, and it is the commonest site of medial meniscal tears.",
+  "description": "Largest third of the medial meniscus, always larger than the anterior horn on sagittal images, attached peripherally to the posteromedial capsule (the ramp region) and narrowing centrally into the posterior root. The commonest site of medial tears; sagittal images show it best.",
   "normal_values": {},
   "variants_pitfalls": [
-    "Ramp lesion: a longitudinal tear of the peripheral posterior horn at its meniscocapsular or meniscotibial attachment, found at arthroscopy in about 9–42% of ACL reconstructions (16.6% of 301 in one single-surgeon series). MRI misses many (sensitivity 48% from clinical reports, 54–85% on blinded review, 71% pooled; specificity about 94%); look on sagittal fat-sat images for fluid completely separating the horn from the capsule or an irregular posterior margin, and treat a posteromedial tibial plateau bone bruise (72% of ramp lesions in DePhillipo 2017) as a prompt.",
-    "Fluid between the posterior horn and the capsule is not specific: it met the usual ramp-lesion definition in 35% of 100 consecutive knee MRIs, and only 20% of those knees had an ACL tear (Porrino 2025). Normal posteromedial synovial recesses, the medial gastrocnemius bursa and the slightly brighter vascular rim can all look like this, so without ACL injury or a bone bruise do not call a ramp lesion on a thin fluid line alone.",
-    "Intrasubstance signal that does not reach a surface is degeneration, not a tear, and in children it is often vascular (high meniscal signal in 66% of asymptomatic children, falling from 80% at age 10 to 35% at 15; Takeda 1998). Call a tear when signal clearly reaches the surface on at least 2 images ('two-slice-touch', PPV 94% for medial tears in De Smet 2006) and report a single-image finding as a possible tear.",
-    "A posterior horn that is smaller than the anterior horn, blunted or missing on sagittal images is abnormal: look for the displaced fragment in the notch (bucket-handle, double PCL) or flipped over the anterior horn, and check for a prior partial meniscectomy.",
-    "Incidental tears are common with age: a tear or maceration was present on MRI in 19% (women 50–59) to 56% (men 70–90) of a community sample, and 61% of people with tears had no knee pain in the previous month (Englund 2008). Report horizontal and oblique degenerative posterior horn tears, but do not assume they explain the symptoms."
+    "Ramp lesion (about 9–42% of ACL reconstructions): a peripheral longitudinal tear at the capsular attachment that MRI often misses (pooled sensitivity 71%). Look for fluid completely separating horn and capsule; a posteromedial tibial bone bruise is a prompt.",
+    "Without ACL injury or a bone bruise, a thin fluid line between horn and capsule is not a ramp lesion: it was present in 35% of consecutive knees, most without an ACL tear (recesses, gastrocnemius bursa, vascular rim).",
+    "Signal that does not reach a surface is degeneration, or vascular in children (66% of asymptomatic children). Call a tear when it reaches the surface on 2 or more images; on one image it is a possible tear.",
+    "A posterior horn smaller than the anterior horn, blunted or missing means a displaced fragment (notch, double PCL, flipped anteriorly) or prior meniscectomy.",
+    "Degenerative tears are common with age (19–56% over 50, most painless); report them, but do not assume they explain symptoms."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/knee-menisci",
-  "related_structures": [
-    "medial_meniscus_posterior_root",
-    "medial_meniscus_body",
-    "acl",
-    "posterior_oblique_ligament",
-    "semimembranosus_tendon",
-    "medial_tibial_plateau"
-  ]
+  "related_structures": ["medial_meniscus_posterior_root", "medial_meniscus_body", "acl", "posterior_oblique_ligament", "semimembranosus_tendon", "medial_tibial_plateau"]
 }

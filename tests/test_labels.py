@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 LABELS = ROOT / "labels"
 KEYS = {"id", "name", "ta2_name", "region", "reviewed", "description", "normal_values",
         "variants_pitfalls", "radiopaedia_url", "related_structures"}
+# The panel is read mid-case: keep each label short, and keep citations in docs/labels/.
+MAX_WORDS = 200
+YEAR = re.compile(r"\b(19|20)\d\d\b")
+LABEL_FILES = sorted(LABELS.glob("*.json"))
 
 # Spec §7.1: the minimum for "it works".
 CORE_KNEE = [
@@ -26,7 +31,7 @@ def checklist_ids(region):
     return {r.id for r in checklist.read_checklist(ROOT / "checklists" / f"{region}.md")}
 
 
-@pytest.mark.parametrize("path", sorted(LABELS.glob("*.json")), ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", LABEL_FILES, ids=lambda p: p.stem)
 def test_label_file_follows_schema(path):
     L = json.loads(path.read_text(encoding="utf-8"))
     assert set(L) == KEYS
@@ -44,6 +49,23 @@ def test_label_file_follows_schema(path):
     rel = L["related_structures"]
     assert len(rel) == len(set(rel)) and L["id"] not in rel
     assert set(rel) <= checklist_ids(L["region"]), set(rel) - checklist_ids(L["region"])
+
+
+def panel_text(L):
+    return [L["description"], *L["variants_pitfalls"],
+            *(f"{k.replace('_', ' ')} {v}" for k, v in L["normal_values"].items())]
+
+
+@pytest.mark.parametrize("path", LABEL_FILES, ids=lambda p: p.stem)
+def test_label_text_is_short_enough_to_read_mid_case(path):
+    words = sum(len(s.split()) for s in panel_text(json.loads(path.read_text(encoding="utf-8"))))
+    assert words <= MAX_WORDS
+
+
+@pytest.mark.parametrize("path", LABEL_FILES, ids=lambda p: p.stem)
+def test_label_text_carries_no_citations(path):
+    cited = [s for s in panel_text(json.loads(path.read_text(encoding="utf-8"))) if YEAR.search(s)]
+    assert cited == []
 
 
 def test_core_knee_set_has_content():

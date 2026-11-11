@@ -4,18 +4,16 @@
   "ta2_name": "Os femoris",
   "region": "knee",
   "reviewed": false,
-  "description": "Distal femur: medial and lateral condyles, joined anteriorly by the trochlea and separated posteriorly by the intercondylar notch. In adults the epiphyseal marrow is fatty (bright on T1, dark on fat-sat), the metaphysis may hold patchy red marrow, and a thin smooth line often marks the closed physis. Sagittal images show the condyles and notch, axial images the trochlea, coronal images the weight-bearing surfaces.",
+  "description": "Distal femur: medial and lateral condyles joined anteriorly by the trochlea and separated posteriorly by the intercondylar notch. Adult epiphyseal marrow is fatty, the metaphysis may hold patchy red marrow, and a thin smooth line marks the closed physis; focal edema straddling a closing adolescent physis is physiologic.",
   "normal_values": {
-    "trochlear_depth": "more than 3 mm on axial, 3 cm above the femorotibial joint line; 3 mm or less indicates trochlear dysplasia (Pfirrmann 2000: sensitivity 100%, specificity 96%)",
-    "lateral_trochlear_inclination": "11° or more on the most proximal axial image showing trochlear cartilage, against the posterior condylar line; below 11° indicates trochlear dysplasia (Carrillon 2000: sensitivity 93%, specificity 87% for patellar instability, 30 unstable vs 30 control knees)",
-    "trochlear_facet_ratio": "medial to lateral facet length 2:5 (40%) or more on axial, 3 cm above the joint line; lower indicates dysplasia (Pfirrmann 2000)",
-    "lateral_femoral_notch_depth": "1.5 mm or less at the condylopatellar sulcus on sagittal; deeper supports ACL tear (Gentili 1994: specificity 100%, sensitivity 19%)"
+    "trochlear_depth": "more than 3 mm on axial, 3 cm above the joint line; 3 mm or less is dysplasia",
+    "lateral_trochlear_inclination": "11° or more on the highest axial image with trochlear cartilage; below 11° indicates dysplasia",
+    "lateral_femoral_notch_depth": "1.5 mm or less on sagittal; deeper supports an ACL tear"
   },
   "variants_pitfalls": [
-    "Red marrow in the distal metaphysis is common: over half of women and under a sixth of men (most often women aged 30–60, also obesity and smoking; Wilson 1996), and 43% of marathon runners (Shellock 1992). It is patchy or flame-shaped, isointense to or brighter than muscle on T1 and spares the epiphysis; marrow darker than muscle on T1, epiphyseal extension or cortical breach needs workup.",
-    "Physeal scar: a thin, smooth, transverse low-signal line across the full width of the former physis persists into adulthood and is not a fracture (no edema, no step). In adolescents with a narrowed, closing physis, a focal central edema zone straddling it (FOPE, 2–27 mm, ages about 12–16) is physiologic (Zbojniewicz 2011).",
-    "Distal femoral cortical irregularity (cortical desmoid): a saucer-shaped cortical defect, T1 low and T2 high with a dark rim, at the medial gastrocnemius attachment (about 93–95%), less often at the lateral gastrocnemius (about 4–5%) or adductor magnus (0–4%) attachment, often bilateral. Seen on 9–27% of adolescent knee MRIs and 58% of youth alpine skiers (Gaukroger 2025; Stern 2020); a do-not-touch lesion, not for biopsy.",
-    "Irregular ossification of the posterior condyles in children (22% of children; peak ages 2–12 in boys, 2–10 in girls; 99.6% posterior; Jans 2011) mimics OCD. Favor a variant when it is posterior, the overlying cartilage is intact, there are accessory ossicles or spiculation and no marrow edema (Gebarski 2005)."
+    "Red marrow in the metaphysis is common (over half of women, under a sixth of men, many marathon runners): patchy, isointense to or brighter than muscle on T1, sparing the epiphysis. Darker than muscle, epiphyseal extension or cortical breach needs workup.",
+    "Cortical irregularity (cortical desmoid): a saucer-shaped posterior cortical defect with a dark rim, almost always at the medial gastrocnemius attachment, in 9–27% of adolescents. Leave it alone; it is not for biopsy.",
+    "In children, irregular posterior condylar ossification (about 22%) mimics OCD: favor a variant when it is posterior, cartilage is intact and there is no marrow edema."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/femur",
   "related_structures": ["trochlea", "medial_femoral_condyle", "lateral_femoral_condyle", "intercondylar_notch", "femoral_cartilage", "gastrocnemius_medial_head"]

@@ -4,21 +4,14 @@
   "ta2_name": "Musculus popliteus",
   "region": "knee",
   "reviewed": false,
-  "description": "Flat triangular muscle whose fleshy attachment covers the posterior surface of the proximal tibia above the soleal line; its fibers converge upward and laterally into the popliteus tendon to the lateral femoral condyle, with further attachments to the lateral meniscus (popliteomeniscal fascicles) and the fibular styloid (popliteofibular ligament). The popliteal artery and vein and the tibial nerve run on its posterior surface, and the artery normally divides at its lower border. Normal: skeletal-muscle signal (intermediate on T1 with fine fatty marbling, low to intermediate on PD/T2 fat-sat, no feathery edema), best seen on axial and sagittal images just below the tibial plateau.",
+  "description": "Flat triangular muscle on the posterior proximal tibia whose fibers converge into the popliteus tendon. The popliteal vessels and tibial nerve lie behind it, and the artery normally divides at its lower border; best seen on axial and sagittal images below the plateau.",
   "normal_values": {},
   "variants_pitfalls": [
-    "Strain: most popliteus injuries involve the muscle or musculotendinous junction (23 of 24 in a series drawn from 2,412 knee MRIs, about 1% of studies), and only about 8% are isolated. Feathery edema in the belly should prompt a search for PCL (torn in 29% of that series), posterolateral corner, meniscal and bone injury.",
-    "Fluid in the subpopliteal recess tracks along the tendon toward the musculotendinous junction and can mimic a tear. Recess fluid is sharply marginated and tubular around the tendon; a strain gives ill-defined intramuscular edema or hematoma.",
-    "After a complete tendon tear the belly can retract and look like a fluid-surrounded mass on the posterior tibia; follow the tendon up to the popliteal sulcus before calling a soft-tissue lesion.",
-    "Aberrant anterior tibial artery: in about 2–3% of knee MRIs (2.0% of 787, 1.9% of 4,075, 3.2% of 222) the popliteal artery divides high and the anterior tibial artery runs anterior to popliteus, directly on the posterior tibial cortex. It is best seen on axial images at the level of the PCL tibial attachment and is worth reporting before high tibial osteotomy, PCL or posterolateral corner reconstruction, lateral meniscal root repair or arthroplasty."
+    "Strain (about 1% of knee MRIs, rarely isolated): feathery edema in the belly should prompt a search for PCL, posterolateral corner, meniscal and bone injury.",
+    "Recess fluid along the tendon is sharply marginated and tubular; a strain gives ill-defined intramuscular edema or hematoma.",
+    "After a complete tendon tear the retracted belly can look like a mass; follow the tendon up before calling a soft-tissue lesion.",
+    "Aberrant anterior tibial artery (about 2–3%): a high division with the artery running in front of popliteus on the tibial cortex, best seen on axial images at the PCL attachment. Report it before osteotomy, PCL or posterolateral reconstruction, root repair or arthroplasty."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/popliteus-muscle",
-  "related_structures": [
-    "popliteus_tendon",
-    "popliteofibular_ligament",
-    "popliteal_artery",
-    "tibial_nerve",
-    "pcl",
-    "soleus"
-  ]
+  "related_structures": ["popliteus_tendon", "popliteofibular_ligament", "popliteal_artery", "tibial_nerve", "pcl", "soleus"]
 }

@@ -4,17 +4,17 @@
   "ta2_name": "Patella",
   "region": "knee",
   "reviewed": false,
-  "description": "Largest sesamoid bone, lying in the extensor mechanism between the quadriceps and patellar tendons. Its posterior surface has a larger lateral and a smaller medial facet divided by a vertical median ridge, with a small odd facet at the medial margin. Marrow is fatty with a thin smooth subchondral plate; axial images show facet shape, tilt and cartilage, sagittal images the poles, tendons and patellar height.",
+  "description": "Largest sesamoid, between the quadriceps and patellar tendons, with a larger lateral and smaller medial facet divided by a vertical ridge. Axial images show facets, tilt and cartilage; sagittal images show the poles, tendons and patellar height.",
   "normal_values": {
-    "insall_salvati_ratio": "0.8–1.2 on lateral radiograph; on sagittal MRI, alta above 1.3 (Miller 1996) to above 1.5 (Shabshin 2004), baja below 0.74 (Shabshin 2004)",
-    "caton_deschamps_index": "0.6–1.2 (some use up to 1.3); alta above 1.2–1.3, baja below 0.6 (radiographic criteria, often applied on sagittal MRI)",
-    "patellotrochlear_index": "12.5–50% on sagittal MRI with the knee extended (mean 31.7%; Biedert 2006); below 12.5% alta, above 50% baja"
+    "insall_salvati_ratio": "0.8–1.2 on radiograph; on sagittal MRI alta above 1.3–1.5, baja below 0.74",
+    "caton_deschamps_index": "0.6–1.2 (some use up to 1.3)",
+    "patellotrochlear_index": "12.5–50% on sagittal MRI; below 12.5% alta, above 50% baja"
   },
   "variants_pitfalls": [
-    "Bipartite patella: about 1–2% of people (0.7% of knee MRIs; Kavanagh 2007), bilateral in about 43%, male-predominant; Saupe type III superolateral (about 75%), type II lateral margin (about 20%), type I inferior pole (about 1–5%). Smooth corticated margins distinguish it from fracture, and edema in the fragment marks a painful one (66% of Kavanagh's series, the only finding in 49%).",
-    "Dorsal defect of the patella: a round, well-defined subchondral lesion about 1 cm across in the superolateral patella, T1 low and T2 high with a sclerotic rim, on 0.3–1% of radiographs, mostly in the second and third decades, bilateral in up to a third. Unlike OCD the overlying cartilage is usually intact and there is no fragment; most are incidental and many resolve.",
-    "Wiberg shapes are variants, not disease: type I equal concave facets (about 8–16%), type II a smaller flat or slightly concave medial facet (about 65–80%), type III a small convex medial facet (about 13–27%), across cadaver and clinical series.",
-    "Where injury hides: osteochondral injury of the inferomedial patella (70%) with lateral femoral condyle edema (80%) is the transient lateral dislocation pattern (Elias 2002), often not suspected clinically (73%; Kirsch 1993). Check the MPFL and medial retinaculum and look for loose bodies (15%)."
+    "Bipartite patella (about 1–2%, often bilateral) is usually superolateral; smooth corticated margins separate it from a fracture, and edema in the fragment marks a painful one.",
+    "Dorsal defect: a round subchondral lesion about 1 cm across in the superolateral patella, with a sclerotic rim and usually intact cartilage; unlike OCD there is no fragment. Mostly incidental.",
+    "Transient lateral dislocation: inferomedial patellar osteochondral injury (70%) with lateral femoral condyle edema (80%), often unsuspected clinically. Check the MPFL and medial retinaculum and look for loose bodies.",
+    "Wiberg facet shapes I–III are variants, not disease."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/patella",
   "related_structures": ["patellar_cartilage", "trochlea", "patellar_tendon", "quadriceps_tendon", "mpfl", "medial_patellar_retinaculum"]

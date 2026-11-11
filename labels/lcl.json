@@ -4,22 +4,14 @@
   "ta2_name": "Ligamentum collaterale fibulare",
   "region": "knee",
   "reviewed": false,
-  "description": "Cord-like extracapsular ligament and the primary restraint to varus stress, running from a shallow depression just proximal and posterior to the lateral femoral epicondyle, superficial to the popliteus tendon, to the lateral fibular head about 28 mm below the styloid tip. Distally it inserts within the bursa between the anterior and direct arms of the biceps femoris long head, so on posterior coronal images it converges with the biceps tendon into the V-shaped 'conjoined tendon'. Normal: low signal on T1 and PD/T2 fat-sat (often intermediate for a short segment at the femoral attachment), outlined by fat, about 3–6 mm thick and 6–7 cm long. Its oblique anterosuperior-to-posteroinferior course usually spreads it over 2–3 posterior coronal slices; coronal oblique and axial images follow it best.",
+  "description": "Cord-like extracapsular ligament from just proximal and posterior to the lateral femoral epicondyle to the lateral fibular head, inserting between the biceps arms (the 'conjoined tendon' V). Low signal, about 3–6 mm thick, usually spread over 2–3 posterior coronal slices.",
   "normal_values": {},
   "variants_pitfalls": [
-    "Intermediate signal in the proximal LCL near its femoral attachment is normal: present in about 79% of knees on MRI (mean length ≈9 mm), it corresponds to fibrocartilage and mucin at the enthesis. Call a sprain only with periligamentous edema, thickening or fiber discontinuity.",
-    "Signal change and thickening are common without instability: in one MRI series of stable knees, 33% showed LCL signal alteration and 33% thickening, more often with varus alignment. Mild chronic-looking change in an older varus knee does not by itself mean a prior posterolateral corner injury.",
-    "The fibular collateral ligament–biceps femoris bursa (TA2: inferior subtendinous bursa of biceps femoris) was present in all 50 knees of a cadaver study, about 8 × 18 mm, wrapping the anterior and anteromedial distal quarter of the ligament. Fluid there around intact fibers is bursitis, not an LCL tear.",
-    "'Conjoined tendon' is MRI shorthand: on 3T axial images the LCL most often passes between the anterior and direct arms of the biceps long head (88% of 494 knees, conference abstract), and a true single conjoined insertion is rare (<1%). Separate slips with a little fat or fluid between them at the fibular head are normal.",
-    "Where tears hide: when the LCL fails in a multiligament knee injury involving the posterolateral corner it most often avulses from the fibula (65%; femoral 20%, midsubstance 15%; Kahan 2020), where the biceps can mask it, so check the lateral fibular head for an avulsion fragment or marrow edema and check the common fibular (peroneal) nerve. Isolated LCL tears are rare; look for popliteus, popliteofibular and cruciate injury and an anteromedial femoral condyle bone bruise (55% of acute grade III PLC injuries; Geeslin 2010)."
+    "Intermediate signal at the femoral attachment is normal (about 79% of knees); call a sprain only with periligamentous edema, thickening or fiber discontinuity.",
+    "Signal change and thickening are common in stable knees (a third each in one series, more with varus), so mild change alone does not mean prior injury.",
+    "Fluid around intact fibers at the fibular end is the fibular collateral–biceps bursa, not a tear. Separate slips with fat between them are normal; a true single conjoined insertion is rare.",
+    "In multiligament injuries it most often fails at the fibula (65%), where the biceps can mask it: check the fibular head and the common fibular nerve. Isolated LCL tears are rare; look at the popliteus, popliteofibular ligament and cruciates."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/lateral-collateral-ligament-of-the-knee",
-  "related_structures": [
-    "biceps_femoris_tendon",
-    "popliteus_tendon",
-    "popliteofibular_ligament",
-    "fibular_head",
-    "lateral_femoral_condyle",
-    "common_peroneal_nerve"
-  ]
+  "related_structures": ["biceps_femoris_tendon", "popliteus_tendon", "popliteofibular_ligament", "fibular_head", "lateral_femoral_condyle", "common_peroneal_nerve"]
 }

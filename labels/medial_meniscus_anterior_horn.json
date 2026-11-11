@@ -4,23 +4,15 @@
   "ta2_name": "Meniscus medialis",
   "region": "knee",
   "reviewed": false,
-  "description": "Anterior third of the medial meniscus and the smallest part of the C: on sagittal images a small low-signal triangle at the front of the medial compartment, clearly smaller than the posterior horn on the same slice. It is anchored by the anterior root to the anterior intercondylar area of the tibia, in front of the ACL tibial footprint, and in most knees is joined to the lateral anterior horn by the transverse (intermeniscal) ligament running along the back of Hoffa's fat pad. It is uniformly low signal on PD/T2 fat-sat and T1, and the medial anterior root is usually a single dark bundle without the striated look of the lateral anterior root. Sagittal images show the horn best; coronal and axial images show the root and its ligament connections.",
+  "description": "Smallest part of the medial meniscus: on sagittal images a small low-signal triangle, clearly smaller than the posterior horn, anchored by its root in front of the ACL footprint. The transverse ligament often joins it to the lateral anterior horn behind Hoffa's fat pad.",
   "normal_values": {},
   "variants_pitfalls": [
-    "Transverse meniscal ligament pseudotear: the ligament is visible on MRI in about 54–67% of knees (cadaver series 34–94%), and the high-signal cleft where it joins the anterior horn can mimic an oblique tear. This is commoner laterally: the ligament simulated a lateral anterior horn tear on 22% of 200 early sagittal examinations (Watanabe 1989), whereas a 2021 series found only 4 pseudotears among 68 knees with a visible ligament (3 lateral, 1 medial); follow the round low-signal ligament on consecutive sagittal images, or along one axial image, into the horn.",
-    "The anterior root insertion varies (cadaver, Berlet and Fowler 1998): flat intercondylar area 59%, downslope from the medial plateau 24%, anterior slope of the tibial plateau 15%, no firm bony insertion 3%; the transverse ligament is the main anchor of the horn in about a quarter of knees. A root that fans into soft tissue or sits far forward on the tibial slope can be normal, so call an anterior root tear only with a fluid cleft, displacement or extrusion.",
-    "Anomalous insertion into the ACL or intercondylar notch (anteromedial meniscofemoral ligament), reported prevalence ranges widely (about 1–15%), mostly from small case series: a low-signal band leaves the anterior horn and runs posterosuperiorly along the ACL or into the notch. It mimics a displaced bucket-handle fragment, ACL fibers or an infrapatellar plica; it is continuous with an intact anterior horn, and the body still shows normal bow ties.",
-    "Pseudoradial tear on coronal images: a blunted, truncated tip of the anterior horn or horn–body junction, sometimes with fluid at the tip, was seen on coronal PD images in 79% of 485 knee MRIs (on 1–5 consecutive sections), and none of the 96 arthroscoped knees had a radial tear there (You 2014). It is volume averaging where the meniscus curves through the coronal plane; confirm a radial tear on sagittal or axial images before reporting it.",
-    "The medial anterior horn should never be larger than the posterior horn. An enlarged anterior horn (8 mm or more tall in the original series) with a deficient posterior horn is a posterior horn fragment flipped forward (flipped meniscus or 'double anterior horn'); this is much commoner laterally (9 of 10 cases in Haramati 1993) but does occur medially.",
-    "Oblique meniscomeniscal ligament, about 1–4% (medial and lateral variants combined): the medial variant runs from the medial anterior horn back through the notch, between the ACL and PCL, to the lateral posterior horn. In the notch it mimics a displaced fragment or a double PCL; trace it to both menisci, which are otherwise intact."
+    "Transverse ligament pseudotear: the cleft where the ligament meets the horn can mimic an oblique tear, more often laterally. Follow the round low-signal ligament into the horn on consecutive sagittal images or one axial image.",
+    "The root insertion varies (flat intercondylar area 59%, medial plateau downslope 24%, anterior tibial slope 15%, no firm bony insertion 3% in cadavers); call a root tear only with a fluid cleft, displacement or extrusion.",
+    "Pseudoradial tear on coronal images: a blunted tip where the meniscus curves through the plane was seen in 79% of knees in one series, with no radial tears at arthroscopy. Confirm on sagittal or axial images.",
+    "An anterior horn larger than the posterior horn, with a deficient posterior horn, is a flipped fragment (much commoner laterally).",
+    "Anomalous insertion into the ACL or notch (about 1–15%, small series) and the oblique meniscomeniscal ligament (about 1–4%) mimic a displaced fragment; both trace to intact menisci."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/knee-menisci",
-  "related_structures": [
-    "transverse_meniscal_ligament",
-    "acl",
-    "hoffa_fat_pad",
-    "lateral_meniscus_anterior_horn",
-    "medial_meniscus_body",
-    "medial_meniscus_posterior_horn"
-  ]
+  "related_structures": ["transverse_meniscal_ligament", "acl", "hoffa_fat_pad", "lateral_meniscus_anterior_horn", "medial_meniscus_body", "medial_meniscus_posterior_horn"]
 }

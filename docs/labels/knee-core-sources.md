@@ -4,6 +4,27 @@ Sources behind the 24 drafted `labels/*.json` files for the spec §7.1 core knee
 
 How they were made: four writers drafted one anatomical group each from the literature (PubMed / Europe PMC abstracts, PMC full texts, TA2 term data; Radiopaedia links confirmed from search results because Radiopaedia refuses automated fetches). Two independent fact-checkers then traced every number to its primary paper and found 10 WRONG and 13 UNSUPPORTED statements; all were corrected (second commit on this branch, listed under "Fact-check corrections" below). The writers' notes that follow are as written before the fact-check: **where they disagree with the corrections list, the correction wins.**
 
+## Trim (2026-11-10)
+
+At the owner's request the panel text was cut to at most 200 words per file (description, variants and pitfalls, normal values), keeping the variants and pitfalls a reader would act on mid-case. The panel carries no citations; `tests/test_labels.py` enforces both. The long, fact-checked version, with an inline citation for every number, is commit `b64427a`: `git show b64427a:labels/<id>.json`. Every number in the trimmed text comes from it, and the writers' notes below give each one's source.
+
+A fresh reviewer compared the trim against `b64427a`. No fact-check correction was undone, and the spec §6 examples (how often each meniscofemoral ligament is present, how closely they mimic a posterior horn tear, how far medially the lateral root can sit) are still answered. It found 10 problems the trim had introduced, all fixed:
+
+- medial_meniscus_posterior_horn: the "thin fluid line is not a ramp lesion" rule had lost "without ACL injury or a bone bruise".
+- ligament_of_wrisberg: the 3-image extent rule had lost its 3 mm slice thickness.
+- mcl_deep: restored "a thin, sharp fat or fluid line between the layers is normal".
+- femur: restored focal periphyseal edema at a closing adolescent physis.
+- acl: restored the Blumensaat sign convention.
+- lcl: the "a third each" figures are for stable knees, with more change in varus knees (not "stable varus knees").
+- medial_meniscus_body: flounces sat in torn menisci in "most" cases in one series (not "many").
+- medial_meniscus_anterior_horn: root insertion types split back out (24% and 15%).
+- popliteofibular_ligament: coronal oblique 53–71% and 3D 91% given separately; "not seeing it is normal" limited to routine 2D.
+- arcuate_ligament: none of the 6 surgical disruptions was seen on MRI.
+
+Two of the reviewer's minor notes were also fixed (popliteus_tendon: "fewer than 10% isolated" refers to all popliteus injuries; medial_meniscus_body: 94% of bucket-handle tears). Two were left as they are:
+- lateral_meniscus_posterior_root: 79–84% / 90–95% spans two series, one using any of three signs and one using cleft or truncated triangle.
+- mcl_superficial: "or centered on it" stands for "1–2 mm proximal, overlapping the epicondyle".
+
 ## Fact-check corrections
 
 | File | Severity | What changed |

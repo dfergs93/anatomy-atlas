@@ -4,25 +4,17 @@
   "ta2_name": "Meniscus lateralis",
   "region": "knee",
   "reviewed": false,
-  "description": "Tibial attachment of the lateral meniscus posterior horn in the posterior intercondylar area, just posteromedial to the lateral tibial eminence and anterior to the medial meniscus posterior root and the PCL tibial attachment. On posterior coronal PD/T2 fat-sat images it is a low-signal band sloping down and medially from the posterior horn to the tibia beside the PCL; on sagittal images through the lateral notch it is the descending medial end of the posterior horn, just lateral to the PCL. It may insert as one, two or three fascicles with thin fat stripes between them. Coronal and sagittal images show it best; axial images help count the fascicles.",
+  "description": "Tibial attachment of the lateral posterior horn in the posterior intercondylar area, just posteromedial to the lateral tibial eminence and in front of the PCL. A low-signal band sloping down and medially on posterior coronal images, as one to three fascicles with thin fat between them.",
   "normal_values": {
-    "root_center_to_lateral_tibial_eminence_apex": "about 5 mm posteromedial (4.2 mm medial, 1.5 mm posterior; cadaver); 8.8 ± 1.3 mm on 7 T MRI",
-    "root_zone": "the tibial attachment plus the adjacent 1 cm of meniscus (working definition for root tears)"
+    "root_center_to_lateral_tibial_eminence_apex": "about 5 mm posteromedial (cadaver); about 9 mm on 7 T MRI",
+    "root_zone": "the attachment plus the adjacent 1 cm of meniscus"
   },
   "variants_pitfalls": [
-    "The posterior root attaches in the intercondylar area, not on the lateral plateau. At 7 T, 22% of single roots inserted on the posterior slope of the medial tibial eminence and, in the one knee with three roots (1 of 57), a fascicle reached behind the PCL insertion (Marcus 2026), so lateral meniscal tissue beside the PCL on notch sagittal images can be normal; tissue continuing up toward the medial femoral condyle is a meniscofemoral ligament.",
-    "One (24–53%), two (42–76%) or three (2–5%) insertion fascicles are normal (SSR consensus 2026). Two fascicles give a two-peaked root on coronal images (82% of double roots at 7 T) with fat between them, which is not a tear but makes partial tears harder to call.",
-    "Lateral posterior root tears accompany about 10–15% of ACL tears (9.8% on MRI, Brody 2006; 10% in a national registry; 13.5% at arthroscopy, Ciatti 2021) and are uncommon without one. Look for a vertical cleft at or within 1 cm of the root and a truncated triangle on coronal images, and a ghost meniscus on sagittal images.",
-    "Each sign alone is insensitive (34–66%; the ghost sign only 14% in one series), but calling a tear when any one sign is present detected 79–84% of root tears with 90–95% specificity (Asai 2020, any of the three signs; Yoshihara 2025, cleft or truncated triangle).",
-    "Extrusion is a weak clue laterally: present in only 23% of lateral root tears (Brody 2006). Absent meniscofemoral ligaments were more common with root tears and with extrusion, so an intact Wrisberg or Humphry ligament can hold a root-torn meniscus in place; normal position does not exclude a root tear."
+    "How far medial: some roots insert on the slope of the medial tibial eminence (22% of single roots at 7 T), so lateral meniscal tissue beside the PCL on notch sagittal images can be normal; tissue continuing up to the medial femoral condyle is a meniscofemoral ligament.",
+    "A two-peaked root with fat between fascicles on coronal images is normal, not a tear.",
+    "Root tears accompany about 10–15% of ACL tears and are uncommon without one. Single signs are insensitive; calling a tear on any one of cleft, truncated triangle or ghost meniscus found 79–84% with 90–95% specificity.",
+    "Extrusion is a weak clue laterally (23% of root tears), as an intact meniscofemoral ligament may hold the meniscus; normal position does not exclude a tear."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/meniscal-root-tear",
-  "related_structures": [
-    "lateral_meniscus_posterior_horn",
-    "pcl",
-    "medial_meniscus_posterior_root",
-    "intercondylar_eminence",
-    "ligament_of_wrisberg",
-    "acl"
-  ]
+  "related_structures": ["lateral_meniscus_posterior_horn", "pcl", "medial_meniscus_posterior_root", "intercondylar_eminence", "ligament_of_wrisberg", "acl"]
 }

@@ -4,23 +4,17 @@
   "ta2_name": "Meniscus lateralis",
   "region": "knee",
   "reviewed": false,
-  "description": "Anterior third of the nearly circular lateral meniscus, running from the body at the anterolateral joint line to the anterior root, which attaches in the anterior intercondylar area just lateral to and partly beneath the ACL tibial footprint. On sagittal PD/T2 fat-sat and T1 images it is a low-signal triangle pointing posteriorly, about the same height as the lateral posterior horn (on the medial side the posterior horn is clearly larger). Near the root its signal is often striated where ACL fibers and fat interleave with the root fibers. Sagittal images show it best; axial images show the root beside the ACL.",
+  "description": "Anterior third of the nearly circular lateral meniscus, its root attaching just lateral to and partly beneath the ACL footprint. A low-signal triangle about the same height as the lateral posterior horn, often striated near the root where ACL fibers interleave.",
   "normal_values": {
     "height_vs_posterior_horn": "about equal to the lateral posterior horn on sagittal images"
   },
   "variants_pitfalls": [
-    "Speckled or striated signal near the central attachment is normal, from ACL fibers and fibrofatty tissue interleaved with the root fibers: seen in 7 of 11 volunteer knees, and all 22 arthroscoped patients who showed it on two consecutive sagittal images had a normal horn (Shankman 1997). Because it can span two images, judge it by the horn's shape and by whether the signal stays at the root beside the ACL, not by the two-image rule alone.",
-    "The anterior root inserts deeply beneath the ACL, which covers about 63% of the root footprint in cadavers (LaPrade 2014), so ACL and root fibers merge on sagittal and axial images. After ACL reconstruction, check the root for tunnel injury: a 10-mm tibial reamer breached the lateral anterior root in 4 of 6 cadaver knees (Watson 2015).",
-    "The two lateral horns are normally about the same height. An anterior horn clearly taller than the posterior horn (8 mm or more in the original series, 9 of 10 of them lateral) with a small or truncated posterior horn is a posterior horn fragment flipped forward onto it, the flipped meniscus or double anterior horn sign (Haramati 1993).",
-    "The inferior lateral genicular artery, running with a rim of fat along the outer edge of the lateral meniscus anteriorly, can mimic a peripheral tear of the anterior horn on sagittal images (Herman 1988); it lies outside the meniscal triangle and can be followed as a tubular structure along the joint line on adjacent images.",
-    "Where the transverse (intermeniscal) ligament joins the anterior horn, the fat between ligament and horn can mimic an oblique tear on sagittal images (described at either meniscus); follow the ligament medially through the Hoffa fat pad on consecutive sagittal or axial images."
+    "Speckled signal near the root is normal (ACL fibers and fat between root fibers; 7 of 11 volunteers) and can span two images, so judge the horn's shape and whether the signal stays at the root beside the ACL.",
+    "A horn clearly taller than the posterior horn, with a small or truncated posterior horn, is a flipped posterior horn fragment (double anterior horn), usually lateral.",
+    "The inferior lateral genicular artery runs with fat along the outer edge and can mimic a peripheral tear; it lies outside the meniscal triangle and is tubular on adjacent images.",
+    "Where the transverse ligament joins the horn, the fat between them can mimic an oblique tear; follow the ligament medially.",
+    "After ACL reconstruction check the root: the ACL covers about 63% of its footprint, and a 10 mm tibial reamer breached it in 4 of 6 cadaver knees."
   ],
   "radiopaedia_url": "https://radiopaedia.org/articles/knee-menisci",
-  "related_structures": [
-    "acl",
-    "transverse_meniscal_ligament",
-    "lateral_meniscus_body",
-    "lateral_meniscus_posterior_horn",
-    "inferior_lateral_genicular_artery"
-  ]
+  "related_structures": ["acl", "transverse_meniscal_ligament", "lateral_meniscus_body", "lateral_meniscus_posterior_horn", "inferior_lateral_genicular_artery"]
 }
