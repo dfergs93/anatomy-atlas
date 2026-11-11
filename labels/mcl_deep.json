@@ -1,0 +1,24 @@
+{
+  "id": "mcl_deep",
+  "name": "MCL — deep (meniscofemoral/meniscotibial)",
+  "ta2_name": "Pars profunda ligamenti collateralis tibialis",
+  "region": "knee",
+  "reviewed": false,
+  "description": "The deep MCL is a thickening of the medial joint capsule (layer 3) beneath the superficial MCL, made of a meniscofemoral part from the femur to the upper rim of the meniscal body and a meniscotibial (coronary) part from the lower rim to the tibia. The meniscofemoral part is about three times longer and attaches roughly 1 cm distal to the superficial MCL femoral footprint; the meniscotibial part is short and wide, inserting a few millimeters below the tibial articular margin; posteriorly the deep MCL blends with the posterior oblique ligament. On coronal PD/T2 fat-sat images both parts are thin low-signal bands above and below the meniscal body, inseparable from its rim and separated from the superficial MCL by a thin fat plane or the collapsed MCL bursa, and coronal images show them best.",
+  "normal_values": {},
+  "variants_pitfalls": [
+    "The MCL bursa between the superficial and deep MCL is normally collapsed. When distended (bursitis), fluid lies between the layers, often in separate femoral (above the meniscus) and tibial (below) compartments (De Maeseneer 2001), with intact ligaments and meniscus; a parameniscal cyst instead connects to a horizontal meniscal tear.",
+    "A thin fat or fluid stripe between the layers is normal. Call a deep MCL tear when its fibers are discontinuous or joint fluid tracks from the joint between the deep and superficial layers; the meniscofemoral part is torn far more often than the meniscotibial part (93% vs 6% of deep MCL injuries in an ACL series, Willinger 2022), and deep MCL injury is associated with edema in the medial femoral condyle next to its femoral attachment.",
+    "Meniscocapsular separation is overcalled: the MRI diagnosis had a positive predictive value of 9% medially, and fluid at the meniscocapsular border, fluid deep to the MCL and meniscal displacement up to 10 mm all occurred without separation at arthroscopy (Rubin 1996). Reserve it for fluid clearly separating the meniscus from both deep MCL parts in an injured knee.",
+    "In clinically 'isolated' ACL ruptures the deep MCL was injured in 31%, associated with the more severe superficial MCL injuries and with medial meniscal ramp lesions (Willinger 2022); deep MCL edema on an ACL study should prompt a close look at the posterior horn meniscocapsular junction."
+  ],
+  "radiopaedia_url": "https://radiopaedia.org/articles/medial-collateral-ligament",
+  "related_structures": [
+    "mcl_superficial",
+    "medial_meniscus_body",
+    "medial_meniscus_posterior_horn",
+    "posterior_oblique_ligament",
+    "medial_femoral_condyle",
+    "medial_tibial_plateau"
+  ]
+}

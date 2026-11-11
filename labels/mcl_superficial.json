@@ -1,0 +1,29 @@
+{
+  "id": "mcl_superficial",
+  "name": "MCL — superficial",
+  "ta2_name": "Pars superficialis ligamenti collateralis tibialis",
+  "region": "knee",
+  "reviewed": false,
+  "description": "The superficial MCL forms layer 2 of the medial knee: a flat band about 9.5 cm long from its femoral attachment just proximal and posterior to the medial epicondyle to two tibial attachments, a proximal one into soft tissue over the anterior arm of the semimembranosus just below the joint line, and a long distal bony one about 6 cm below the joint line, deep to the pes anserinus tendons. On MRI it is a thin, uniformly low-signal band on all sequences, separated from the deep MCL and meniscus by a thin fat plane, with no surrounding edema. Coronal PD/T2 fat-sat images show its whole length; axial images show its anteroposterior extent and its relation to the pes anserinus and semimembranosus.",
+  "normal_values": {
+    "femoral_attachment_center": "≈3 mm proximal and ≈5 mm posterior to the medial epicondyle (cadaver); another series centers it 1–2 mm proximal, overlapping the epicondyle",
+    "distal_tibial_attachment_below_joint_line": "≈6 cm (mean 61–62 mm in two cadaver series; the linear footprint spans ≈4–7 cm)"
+  },
+  "variants_pitfalls": [
+    "A thin stripe or small triangle of fluid-bright signal (up to about 4 mm) beside the MCL is common in normal knees: fat, the MCL bursa or a little joint fluid (Watanabe 1989). A sprain needs a valgus injury: grade 1 is high signal around a normal-looking ligament, grade 2 adds intrasubstance signal or partial fiber disruption, grade 3 is complete discontinuity.",
+    "Edema around the MCL without trauma is common in medial compartment osteoarthritis: 27 of 30 knees with medial OA versus 2 of 30 age-matched controls (Bergin 2002). Treat it as part of the arthritis, not a sprain, unless there was a valgus injury.",
+    "Distal tears are easy to miss: a wavy, redundant sMCL ('wave sign') suggests a tear at the tibial attachment. Check on coronal and axial images that the pes anserinus tendons still lie superficial to the sMCL; a distal stump flipped superficial to them (Stener-like lesion, 20 of 51 distal tears in Boutin 2020) blocks healing and is an indication to consider surgical repair.",
+    "Three fluid collections sit around the sMCL and are told apart by position: the pes anserine bursa lies between the pes tendons and the distal sMCL below the joint line; the semimembranosus–tibial collateral ligament bursa is an inverted U draped over the semimembranosus tendon, deep to the posterior sMCL (Rothstein 1996); the MCL bursa lies between the superficial and deep MCL at the joint line. A parameniscal cyst instead connects to a meniscal tear.",
+    "Ossification at the femoral attachment (Pellegrini–Stieda lesion) marks an old proximal MCL injury: on MRI an ossicle with marrow signal beside the medial femoral condyle and a thickened ligament, without the marrow edema of an acute avulsion.",
+    "In clinically 'isolated' ACL ruptures the sMCL was injured in 62%, mostly in its midsubstance (73%; femoral 23%, tibial 5%) (Willinger 2022), so check it on every ACL tear even without valgus laxity."
+  ],
+  "radiopaedia_url": "https://radiopaedia.org/articles/medial-collateral-ligament",
+  "related_structures": [
+    "mcl_deep",
+    "pes_anserinus",
+    "pes_anserine_bursa",
+    "semimembranosus_tendon",
+    "posterior_oblique_ligament",
+    "medial_femoral_condyle"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "popliteus_tendon",
+  "name": "Popliteus tendon",
+  "ta2_name": "Musculus popliteus",
+  "region": "knee",
+  "reviewed": false,
+  "description": "Proximal tendon of popliteus, intracapsular but extrasynovial, arising from the anterior part of the popliteal sulcus on the lateral femoral condyle, about 1–2 cm from the LCL origin, distal and usually anterior to it. It runs deep to the LCL and posteroinferiorly through the popliteal hiatus of the lateral meniscus posterior horn, tethered by the popliteomeniscal fascicles, to its musculotendinous junction behind the posterolateral tibia, about 5.5 cm from its origin. Normal: low-signal band about 3–4 mm thick, often outlined by joint fluid in the subpopliteal recess. The origin is best seen on coronal and axial images through the lateral condyle, the hiatus on far lateral sagittal images, and the whole course on coronal oblique images angled along the tendon.",
+  "normal_values": {},
+  "variants_pitfalls": [
+    "Fluid around the tendon at and below the hiatus is normal: it lies in the subpopliteal recess, a joint extension that follows the tendon to about 2 cm below the top of the lateral tibial condyle (cadaver mean 23 mm, wide range). A tear needs fiber discontinuity, a retracted or wavy tendon, or an empty sulcus; fluid behind the tendon outside the recess suggests a posterolateral capsular tear.",
+    "On far lateral sagittal images the tendon and its fluid-filled sheath cross the periphery of the lateral meniscus posterior horn and mimicked a tear in 27.5% of 200 knee MRIs; follow the oblique fluid band onto the tendon and check that the popliteomeniscal fascicles are intact. A second low-signal band parallel to the tendon in the hiatus (double popliteus tendon sign) is a displaced lateral meniscal flap, not a variant.",
+    "Most popliteus injuries are in the muscle or musculotendinous junction; tears of the tendon itself are uncommon, and when present are often a femoral avulsion, seen as an empty popliteal sulcus on coronal and axial images. Fewer than 10% of popliteus injuries are isolated, so look for LCL, popliteofibular ligament and PCL injury.",
+    "Mild intermediate signal or thickening is common in knees without instability (signal alteration 23%, thickening 8% in one MRI series), and dissection finds two tendon slips in the popliteal sulcus in about 35% of limbs. A slightly heterogeneous or split-looking origin without edema, fluid gap or retraction may be normal; MRI correlation of the two-slip variant is not established.",
+    "A cyamella, a sesamoid within the popliteus tendon (at the popliteal sulcus, over the posterior tibial condyle or near the fibular head), is present in about 0.6–1.8% of knees. It is a small corticated ossicle with fatty marrow and should not be called a loose body or avulsion fragment."
+  ],
+  "radiopaedia_url": "https://radiopaedia.org/articles/popliteus-tendon",
+  "related_structures": [
+    "popliteus",
+    "lcl",
+    "lateral_meniscus_posterior_horn",
+    "popliteofibular_ligament",
+    "lateral_femoral_condyle",
+    "arcuate_ligament"
+  ]
+}

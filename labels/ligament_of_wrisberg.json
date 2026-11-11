@@ -1,0 +1,29 @@
+{
+  "id": "ligament_of_wrisberg",
+  "name": "Posterior meniscofemoral lig. (Wrisberg)",
+  "ta2_name": "Ligamentum meniscofemorale posterius",
+  "region": "knee",
+  "reviewed": false,
+  "description": "Posterior meniscofemoral ligament: an inconstant band from the posterior horn of the lateral meniscus that runs upward and medially behind (posterosuperior to) the PCL to a fan-shaped attachment on the lateral surface of the medial femoral condyle. On posterior coronal images it is an oblique low-signal band crossing behind the PCL from the lateral meniscus to the medial femoral condyle; on sagittal images, a small oval low-signal dot just behind the PCL. It is low in signal on all sequences, about 2–2.5 mm thick and on average thicker than Humphry. Coronal images show it best; trace it on sagittal images.",
+  "normal_values": {
+    "thickness": "about 2–2.5 mm (pooled: cadaver 2.0 mm, MRI 2.5 mm); MRI range 1–3.8 mm",
+    "midportion_width": "about 4 mm (cadaver pooled 4.1 mm), widening to about 6 mm at the femoral attachment",
+    "cross_sectional_area_vs_pcl": "about 14% of the PCL at midportion (cadaver pooled)"
+  },
+  "variants_pitfalls": [
+    "Present in about 70% of knees (pooled 70.4%: cadaver 74%, MRI 66.5%; Pekala 2021); single MRI series range from 51% (7 T, Marcus 2026) to 90–94% (Cho 1999; de Abreu 2007). At least one meniscofemoral ligament is present in about 91–93% of cadaver knees (Gupte 2002, 2003), and Wrisberg is the one more often seen on MRI.",
+    "Its insertion on the posterior horn mimics a tear on sagittal images in 39–63% of knees, usually an oblique line from the superior surface running posteriorly and inferiorly (Vahey 1990; de Abreu 2007). The attachment runs along about 8 mm of the horn at 7 T and normally reaches on average 3 consecutive 3-mm images lateral to the PCL; 4 or more, especially with an ACL tear, suggests a real tear (Park 2007).",
+    "With an ACL tear, a vertical longitudinal tear can run along the Wrisberg attachment of the posterior horn (the Wrisberg rip; the SSR 2026 consensus prefers 'tear along the posterior meniscofemoral attachment'); unlike the pseudotear it extends further lateral across more sagittal images.",
+    "On a single sagittal image it is a small ovoid low-signal focus behind the PCL that can be mistaken for a loose body or displaced fragment; follow it on coronal images from the posterior horn to the medial femoral condyle. On MRI it often seems to end on the PCL rather than the condyle (about half in Cho 1999), and oblique PCL fibers (the false posterior MFL, 19% of cadaver knees; Gupte 2002) can mimic it or a meniscal tear.",
+    "Wrisberg-variant discoid: when the lateral meniscus lacks posterior meniscotibial and capsular attachments, this ligament is its only posterior stabilizer and the posterior horn is hypermobile (snapping, locking). MRI can look normal unless the knee is locked; clues are absent popliteomeniscal fascicles, fluid between posterior horn and capsule, or a posterior horn flipped forward without a peripheral rim (Singh 2006; Moser 2007; Yue 2011)."
+  ],
+  "radiopaedia_url": "https://radiopaedia.org/articles/meniscofemoral-ligament",
+  "related_structures": [
+    "pcl",
+    "ligament_of_humphry",
+    "lateral_meniscus_posterior_horn",
+    "lateral_meniscus_posterior_root",
+    "medial_femoral_condyle",
+    "acl"
+  ]
+}

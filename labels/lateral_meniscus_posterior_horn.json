@@ -1,0 +1,28 @@
+{
+  "id": "lateral_meniscus_posterior_horn",
+  "name": "Lateral meniscus — posterior horn",
+  "ta2_name": "Meniscus lateralis",
+  "region": "knee",
+  "reviewed": false,
+  "description": "Posterior third of the lateral meniscus, from the popliteal hiatus to the posterior root. On sagittal PD/T2 fat-sat and T1 images it is a low-signal triangle about the same size as the lateral anterior horn; toward the notch its medial segment slopes upward to the root, and the meniscofemoral ligaments leave its posterior aspect for the medial femoral condyle. At the hiatus the popliteus tendon separates its periphery from the capsule, joined to it by the popliteomeniscal fascicles. Sagittal images show it best, with coronal images for the hiatus and the root.",
+  "normal_values": {
+    "mfl_interface_extent_lateral_to_pcl": "Humphry about 1 and Wrisberg about 3 consecutive 3-mm sagittal images lateral to the PCL in intact menisci; 4 or more suggests a tear"
+  },
+  "variants_pitfalls": [
+    "Where the Humphry or Wrisberg ligament joins the posterior horn, a line of intermediate signal between ligament and meniscus mimics a tear on sagittal images near the PCL in 39% (Vahey 1990) to 63% (de Abreu 2007) of knees, usually oblique from the superior surface running posteriorly and inferiorly (83–87%), less often vertical.",
+    "The pseudotear stays close to the PCL. An apparent ligament attachment extending 4 or more consecutive 3-mm sagittal images lateral to the PCL is likely a true posterior horn tear, especially with an ACL tear (every such tear in Park 2007 had one).",
+    "With an ACL tear, lateral meniscal tears are more often posterior and peripheral, and MRI sensitivity for lateral tears fell from 94% to 69% (De Smet 1994). A typical one is a vertical longitudinal tear along the Wrisberg attachment (the Wrisberg rip), so check the posterior horn periphery on every ACL-torn knee.",
+    "The upsloping medial segment of the posterior horn often shows intermediate signal on short-TE images (PD, T1, GRE) from the magic angle effect: 74% of knees, 81% of them oriented 55–60° to B0 (Peterfy 1994). Signal that fades on long-TE T2 is magic angle; signal that persists or reaches a surface with distortion is real.",
+    "At the popliteal hiatus, fluid in the popliteus tendon sheath between tendon and posterolateral horn mimics a vertical peripheral tear on lateral sagittal images (Herman 1988); trace the tendon running obliquely downward on consecutive images, and remember the meniscotibial attachment is normally absent at the hiatus.",
+    "The superior and inferior popliteomeniscal fascicles (roof and floor of the hiatus) were seen in 97% of uninjured knees, better on T2 than PD (Johnson 1999), but were indistinct or absent in 40% (superior) and 26% (inferior) of control knees in another series (Suganuma 2012). Non-visualization alone is not a tear; with locking, abnormal fascicles support a hypermobile lateral meniscus (all such knees had them in that series)."
+  ],
+  "radiopaedia_url": "https://radiopaedia.org/articles/knee-menisci",
+  "related_structures": [
+    "lateral_meniscus_posterior_root",
+    "ligament_of_wrisberg",
+    "ligament_of_humphry",
+    "popliteus_tendon",
+    "lateral_meniscus_body",
+    "acl"
+  ]
+}

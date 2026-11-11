@@ -1,0 +1,28 @@
+{
+  "id": "medial_meniscus_body",
+  "name": "Medial meniscus — body",
+  "ta2_name": "Meniscus medialis",
+  "region": "knee",
+  "reviewed": false,
+  "description": "Middle third of the medial meniscus, lying beneath the MCL: its peripheral rim is fixed to the deep MCL (meniscofemoral part above, meniscotibial part below), so there is no normal gap between meniscus and capsule as there is at the lateral popliteal hiatus. On coronal images it is a sharp low-signal triangle with a pointed free edge; on the most peripheral sagittal images, where the slice runs along the curve, the horns join into a continuous 'bow tie'. It is uniformly low signal on PD/T2 fat-sat and T1, and the medial meniscus covers about half of the medial tibial plateau. Coronal images show it best, including its relation to the MCL and any extrusion.",
+  "normal_values": {
+    "bow_tie_count_on_sagittal": "at least 2 consecutive images at 4–5 mm slice thickness (typically 2–3 at 3 mm with a 1 mm gap; the count rises as slices get thinner); fewer is an absent bow tie",
+    "extrusion_beyond_tibial_margin": "≤3 mm on the coronal image through the apex of the medial tibial spine; >3 mm is major extrusion (asymptomatic adults average about 1–2 mm)"
+  },
+  "variants_pitfalls": [
+    "Meniscal flounce: an S-shaped ripple of the free edge on sagittal images, nearly always in the medial body. MRI prevalence was 0.2% in the first large series (Yu 1997) and 5% in a later one (Park 2006); it is a transient fold that usually flattens when the knee is scanned fully extended. Accept it as a variant only after excluding a tear: in a 2020 series (11% prevalence) most flounces were in torn medial menisci, especially with posterior horn or meniscocapsular tears.",
+    "Absent bow tie (fewer than 2 bow ties) had 97% sensitivity for bucket-handle tears in the original series (Helms 1998), but it is non-specific: one series found it in 28% of normal menisci and linked it to small menisci (body under 9 mm wide in 56% of women vs 27% of men). Degeneration and partial meniscectomy also shrink the body, so base a bucket-handle diagnosis on the displaced fragment (seen in 94% in Helms 1998: in the notch, a double PCL, or flipped anteriorly), not on the count alone.",
+    "Extrusion of more than 3 mm beyond the tibial margin is associated with root tears (42% of knees with >3 mm vs 3% with ≤3 mm), large radial and complex tears and severe degeneration (Costa 2004). Up to about 3 mm is common in asymptomatic adults; measure on the coronal slice through the medial tibial spine (the slice showing the most extrusion overestimates it) and, above 3 mm, scrutinize the posterior root.",
+    "Flap tears of the body can displace inferiorly into the recess between the meniscus, deep MCL and tibia, or superiorly into the meniscofemoral recess. On coronal images a low-signal nodule beside or below the medial tibial plateau margin, deep to the MCL, with a truncated body is a displaced fragment, not extrusion or an osteophyte; these are easily missed at MRI and at arthroscopy (Lecas 2000).",
+    "Discoid medial meniscus is rare (about 0.06–0.3%). Suspect it when bow ties continue on 3 or more consecutive 5 mm sagittal slices or the body is 11 mm or wider on coronal images, criteria that were 93–99% specific for an enlarged medial meniscus in one series (Samoto 2006)."
+  ],
+  "radiopaedia_url": "https://radiopaedia.org/articles/knee-menisci",
+  "related_structures": [
+    "mcl_deep",
+    "mcl_superficial",
+    "medial_meniscus_anterior_horn",
+    "medial_meniscus_posterior_horn",
+    "medial_meniscus_posterior_root",
+    "pcl"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "arcuate_ligament",
+  "name": "Arcuate ligament",
+  "ta2_name": "Ligamentum popliteum arcuatum",
+  "region": "knee",
+  "reviewed": false,
+  "description": "Y-shaped thickening of the posterolateral capsule arising from the apex of the fibular styloid: its lateral limb ascends along the capsule toward the lateral femoral condyle and lateral gastrocnemius origin, and its medial limb arches over the popliteus musculotendinous junction to blend with the oblique popliteal ligament. It lies in the deep lamina of the lateral capsule, deep to the fabellofibular ligament, and is anatomically inconstant. When visible it is a thin low-signal band posterior to the popliteus tendon, best on coronal oblique images parallel to the popliteus tendon or on posterior coronal and sagittal images just above the fibular styloid.",
+  "normal_values": {},
+  "variants_pitfalls": [
+    "Often absent or invisible: cadaver series report it in 24–100% of knees (Radiopaedia cites about 65%), and MRI shows it in 10% of standard coronal vs 46% of coronal oblique studies and in 25% of routine studies. Not seeing it is normal.",
+    "It varies inversely with the fabella and fabellofibular ligament: the capsule is reinforced by the arcuate ligament alone in 13%, the fabellofibular ligament alone in 20% and both in 67% of cadaver knees. With a large bony fabella expect a thick fabellofibular ligament running parallel to the LCL from the fabella to the styloid and a small or absent arcuate ligament.",
+    "The fabella, a sesamoid in the lateral gastrocnemius tendon behind the lateral femoral condyle, is found in about 25–37% of knees in pooled analyses (dissection ≈32%, radiographs ≈19%) and 21–48% in MRI series, more often in older and East Asian patients. Ossified it is a corticated ovoid with fatty marrow; ossified or cartilaginous, it is not a loose body or avulsion fragment.",
+    "Arcuate sign: a small, horizontally oriented avulsion of the fibular styloid tip (about 8–10 × 2–5 mm) where the arcuate complex (arcuate, popliteofibular and fabellofibular ligaments) inserts. It marks a posterolateral corner injury, with cruciate tears in 89% of one series and PCL tears in all 13 of another; if no fragment is visible, styloid marrow edema may be the only sign.",
+    "Injury to the arcuate ligament itself is rarely seen on MRI (not confidently characterized in 22 surgically treated PLC injuries; disruption found at surgery but invisible on MRI in 6 of 13), so judge the corner by the LCL, popliteus tendon, popliteofibular ligament and fibular styloid. Only fat should lie behind the popliteus tendon outside the subpopliteal recess; fluid there suggests a posterolateral capsular tear."
+  ],
+  "radiopaedia_url": "https://radiopaedia.org/articles/arcuate-ligament",
+  "related_structures": [
+    "popliteofibular_ligament",
+    "popliteus_tendon",
+    "fibular_head",
+    "gastrocnemius_lateral_head",
+    "oblique_popliteal_ligament",
+    "lcl"
+  ]
+}
